@@ -1,227 +1,298 @@
-import { useState } from "react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "./ui/accordion";
+import { useState, useMemo } from "react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { grammarLessons } from "../data/grammarLessons";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
 
-interface GrammarPageProps {
+const LESSONS_PER_PAGE = 5;
+const GRAMMAR_PER_PAGE = 10;
+const WORDS_PER_PAGE = 10;
+
+export function GrammarPage({
+  onNavigate,
+}: {
   onNavigate: (page: string) => void;
-}
+}) {
+  const [selectedLesson, setSelectedLesson] = useState<number | null>(null);
+  const [lessonPage, setLessonPage] = useState(1);
+  const [grammarPage, setGrammarPage] = useState(1);
+  const [wordPage, setWordPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
-const grammarData = [
-  {
-    id: "1",
-    title: "は (wa) - Trợ từ chủ đề",
-    structure: "[Danh từ] + は + [Vị ngữ]",
-    meaning: "Dùng để chỉ chủ đề của câu",
-    examples: [
-      { japanese: "私は学生です。", vietnamese: "Tôi là học sinh." },
-      { japanese: "これは本です。", vietnamese: "Đây là quyển sách." },
-    ],
-    catMood: "happy",
-  },
-  {
-    id: "2",
-    title: "が (ga) - Trợ từ chủ ngữ",
-    structure: "[Danh từ] + が + [Vị ngữ]",
-    meaning: "Dùng để chỉ chủ ngữ của câu, nhấn mạnh ai/cái gì làm hành động",
-    examples: [
-      { japanese: "猫が好きです。", vietnamese: "Tôi thích mèo." },
-      { japanese: "雨が降ります。", vietnamese: "Trời mưa." },
-    ],
-    catMood: "thinking",
-  },
-  {
-    id: "3",
-    title: "を (wo/o) - Trợ từ tân ngữ",
-    structure: "[Danh từ] + を + [Động từ]",
-    meaning: "Đánh dấu tân ngữ trực tiếp của động từ",
-    examples: [
-      { japanese: "本を読みます。", vietnamese: "Đọc sách." },
-      { japanese: "水を飲みます。", vietnamese: "Uống nước." },
-    ],
-    catMood: "cool",
-  },
-  {
-    id: "4",
-    title: "に (ni) - Trợ từ chỉ nơi chốn/thời gian",
-    structure: "[Nơi chốn/Thời gian] + に + [Động từ]",
-    meaning: "Chỉ địa điểm, thời gian, hướng đi",
-    examples: [
-      { japanese: "学校に行きます。", vietnamese: "Đi đến trường." },
-      { japanese: "7時に起きます。", vietnamese: "Thức dậy lúc 7 giờ." },
-    ],
-    catMood: "excited",
-  },
-  {
-    id: "5",
-    title: "で (de) - Trợ từ chỉ phương tiện/địa điểm",
-    structure: "[Phương tiện/Địa điểm] + で + [Động từ]",
-    meaning: "Chỉ phương tiện hoặc nơi diễn ra hành động",
-    examples: [
-      { japanese: "電車で行きます。", vietnamese: "Đi bằng tàu điện." },
-      { japanese: "図書館で勉強します。", vietnamese: "Học ở thư viện." },
-    ],
-    catMood: "smart",
-  },
-];
+  const totalLessonPages = Math.ceil(grammarLessons.length / LESSONS_PER_PAGE);
+  const currentLessons = grammarLessons.slice(
+    (lessonPage - 1) * LESSONS_PER_PAGE,
+    lessonPage * LESSONS_PER_PAGE
+  );
 
-const catEmojis = {
-  happy: "😺",
-  thinking: "🤔😸",
-  cool: "😎😺",
-  excited: "😻",
-  smart: "🧐😺",
-};
+  const currentLessonData = selectedLesson
+    ? grammarLessons.find((l) => l.id === selectedLesson)
+    : null;
 
-export function GrammarPage({ onNavigate }: GrammarPageProps) {
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const paginatedGrammar =
+    currentLessonData?.grammar.slice(
+      (grammarPage - 1) * GRAMMAR_PER_PAGE,
+      grammarPage * GRAMMAR_PER_PAGE
+    ) || [];
 
-  const handleAccordionChange = (value: string[]) => {
-    setOpenItems(value);
-  };
+  const paginatedWords =
+    currentLessonData?.vocabulary.slice(
+      (wordPage - 1) * WORDS_PER_PAGE,
+      wordPage * WORDS_PER_PAGE
+    ) || [];
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return grammarLessons.flatMap((lesson) =>
+      lesson.vocabulary
+        .filter(
+          (w) =>
+            w.japanese.includes(query) ||
+            w.romaji.toLowerCase().includes(query) ||
+            w.vietnamese.toLowerCase().includes(query)
+        )
+        .map((word) => ({ word, lessonId: lesson.id }))
+    );
+  }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#D8C8FF]/20 to-[#C7FFF1]/30">
-      {/* Navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#D8C8FF]/20 to-[#C7FFF1]/30 relative">
+      <Background />
       <Navigation currentPage="grammar" onNavigate={onNavigate} />
 
-      {/* Background */}
-      <Background />
-      
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 py-12">
+      <main className="container mx-auto px-4 py-12 relative z-10">
+        {/* Tiêu đề */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl mb-4 text-gray-800">
-            Ngữ Pháp Tiếng Nhật 📝
-          </h2>
-          <p className="text-xl text-gray-600">
-            Nhấn vào từng mục để xem chi tiết nhé! 🐾
-          </p>
-        </div>
-
-        {/* Grammar Accordion */}
-        <div className="max-w-4xl mx-auto relative z-20">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl ring-8 ring-white/60 p-6 sm:p-8">
-          <Accordion
-            type="multiple"
-            value={openItems}
-            onValueChange={handleAccordionChange}
-            className="space-y-4"
+          <h1
+            className="text-6xl md:text-8xl font-black text-white drop-shadow-2xl"
+            style={{
+              color: "white",
+              textShadow: `
+        -4px -4px 0 #000,
+        4px -4px 0 #000,
+        -4px 4px 0 #000,
+        4px 4px 0 #000,
+        -6px -6px 12px #000,
+        6px 6px 12px #000
+      `,
+              WebkitTextStroke: "3px black",
+              paintOrder: "stroke fill",
+            }}
           >
-            {grammarData.map((grammar) => (
-              <AccordionItem
-                key={grammar.id}
-                value={grammar.id}
-                className="bg-white/90 rounded-2xl overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all duration-300"
-              >
-                <AccordionTrigger className="px-6 py-6 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-pink-100 [&[data-state=open]]:to-purple-100">
-                  <div className="flex items-center gap-5 flex-1 text-left">
-                    <span className="text-4xl transition-transform duration-500 group-hover:scale-110">
-                      {openItems.includes(grammar.id)
-                        ? catEmojis[grammar.catMood as keyof typeof catEmojis]
-                        : "😺"}
-                    </span>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-gray-800">{grammar.title}</h3>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-8 pt-4 bg-gradient-to-b from-white/80 to-pink-50/30">
-                  <div className="space-y-6">
-                    {/* Structure */}
-                    <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-5 shadow-md">
-                      <h4 className="font-semibold text-pink-700 mb-2">Cấu trúc:</h4>
-                      <p className="text-xl font-medium text-gray-800">{grammar.structure}</p>
-                    </div>
-
-                    {/* Meaning */}
-                    <div className="bg-gradient-to-r from-purple-100 to-cyan-100 rounded-2xl p-5 shadow-md">
-                      <h4 className="font-semibold text-purple-700 mb-2">Ý nghĩa:</h4>
-                      <p className="text-lg text-gray-800">{grammar.meaning}</p>
-                    </div>
-
-                    {/* Examples */}
-                    <div>
-                      <h4 className="font-semibold text-gray-700 text-lg">Ví dụ:</h4>
-                      <div className="space-y-3">
-                        {grammar.examples.map((example, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-white rounded-2xl p-5 shadow-md border-2 border-pink-200 hover:border-pink-400 hover:scale-[1.02] transition-all duration-300"
-                          >
-                            <p className="text-2xl font-bold text-gray-800 mb-2">
-                              {example.japanese}
-                            </p>
-                            <p className="text-lg text-gray-600">
-                              → {example.vietnamese}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Decoration */}
-                    <div className="flex justify-center gap-3 pt-2">
-                      <span className="text-2xl animate-wiggle">🌸</span>
-                      <span className="text-2xl">✨</span>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-            </div>
-        {/* Bottom Decoration */}
-        <div className="text-center mt-16 space-y-4">
-          <div className="flex justify-center gap-4">
-            <span className="text-3xl animate-float">🐾</span>
-            <span className="text-3xl animate-float delay-1">📖</span>
-            <span className="text-3xl animate-float delay-2">💫</span>
-          </div>
-          <p className="text-lg text-gray-600">
-            Học ngữ pháp thật thú vị phải không nào! 🎉
+            Ngữ Pháp Tiếng Nhật
+          </h1>
+          <p
+            className="relative mt-6 text-2xl md:text-4xl font-bold 
+               drop-shadow-2xl px-8 py-3 inline-block"
+            style={{
+              color: "white",
+              textShadow: `
+        0 0 15px rgba(0, 0, 0, 0.9),
+        0 0 30px rgba(0, 0, 0, 0.8),
+      `,
+            }}
+          >
+            Học cùng mèo siêu dễ thương!
           </p>
         </div>
+
+        {/* Danh sách 25 bài học */}
+        {!selectedLesson && !searchQuery && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-7xl mx-auto mb-12">
+              {currentLessons.map((lesson) => (
+                <button
+                  key={lesson.id}
+                  onClick={() => {
+                    setSelectedLesson(lesson.id);
+                    setGrammarPage(1);
+                    setWordPage(1);
+                  }}
+                  className="group relative w-56 h-56 rounded-3xl bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
+                >
+                  <div className="text-6xl group-hover:animate-bounce">
+                    {lesson.icon}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-purple-700">
+                      Bài {lesson.id}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-2 px-4 line-clamp-2">
+                      {lesson.title}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Phân trang bài học */}
+            <div className="flex justify-center items-center gap-8 mt-12">
+              <button
+                onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
+                disabled={lessonPage === 1}
+                className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+              >
+                <ChevronLeft className="w-10 h-10" />
+              </button>
+              <span className="text-2xl font-bold text-purple-700">
+                Trang {lessonPage} / {totalLessonPages}
+              </span>
+              <button
+                onClick={() =>
+                  setLessonPage((p) => Math.min(totalLessonPages, p + 1))
+                }
+                disabled={lessonPage === totalLessonPages}
+                className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+              >
+                <ChevronRight className="w-10 h-10" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Nội dung bài học đã chọn */}
+        {selectedLesson && currentLessonData && (
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={() => setSelectedLesson(null)}
+              className="px-8 py-3 bg-white/30 backdrop-blur-md rounded-full text-white font-bold hover:bg-white/50 transition"
+            >
+              ← Tất cả bài học
+            </button>
+            <h1
+              className="text-5xl font-black text-center mb-12 text-white"
+              style={{
+                textShadow: `
+        0 4px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(0, 0, 0, 0.5)
+      `,
+              }}
+            >
+              Bài {selectedLesson}: {currentLessonData.title}
+            </h1>
+
+            {/* Ngữ pháp */}
+            <div className="mb-16">
+              <h3
+                className="text-4xl font-bold text-white mb-8 text-center"
+                style={{
+                  textShadow: `
+        0 4px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(0, 0, 0, 0.5)
+      `,
+                }}
+              >
+                Ngữ pháp
+              </h3>
+              {/* CHIA 2 CỘT – MỖI CỘT 1 NGỮ PHÁP – ĐẸP NHƯ SÁCH GIÁO KHOA NHẬT BẢN */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                {paginatedGrammar.map((g, i) => (
+                  <div
+                    key={i}
+                    className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-purple-200 
+                 hover:border-pink-400 hover:scale-[1.02] hover:shadow-pink-500/30 
+                 transition-all duration-500 group"
+                  >
+                    {/* Icon mèo dễ thương + tiêu đề */}
+                    <div className="flex items-center gap-4 mb-6">
+                      <h4 className="text-3xl font-black text-purple-700 tracking-tight">
+                        {g.title}
+                      </h4>
+                    </div>
+
+                    {/* Cấu trúc */}
+                    <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-6 mb-6 shadow-md">
+                      <p className="text-sm font-bold text-pink-700 mb-2">
+                        CẤU TRÚC
+                      </p>
+                      <p className="text-2xl font-bold text-gray-800">
+                        {g.structure}
+                      </p>
+                    </div>
+
+                    {/* Ý nghĩa */}
+                    <div className="bg-gradient-to-r from-purple-100 to-cyan-100 rounded-2xl p-6 mb-8 shadow-md">
+                      <p className="text-sm font-bold text-purple-700 mb-2">
+                        Ý NGHĨA
+                      </p>
+                      <p className="text-xl text-gray-800 leading-relaxed">
+                        {g.meaning}
+                      </p>
+                    </div>
+
+                    {/* Ví dụ – đẹp như flashcard */}
+                    <div className="space-y-5">
+                      <p className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                        <span>Ví dụ</span>
+                        <span className="text-2xl">😺</span>
+                      </p>
+                      {g.examples.map((ex, j) => (
+                        <div
+                          key={j}
+                          className="bg-white rounded-2xl p-6 shadow-lg border-2 border-pink-200 
+                       hover:border-pink-500 hover:shadow-xl hover:-translate-y-1 
+                       transition-all duration-300"
+                        >
+                          <p className="text-3xl font-black text-gray-800 mb-3 leading-relaxed">
+                            {ex.japanese}
+                          </p>
+                          <p className="text-xl text-gray-600 flex items-center gap-3">
+                            <span className="text-2xl">😺</span>
+                            <span className="font-medium">{ex.vietnamese}</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Trang trí nhỏ xinh */}
+                    <div className="flex justify-center gap-4 mt-8 pt-4 border-t border-purple-100">
+                      <span className="text-3xl animate-wiggle">😺</span>
+                      <span className="text-3xl">😺</span>
+                      <span className="text-3xl animate-wiggle">😺</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Phân trang ngữ pháp */}
+              {currentLessonData.grammar.length > GRAMMAR_PER_PAGE && (
+                <div className="flex justify-center gap-6 mt-8">
+                  <button
+                    onClick={() => setGrammarPage((p) => Math.max(1, p - 1))}
+                    disabled={grammarPage === 1}
+                    className="px-6 py-3 bg-purple-500 text-white rounded-full disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xl font-bold self-center">
+                    {grammarPage} /{" "}
+                    {Math.ceil(
+                      currentLessonData.grammar.length / GRAMMAR_PER_PAGE
+                    )}
+                  </span>
+                  <button
+                    onClick={() => setGrammarPage((p) => p + 1)}
+                    disabled={
+                      grammarPage * GRAMMAR_PER_PAGE >=
+                      currentLessonData.grammar.length
+                    }
+                    className="px-6 py-3 bg-purple-500 text-white rounded-full disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
-
-      {/* Footer */}
       <Footer />
-
-      <style>{`
-        @keyframes wiggle {
-          0%, 100% { transform: rotate(-5deg); }
-          50% { transform: rotate(5deg); }
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-
-        .animate-wiggle {
-          animation: wiggle 1s ease-in-out infinite;
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        .delay-1 {
-          animation-delay: 0.3s;
-        }
-
-        .delay-2 {
-          animation-delay: 0.6s;
-        }
-      `}</style>
     </div>
   );
 }

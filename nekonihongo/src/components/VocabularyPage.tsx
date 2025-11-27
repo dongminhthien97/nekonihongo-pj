@@ -225,7 +225,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
            flex flex-col items-center justify-center gap-4 px-6 shadow-xl"
                   >
                     <div
-                      className="text-4xl "
+                      className="text-5xl "
                       style={{
                         textShadow: `
         0 4px 10px rgba(255, 255, 255, 0.8),

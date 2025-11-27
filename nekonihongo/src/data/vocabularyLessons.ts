@@ -37,7 +37,7 @@ export const vocabularyLessons: Lesson[] = [
   {
     id: 2,
     title: "Số đếm & Tuổi",
-    icon: "1st Place Medal",
+    icon: "Place Medal",
     words: [
       { japanese: "一", romaji: "ichi", vietnamese: "Một" },
       { japanese: "二", romaji: "ni", vietnamese: "Hai" },
