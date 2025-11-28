@@ -3,19 +3,16 @@ import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
 
-
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
   return (
-  <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
-      
+    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
       {/* Navigation */}
       <Navigation currentPage="landing" onNavigate={onNavigate} />
       <Background />
-
       {/* Features Section */}
       <section className="container mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -30,7 +27,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
               <h3 className="text-xl sm:text-2xl text-gray-800">Từ Vựng</h3>
               <p className="text-sm sm:text-base text-gray-600">
-                Học từ vựng tiếng Nhật cơ bản với hình ảnh và phát âm dễ nhớ
+                Học từ vựng tiếng Nhật cơ bản
               </p>
               <div className="flex gap-2 pt-2">
                 <span className="text-2xl animate-wiggle">😺</span>
@@ -100,7 +97,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           </button>
         </div>
       </section>
-
       {/* Floating Cat Animation */}
       <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
         <img
@@ -116,14 +112,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                animate-fly 
                drop-shadow-2xl"
           style={{
-          filter: 'drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))',
-        }}
-        /> 
+            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
+          }}
+        />
       </div>
-
       {/* Footer */}
+      {/* <div className="fixed bottom-0 right-0 pointer-events-none z-50 hidden lg:block"> */}
       <Footer />
-
+      {/* </div> */}
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }

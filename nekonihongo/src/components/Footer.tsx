@@ -20,7 +20,16 @@ export function Footer() {
   ];
 
   return (
-    <footer className="relative bg-gradient-to-r from-[#FFF6E9] via-[#FFF2F9] to-[#E8F8FF] overflow-hidden py-16 mt-20">
+    <footer
+      className="relative py-16 mt-20"
+      style={{
+        position: "fixed" /* 1. Fixed để dính đáy */,
+        bottom: 0 /* 2. Dính sát đáy màn hình */,
+        left: 0 /* 3. Từ mép trái */,
+        width: "100%" /* 4. Full chiều ngang */,
+        pointerEvents: "none" /* Không che nút bấm */,
+      }}
+    >
       {/* Nhiều mèo bay nhẹ nhàng từ trái → phải, ra khỏi màn hình thì quay lại */}
       <div className="absolute inset-0">
         {catImages.map((src, index) => (
@@ -28,10 +37,10 @@ export function Footer() {
             key={index}
             className="absolute"
             style={{
-              top: `${20 + (index % 3) * 7}%`,        // 3 hàng dọc nhẹ nhàng
-              left: `-150px`,                          // bắt đầu ngoài màn hình bên trái
+              top: `${20 + (index % 3) * 7}%`, // 3 hàng dọc nhẹ nhàng
+              left: `-80px`, // bắt đầu ngoài màn hình bên trái
               animation: `floatRight 28s linear infinite`,
-              animationDelay: `${index * 1.7}s`,       // mỗi con cách nhau ~2.8s
+              animationDelay: `${index * 1.7}s`, // mỗi con cách nhau ~2.8s
             }}
           >
             <img
@@ -51,14 +60,13 @@ export function Footer() {
               top: `${15 + i * 12}%`,
               left: `-80px`,
               animation: `floatRight 32s linear infinite`,
-              animationDelay: `${i * 4 + 10}s`,
+              animationDelay: `${i * 4}s`,
             }}
           >
             🌸
           </div>
         ))}
       </div>
-
 
       {/* Animation: bay từ trái sang phải rồi lặp lại */}
       <style>{`

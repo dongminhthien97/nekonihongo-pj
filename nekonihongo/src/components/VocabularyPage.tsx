@@ -214,25 +214,19 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       setSearchQuery("");
                     }}
                     className="group font-black text-black relative overflow-hidden rounded-3xl 
-           bg-white/80 backdrop-blur-xl border-4 border-white/50 hover:border-pink-300 
-           hover:scale-110 hover:shadow-2xl hover:shadow-pink-500/40 transition-all 
-           duration-500 
-
-           /* KÍCH THƯỚC CỐ ĐỊNH – ĐỀU TẮM TẮP TRÊN MỌI MÀN HÌNH */
-           w-[24rem] h-[12rem]        /* 384px x 192px – cố định tuyệt đối */
-           
-           /* CĂN GIỮA NỘI DUNG – TEXT GỌN GÀNG TRONG KHUNG */
-           flex flex-col items-center justify-center gap-4 px-6 shadow-xl"
+                    bg-white/80 backdrop-blur-xl border-4 border-white/50 hover:border-pink-300 
+                    hover:scale-110 hover:shadow-2xl hover:shadow-pink-500/40 transition-all 
+                    duration-500 flex flex-col items-center justify-center gap-4 px-6 shadow-xl"
                   >
                     <div
                       className="text-5xl "
                       style={{
                         textShadow: `
-        0 4px 10px rgba(255, 255, 255, 0.8),
-        0 0 20px rgba(255, 255, 255, 0.9),
-        0 0 40px rgba(255, 255, 255, 0.7),
-        0 0 60px rgba(255, 255, 255, 0.5)
-      `,
+                          0 4px 10px rgba(255, 255, 255, 0.8),
+                          0 0 20px rgba(255, 255, 255, 0.9),
+                          0 0 40px rgba(255, 255, 255, 0.7),
+                          0 0 60px rgba(255, 255, 255, 0.5)
+                        `,
                       }}
                     >
                       {lesson.icon}
@@ -253,11 +247,24 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 <button
                   onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
                   disabled={lessonPage === 1}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-50"
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-70"
                 >
                   <ChevronLeft className="w-8 h-8 text-white" />
                 </button>
-                <span className="text-2xl text-white font-bold">
+                <span
+                  className="text-xl font-bold"
+                  style={{
+                    color: "#000000",
+                    fontSize: "2.0rem", // to hơn tí cho nổi bật
+                    textShadow: `
+                    0 0 12px #fff,
+                    -4px -4px 0 #fff, 4px -4px 0 #fff,
+                    -4px 4px 0 #fff, 4px 4px 0 #fff,
+                    -5px 0 0 #fff, 5px 0 0 #fff,
+                    0 -5px 0 #fff, 0 5px 0 #fff
+                  `,
+                  }}
+                >
                   {lessonPage} / {totalLessonPages}
                 </span>
                 <button
@@ -265,7 +272,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                     setLessonPage((p) => Math.min(totalLessonPages, p + 1))
                   }
                   disabled={lessonPage === totalLessonPages}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-50"
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-70"
                 >
                   <ChevronRight className="w-8 h-8 text-white" />
                 </button>
