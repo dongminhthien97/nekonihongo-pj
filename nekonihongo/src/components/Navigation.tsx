@@ -1,4 +1,11 @@
-import { Home, BookOpen, FileText, Languages, CreditCard } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  FileText,
+  Languages,
+  CreditCard,
+  Dumbbell,
+} from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 interface NavigationProps {
   currentPage: string;
@@ -12,6 +19,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: "grammar", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji", label: "Kanji", icon: FileText },
     { id: "flashcard", label: "Flashcard", icon: CreditCard },
+    { id: "excercise", label: "Bài tập", icon: Dumbbell },
   ];
 
   return (
@@ -19,38 +27,39 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-<button
-  onClick={() => onNavigate("landing")}
-  className="flex items-center gap-4 group"
-  style={{ cursor: 'pointer' }}
->
-  <ImageWithFallback
-    src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
-    alt="Neko Nihongo"
-    style={{
-      width: '56px',
-      height: '56px',
-      borderRadius: '16px',
-      objectFit: 'cover',
-      boxShadow: '0 10px 25px -5px rgba(236, 72, 153, 0.5)',
-      border: '4px solid rgba(255, 255, 255, 0.9)',
-      transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', 
-    }}
-    className="group-hover:scale-125 group-hover:-rotate-6 group-hover:shadow-pink-500/60"
-  />
+          <button
+            onClick={() => onNavigate("landing")}
+            className="flex items-center gap-4 group"
+            style={{ cursor: "pointer" }}
+          >
+            <ImageWithFallback
+              src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
+              alt="Neko Nihongo"
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "16px",
+                objectFit: "cover",
+                boxShadow: "0 10px 25px -5px rgba(236, 72, 153, 0.5)",
+                border: "4px solid rgba(255, 255, 255, 0.9)",
+                transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+              className="group-hover:scale-125 group-hover:-rotate-6 group-hover:shadow-pink-500/60"
+            />
 
-  <span
-    className="hidden sm:block text-2xl font-extrabold"
-    style={{
-      background: 'linear-gradient(to right, #F472B6, #C084FC, #A78BFA)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
-    }}
-  >
-    Neko Nihongo
-  </span>
-</button>
+            <span
+              className="hidden sm:block text-2xl font-extrabold"
+              style={{
+                background:
+                  "linear-gradient(to right, #F472B6, #C084FC, #A78BFA)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Neko Nihongo
+            </span>
+          </button>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
