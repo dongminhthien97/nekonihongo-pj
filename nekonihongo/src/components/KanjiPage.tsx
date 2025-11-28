@@ -46,22 +46,17 @@ export function KanjiPage({
         <div className="text-center mb-20 md:mb-28">
           {/* TIÊU ĐỀ CHÍNH – GRADIENT + VIỀN TRẮNG ĐEN SIÊU NỔI */}
           <h1
-            className="text-7xl md:text-9xl font-black mb-8"
-            style={{
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-              WebkitTextStroke: "4px white", // VIỀN TRẮNG ĐẬM
-              paintOrder: "stroke fill",
-              textShadow: `
-        0 0 20px rgba(255,255,255,0.9),
-        -6px -6px 0 #ffffffff,
-        6px -6px 0 #000000ff,
-        -6px 6px 0 #000,
-        6px 6px 0 #000,
-        0 8px 20px rgba(0,0,0,0.8)
-      `,
-            }}
+            className="relative block 
+      px-10 md:px-14 lg:px-20       
+      py-8 md:py-10 lg:py-12        
+      text-6xl sm:text-6xl md:text-7xl lg:text-10xl 
+      font-black 
+      tracking-wider   
+      hero-text-glow            
+      text-white
+      animate-pulse-soft 
+      drop-shadow-2xl
+      -translate-y-3 md:-translate-y-4 lg:-translate-y-5"
           >
             Học Chữ Kanji
           </h1>
@@ -71,27 +66,8 @@ export function KanjiPage({
             {" "}
             {/* ← TÙY CHỈNH KHOẢNG CÁCH TỪ TIÊU ĐỀ CHÍNH */}
             <p
-              className="text-3xl md:text-4xl lg:text-5xl font-black text-center leading-tight"
-              style={{
-                color: "#ffffffff",
-
-                /* ==== TÙY CHỈNH VỊ TRÍ ==== */
-                marginTop: "2rem", // ← Tăng/giảm để đẩy lên/xuống
-                marginBottom: "4rem", // ← Khoảng cách xuống phần tiếp theo
-
-                /* ==== TÙY CHỈNH ĐỘ DÀY VIỀN TRẮNG ==== */
-                textShadow: `
-        0 0 12px #000000ff,          // độ sáng viền (tăng = sáng hơn)
-        -4px -4px 0 #000000ff,       // viền dày hơn (tăng số = dày hơn)
-        4px -4px 0 #000000ff,
-        -4px 4px 0 #000000ff,
-        4px 4px 0 #000000ff,
-      `,
-
-                /* ==== TÙY CHỈNH THÊM HIỆU ỨNG (bỏ comment nếu muốn) ==== */
-                // animation: "bounce 3s ease-in-out infinite",
-                // transform: "translateY(-10px)",  // đẩy lên thêm nếu cần
-              }}
+              className="relative hero-text-glow text-white animate-pulse-soft mt-6 text-2xl md:text-4xl
+               drop-shadow-2xl px-8 py-3 inline-block"
             >
               Cùng mèo học từng nét một nào!😺😺😺😺
             </p>
@@ -113,14 +89,16 @@ export function KanjiPage({
                              hover:border-pink-400 hover:scale-110 hover:shadow-pink-500/50 
                              transition-all duration-500 flex flex-col items-center gap-6"
                 >
-                  <div className="text-5xl group-hover:animate-bounce">
+                  <div className="text-4xl animate-pulse-soft">
                     {lesson.icon}
                   </div>
                   <div className="text-center">
-                    <p className="text-3xl font-black text-gray-800">
+                    <p className="hero-text-glow text-white text-2xl">
                       Bài {lesson.id}
                     </p>
-                    <p className="text-lg text-gray-600 mt-2">{lesson.title}</p>
+                    <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
+                      {lesson.title}
+                    </p>
                   </div>
                   <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-4xl animate-bounce">Paw</span>
@@ -136,9 +114,9 @@ export function KanjiPage({
                 disabled={lessonPage === 1}
                 className="p-4 rounded-full bg-white shadow-xl disabled:opacity-50 hover:bg-pink-100 transition"
               >
-                <ChevronLeft className="w-10 h-10 text-purple-600" />
+                <ChevronLeft className="w-10 h-10" />
               </button>
-              <span className="text-3xl font-bold text-purple-700">
+              <span className="text-2xl hero-text-glow text-white font-bold">
                 Trang {lessonPage} / {totalLessonPages}
               </span>
               <button
@@ -148,7 +126,7 @@ export function KanjiPage({
                 disabled={lessonPage === totalLessonPages}
                 className="p-4 rounded-full bg-white shadow-xl disabled:opacity-50 hover:bg-pink-100 transition"
               >
-                <ChevronRight className="w-10 h-10 text-purple-600" />
+                <ChevronRight className="w-10 h-10" />
               </button>
             </div>
           </>
@@ -157,20 +135,26 @@ export function KanjiPage({
         {/* NẾU ĐÃ CHỌN BÀI HỌC → HIỂN THỊ KANJI CHIA 4 CỘT */}
         {selectedLesson && currentLesson && (
           <div className="max-w-7xl mx-auto">
-            {/* HEADER BÀI HỌC – ĐƯỢC ĐƯA LÊN CAO, THOÁNG ĐÃNG, ĐẸP LUNG LINH */}
-            <div className="text-center mb-24 md:mb-32 lg:mb-40">
-              {/* Nút Back – nhỏ nhắn, dễ thương */}
-              <button
-                onClick={() => setSelectedLesson(null)}
-                className="mb-10 px-10 py-4 bg-white/80 backdrop-blur-xl rounded-full 
-               text-purple-700 font-bold text-2xl 
-               hover:bg-pink-100 hover:scale-105 
-               transition-all duration-300 shadow-2xl 
-               border-4 border-white/50"
-              >
-                ← Quay lại danh sách bài
-              </button>
-
+            <div className="w-full flex flex-col items-center gap-4">
+              {/* HEADER BÀI HỌC – ĐƯỢC ĐƯA LÊN CAO, THOÁNG ĐÃNG, ĐẸP LUNG LINH */}
+              <div className="text-center mb-24 md:mb-32 lg:mb-40">
+                {/* Nút Back – nhỏ nhắn, dễ thương */}
+                <button
+                  onClick={() => setSelectedLesson(null)}
+                  className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60
+                "
+                  style={{
+                    textShadow: `
+        0 4px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(0, 0, 0, 0.5)
+      `,
+                  }}
+                >
+                  ← Quay lại danh sách bài
+                </button>
+              </div>
               {/* Tiêu đề bài học – TO ĐÙNG, NEON, CĂN GIỮA */}
               <h2
                 className="text-7xl md:text-9xl lg:text-10xl font-black text-transparent bg-clip-text 
@@ -281,8 +265,44 @@ export function KanjiPage({
           </div>
         )}
       </main>
+      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
+        <img
+          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+          alt="Flying Neko"
+          className="w-40 h-40 
+               sm:w-24 sm:h-24 
+               md:w-28 md:h-28 
+               lg:w-32 lg:h-32 
+               xl:w-36 xl:h-36 
+               rounded-full object-cover 
+               shadow-2xl 
+               animate-fly 
+               drop-shadow-2xl"
+          style={{
+            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
+          }}
+        />
+      </div>
 
       <Footer />
+      <style>{`
+      @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+      .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+       .hero-text-glow {
+    text-shadow: 
+      0 0 20px #FF69B4,
+      0 0 40px #A020F0,
+      0 0 60px #00FFFF,
+      0 0 80px #FF69B4,
+      0 0 100px #A020F0,
+      0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+  `}</style>
     </div>
   );
 }

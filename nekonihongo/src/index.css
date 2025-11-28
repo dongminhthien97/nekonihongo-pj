@@ -1,4 +1,7 @@
 /*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
     *, :before, :after, ::backdrop {
@@ -2030,15 +2033,43 @@
   --sidebar-ring: oklch(.439 0 0);
 }
 @supports (font-variation-settings: normal) {
-  html, body, * {
-    font-family: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", "Noto Sans", sans-serif !important;
+
+  html,
+  body,
+  * {
+    font-family: "M PLUS Rounded 1c", sans-serif !important;
+    font-weight: 700 !important;
   }
 }
-html, body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Noto Sans", sans-serif;
+
+html,
+body {
+  font-family: "M PLUS Rounded 1c", sans-serif !important;
+  font-weight: 700;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fix đẹp hơn cho chữ có dấu + tiêu đề siêu to */
+* {
+  letter-spacing: 0.02em !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.text-5xl,
+.text-6xl,
+.text-7xl,
+.text-8xl,
+.text-9xl {
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em !important;
 }
 
 /* Đặc biệt fix cho tiếng Việt có dấu */
@@ -2436,4 +2467,83 @@ html {
   to {
     height: 0;
   }
+  
+}
+/* ============================================================= */
+/* FONT CUTE MẶC ĐỊNH TOÀN APP – CHỈ DÁN 1 LẦN LÀ XONG MÃI MÃI */
+/* ============================================================= */
+
+/* Chọn 1 trong 6 font siêu cute dưới đây (xóa /* */
+/* của font bạn thích) */ 
+
+/* 1. M PLUS Rounded 1c – CHUẨN NHẬT BẢN KAWAII NHẤT (RECOMMEND) */
+/* html,
+body,
+* {
+  font-family: "M PLUS Rounded 1c", sans-serif !important;
+  font-weight: 700;
+} */
+
+/* 2. Fredoka – Mèo tròn vo chính hãng */
+
+/* html, body, * {
+  font-family: "Fredoka", sans-serif !important;
+  font-weight: 700;
+} */
+
+
+/* 3. Baloo 2 – Bong bóng mũm mĩm siêu dễ thương */
+/*
+html, body, * {
+  font-family: "Baloo 2", sans-serif !important;
+  font-weight: 800;
+}
+*/
+
+/* 4. Zen Maru Gothic – Chuẩn anime Nhật Bản */
+/*
+html, body, * {
+  font-family: "Zen Maru Gothic", sans-serif !important;
+  font-weight: 900;
+}
+*/
+
+/* 5. Comic Neue – Anime style cực chất */
+/*
+html, body, * {
+  font-family: "Comic Neue", cursive !important;
+  font-weight: 900;
+}
+*/
+
+/* 6. Patrick Hand – Như Trúc tự viết tay */
+/*
+html, body, * {
+  font-family: "Patrick Hand", cursive !important;
+}
+*/
+
+/* Fix đẹp hơn cho chữ có dấu tiếng Việt */
+* {
+  letter-spacing: 0.02em !important;
+}
+
+/* Fix đẹp hơn cho tiếng Việt */
+* {
+  letter-spacing: 0.02em !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.text-5xl,
+.text-6xl,
+.text-7xl,
+.text-8xl {
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em !important;
 }

@@ -66,33 +66,23 @@ export function GrammarPage({
         {/* Tiêu đề */}
         <div className="text-center mb-12">
           <h1
-            className="text-6xl md:text-8xl font-black text-white drop-shadow-2xl"
-            style={{
-              color: "white",
-              textShadow: `
-        -4px -4px 0 #000,
-        4px -4px 0 #000,
-        -4px 4px 0 #000,
-        4px 4px 0 #000,
-        -6px -6px 12px #000,
-        6px 6px 12px #000
-      `,
-              WebkitTextStroke: "3px black",
-              paintOrder: "stroke fill",
-            }}
+            className="relative block 
+      px-10 md:px-14 lg:px-20       
+      py-8 md:py-10 lg:py-12        
+      text-6xl sm:text-6xl md:text-7xl lg:text-10xl 
+      font-black 
+      tracking-wider   
+      hero-text-glow            
+      text-white
+      animate-pulse-soft 
+      drop-shadow-2xl
+      -translate-y-3 md:-translate-y-4 lg:-translate-y-5"
           >
             Ngữ Pháp Tiếng Nhật
           </h1>
           <p
-            className="relative mt-6 text-2xl md:text-4xl font-bold 
+            className="relative hero-text-glow text-white animate-pulse-soft mt-6 text-2xl md:text-4xl
                drop-shadow-2xl px-8 py-3 inline-block"
-            style={{
-              color: "white",
-              textShadow: `
-        0 0 15px rgba(0, 0, 0, 0.9),
-        0 0 30px rgba(0, 0, 0, 0.8),
-      `,
-            }}
           >
             Học cùng mèo siêu dễ thương!
           </p>
@@ -101,7 +91,7 @@ export function GrammarPage({
         {/* Danh sách 25 bài học */}
         {!selectedLesson && !searchQuery && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-7xl mx-auto mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-7xl mx-auto mb-12">
               {currentLessons.map((lesson) => (
                 <button
                   key={lesson.id}
@@ -112,14 +102,14 @@ export function GrammarPage({
                   }}
                   className="group relative w-56 h-56 rounded-3xl bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
                 >
-                  <div className="text-6xl group-hover:animate-bounce">
+                  <div className="text-4xl animate-pulse-soft">
                     {lesson.icon}
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-black text-purple-700">
+                    <p className="hero-text-glow text-white text-2xl">
                       Bài {lesson.id}
                     </p>
-                    <p className="text-sm text-gray-700 mt-2 px-4 line-clamp-2">
+                    <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
                       {lesson.title}
                     </p>
                   </div>
@@ -136,7 +126,7 @@ export function GrammarPage({
               >
                 <ChevronLeft className="w-10 h-10" />
               </button>
-              <span className="text-2xl font-bold text-purple-700">
+              <span className="text-2xl hero-text-glow text-white font-bold ">
                 Trang {lessonPage} / {totalLessonPages}
               </span>
               <button
@@ -155,12 +145,23 @@ export function GrammarPage({
         {/* Nội dung bài học đã chọn */}
         {selectedLesson && currentLessonData && (
           <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => setSelectedLesson(null)}
-              className="px-8 py-3 bg-white/30 backdrop-blur-md rounded-full text-white font-bold hover:bg-white/50 transition"
-            >
-              ← Tất cả bài học
-            </button>
+            <div className="w-full flex flex-col items-center gap-4">
+              <button
+                onClick={() => setSelectedLesson(null)}
+                className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60
+                "
+                style={{
+                  textShadow: `
+        0 4px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(0, 0, 0, 0.5)
+      `,
+                }}
+              >
+                ← Tất cả bài học
+              </button>
+            </div>
             <h1
               className="text-5xl font-black text-center mb-12 text-white"
               style={{
@@ -262,7 +263,7 @@ export function GrammarPage({
 
               {/* Phân trang ngữ pháp */}
               {currentLessonData.grammar.length > GRAMMAR_PER_PAGE && (
-                <div className="flex justify-center gap-6 mt-8">
+                <div className="flex justify-center items-center gap-6 mt-16">
                   <button
                     onClick={() => setGrammarPage((p) => Math.max(1, p - 1))}
                     disabled={grammarPage === 1}
@@ -270,7 +271,7 @@ export function GrammarPage({
                   >
                     Previous
                   </button>
-                  <span className="text-xl font-bold self-center">
+                  <span className="hero-text-glow text-xl">
                     {grammarPage} /{" "}
                     {Math.ceil(
                       currentLessonData.grammar.length / GRAMMAR_PER_PAGE
@@ -311,6 +312,40 @@ export function GrammarPage({
         />
       </div>
       <Footer />
+      <style>{`
+      @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+      .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+       .hero-text-glow {
+    text-shadow: 
+      0 0 20px #FF69B4,
+      0 0 40px #A020F0,
+      0 0 60px #00FFFF,
+      0 0 80px #FF69B4,
+      0 0 100px #A020F0,
+      0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+
+    @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }    
+        .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+    @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+    .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
+    
+          
+  `}</style>
     </div>
   );
 }

@@ -77,23 +77,17 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             {/* CHỮ CHÍNH – ĐEN ĐẬM + GLOW TRẮNG */}
             <span
               className="relative block 
-      px-10 md:px-14 lg:px-20        /* ← chỉnh lề ngang */
-      py-8 md:py-10 lg:py-12         /* ← chỉnh chiều cao khung */
+      px-10 md:px-14 lg:px-20       
+      py-8 md:py-10 lg:py-12        
       text-6xl sm:text-6xl md:text-7xl lg:text-10xl 
       font-black 
-      tracking-wider                 /* ← khoảng cách chữ, xóa nếu không thích */
-      text-white 
+      tracking-wider   
+      hero-text-glow            
+      text-white
+      animate-pulse-soft 
       drop-shadow-2xl
       -translate-y-3 md:-translate-y-4 lg:-translate-y-5
     "
-              style={{
-                textShadow: `
-        0 4px 10px rgba(0, 0, 0, 0.8),
-        0 0 20px rgba(0, 0, 0, 0.9),
-        0 0 40px rgba(0, 0, 0, 0.7),
-        0 0 60px rgba(0, 0, 0, 0.5)
-      `,
-              }}
             >
               Từ Vựng Tiếng Nhật
             </span>
@@ -219,7 +213,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                     duration-500 flex flex-col items-center justify-center gap-4 px-6 shadow-xl"
                   >
                     <div
-                      className="text-5xl "
+                      className="text-4xl animate-pulse-soft"
                       style={{
                         textShadow: `
                           0 4px 10px rgba(255, 255, 255, 0.8),
@@ -232,8 +226,10 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       {lesson.icon}
                     </div>
                     <div className="text-center py-6">
-                      <p className="text-xl drop-shadow-lg">Bài {lesson.id}</p>
-                      <p className="text-xl text-black mt-2 line-clamp-2">
+                      <p className="hero-text-glow text-white text-2xl">
+                        Bài {lesson.id}
+                      </p>
+                      <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
                         {lesson.title}
                       </p>
                     </div>
@@ -243,38 +239,25 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
               </div>
 
               {/* Phân trang bài học */}
-              <div className="flex justify-center items-center gap-4 mt-12">
+              <div className="flex justify-center items-center gap-8 mt-12">
                 <button
                   onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
                   disabled={lessonPage === 1}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-70"
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
                 >
-                  <ChevronLeft className="w-8 h-8 text-white" />
+                  <ChevronLeft className="w-10 h-10 self-center " />
                 </button>
-                <span
-                  className="text-xl font-bold"
-                  style={{
-                    color: "#000000",
-                    fontSize: "2.0rem", // to hơn tí cho nổi bật
-                    textShadow: `
-                    0 0 12px #fff,
-                    -4px -4px 0 #fff, 4px -4px 0 #fff,
-                    -4px 4px 0 #fff, 4px 4px 0 #fff,
-                    -5px 0 0 #fff, 5px 0 0 #fff,
-                    0 -5px 0 #fff, 0 5px 0 #fff
-                  `,
-                  }}
-                >
-                  {lessonPage} / {totalLessonPages}
+                <span className="text-2xl hero-text-glow text-white font-bold">
+                  Trang {lessonPage} / {totalLessonPages}
                 </span>
                 <button
                   onClick={() =>
                     setLessonPage((p) => Math.min(totalLessonPages, p + 1))
                   }
                   disabled={lessonPage === totalLessonPages}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-70"
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
                 >
-                  <ChevronRight className="w-8 h-8 text-white" />
+                  <ChevronRight className="w-10 h-10 self-center" />
                 </button>
               </div>
             </div>
@@ -283,13 +266,13 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           /* Trong bài học – từ vựng + phân trang */
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-right mb-10">
-              <div className="w-full bg-white/70 flex flex-col items-center gap-4 overflow-hidden">
-                <h2 className="text-3xl font-bold text-white drop-shadow-2xl text-glow-rainbow">
+              <div className="w-full flex flex-col items-center gap-4">
+                <h2 className=" text-3xl hero-text-glow text-white">
                   {selectedLesson.icon} {selectedLesson.title}
                 </h2>
                 <button
                   onClick={() => setSelectedLesson(null)}
-                  className="px-8 py-4 bg-white/80 backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60
+                  className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60
                 "
                   style={{
                     textShadow: `
@@ -380,6 +363,30 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       <Footer />
 
       <style>{`
+      @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+      .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+       .hero-text-glow {
+    text-shadow: 
+      0 0 20px #FF69B4,
+      0 0 40px #A020F0,
+      0 0 60px #00FFFF,
+      0 0 80px #FF69B4,
+      0 0 100px #A020F0,
+      0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+
+     @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }    
+        .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
   `}</style>
     </div>
   );

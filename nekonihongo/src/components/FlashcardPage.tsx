@@ -36,7 +36,9 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
 
   const handlePrevious = () => {
     setIsFlipped(false);
-    setCurrentIndex((prev) => (prev - 1 + flashcardData.length) % flashcardData.length);
+    setCurrentIndex(
+      (prev) => (prev - 1 + flashcardData.length) % flashcardData.length
+    );
   };
 
   const handleReset = () => {
@@ -87,7 +89,9 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
         <div className="relative w-full max-w-2xl h-96 mb-8 perspective-1000">
           <div
             onClick={handleFlip}
-            className={`flashcard-inner ${isFlipped ? "flipped" : ""} w-full h-full cursor-pointer`}
+            className={`flashcard-inner ${
+              isFlipped ? "flipped" : ""
+            } w-full h-full cursor-pointer`}
           >
             {/* Front Side */}
             <div className="flashcard-face flashcard-front absolute w-full h-full bg-white rounded-[32px] shadow-2xl flex flex-col items-center justify-center p-8 backface-hidden">
@@ -110,9 +114,7 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
               <div className="text-5xl mb-4 text-white">
                 {flashcardData[currentIndex].back}
               </div>
-              <div className="text-lg text-white/90 mt-4">
-                Nhấn để quay lại
-              </div>
+              <div className="text-lg text-white/90 mt-4">Nhấn để quay lại</div>
               <div className="absolute top-6 right-6 text-3xl animate-wiggle">
                 😺
               </div>
@@ -158,7 +160,24 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
           </p>
         </div>
       </main>
-
+      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
+        <img
+          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+          alt="Flying Neko"
+          className="w-40 h-40 
+               sm:w-24 sm:h-24 
+               md:w-28 md:h-28 
+               lg:w-32 lg:h-32 
+               xl:w-36 xl:h-36 
+               rounded-full object-cover 
+               shadow-2xl 
+               animate-fly 
+               drop-shadow-2xl"
+          style={{
+            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
+          }}
+        />
+      </div>
       {/* Footer */}
       <Footer />
 

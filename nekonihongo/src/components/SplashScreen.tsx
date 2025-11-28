@@ -17,78 +17,78 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFC7EA] via-[#D8C8FF] to-[#C7FFF1] animate-fade-in">
       {/* Hero Section with Magical Cat Background */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute inset-0 flex">
-          
-              {/* MÈO 1 – Yuumi 61 */}
-              <div className="flex-shrink-0 w-screen h-full">
-                <ImageWithFallback
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_61.jpg"
-                alt="Yuumi Magical Cat"
-                className="w-full h-full object-cover object-center"
-                style={{
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 flex">
+          {/* MÈO 1 – Yuumi 61 */}
+          <div className="flex-shrink-0 w-screen h-full">
+            <ImageWithFallback
+              src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_61.jpg"
+              alt="Yuumi Magical Cat"
+              className="w-full h-full object-cover object-center"
+              style={{
                 filter: "brightness(0.88) contrast(1.12) saturate(1.2)",
-                }}
-                />
-              </div>
-      
-              {/* MÈO 2 – Yuumi 49 (lặp lại để tạo hiệu ứng liền mạch) */}
-              <div className="flex-shrink-0 w-screen h-full">
-                <ImageWithFallback
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_49.jpg"
-                alt="Yuumi Magical Cat 2"
-                className="w-full h-full object-cover"
-                style={{
+              }}
+            />
+          </div>
+
+          {/* MÈO 2 – Yuumi 49 (lặp lại để tạo hiệu ứng liền mạch) */}
+          <div className="flex-shrink-0 w-screen h-full">
+            <ImageWithFallback
+              src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_49.jpg"
+              alt="Yuumi Magical Cat 2"
+              className="w-full h-full object-cover"
+              style={{
                 filter: "brightness(0.88) contrast(1.12) saturate(1.2)",
-                }}
-                />
-              </div>
-      
-              {/* Lặp lại lần nữa để không bị trắng khi cuộn */}
-              <div className="flex-shrink-0 w-screen h-full">
-                <ImageWithFallback
-                src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_50.jpg"
-                alt="Yuumi Magical Cat"
-                className="w-full h-full object-cover"
-                style={{
+              }}
+            />
+          </div>
+
+          {/* Lặp lại lần nữa để không bị trắng khi cuộn */}
+          <div className="flex-shrink-0 w-screen h-full">
+            <ImageWithFallback
+              src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_50.jpg"
+              alt="Yuumi Magical Cat"
+              className="w-full h-full object-cover"
+              style={{
                 filter: "brightness(0.88) contrast(1.12) saturate(1.2)",
-                }}
-                />
-              </div>
-              <div className="flex-shrink-0 w-screen h-full">
+              }}
+            />
+          </div>
+          <div className="flex-shrink-0 w-screen h-full">
             <ImageWithFallback
               src="https://wiki.leagueoflegends.com/en-us/images/Yuumi_YuubeeSkin.jpg?250dd"
               alt="Yuumi 2 repeat"
               className="w-full h-full object-cover"
-              style={{ filter: "brightness(0.88) contrast(1.12) saturate(1.2)" }}
+              style={{
+                filter: "brightness(0.88) contrast(1.12) saturate(1.2)",
+              }}
             />
           </div>
-              
-            </div>
-            </div>
+        </div>
+      </div>
       {/* Bouncing Cat */}
-<div className="relative mb-8 animate-bounce-slow">
-  <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto">
-    {/* Viền sáng + bóng nhẹ */}
-    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-300 to-purple-400 blur-xl opacity-60 animate-pulse"></div>
-    
-    <ImageWithFallback
-      src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
-      alt="Cute Cat Icon"
-      className="relative z-10 w-full h-full object-cover rounded-full shadow-2xl border-6 border-white/90"
-      style={{
-        animation: "wiggle 4s ease-in-out infinite",
-      }}
-    />
-  </div>
-</div>
+      <div className="relative mb-8 animate-bounce-slow">
+        <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto">
+          {/* Viền sáng + bóng nhẹ */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-300 to-purple-400 blur-xl opacity-60 animate-pulse"></div>
+
+          <ImageWithFallback
+            src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
+            alt="Cute Cat Icon"
+            className="relative z-10 w-full h-full object-cover rounded-full shadow-2xl border-6 border-white/90"
+            style={{
+              animation: "wiggle 4s ease-in-out infinite",
+            }}
+          />
+        </div>
+      </div>
 
       {/* Welcome Text */}
       <h1 className="hero-text-glow text-4xl mb-8 text-white animate-pulse-soft tracking-wide">
-        Neko Nihongo
+        🐾猫日本語🐾
       </h1>
-      <p className="hero-text-glow text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-12 animate-fade-in-delay">
-        Chào mừng bạn Trúc đến với lớp học!
+      <p className="hero-text-glow text-4xl sm:text-5xl lg:text-6xl text-white mb-12 animate-fade-in-delay">
+        🐾ようこそ！🐾
       </p>
 
       {/* Loading Bar with Paw Prints */}
@@ -97,8 +97,12 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           {/* Paw prints on loading bar */}
           <div className="absolute inset-0 flex items-center justify-evenly">
             <span className="text-white opacity-70 animate-pulse">🐾</span>
-            <span className="text-white opacity-70 animate-pulse delay-100">🐾</span>
-            <span className="text-white opacity-70 animate-pulse delay-200">🐾</span>
+            <span className="text-white opacity-70 animate-pulse delay-100">
+              🐾
+            </span>
+            <span className="text-white opacity-70 animate-pulse delay-200">
+              🐾
+            </span>
           </div>
         </div>
       </div>
@@ -170,6 +174,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       0 4px 20px rgba(0,0,0,0.9);
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
   }
+     
       `}</style>
     </div>
   );
