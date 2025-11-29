@@ -4,6 +4,7 @@ import {
   Languages,
   CreditCard,
   ClipboardCheck,
+  LogOut,
 } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
@@ -14,11 +15,21 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    if (confirm("Thoát ra thật hả mèo ơi?")) {
+      logout(); // → tự động reload → về LoginPage
+    }
+  };
+
+  if (!user) return null; // An toàn tuyệt đối
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
       {/* Navigation */}
       <Navigation currentPage="landing" onNavigate={onNavigate} />
       <Background />
+
       {/* Features Section */}
       <section className="container mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -1173,7 +1173,24 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
           </div>
         )}
       </main>
-
+      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
+        <img
+          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+          alt="Flying Neko"
+          className="w-40 h-40 
+               sm:w-24 sm:h-24 
+               md:w-28 md:h-28 
+               lg:w-32 lg:h-32 
+               xl:w-36 xl:h-36 
+               rounded-full object-cover 
+               shadow-2xl 
+               animate-fly 
+               drop-shadow-2xl"
+          style={{
+            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
+          }}
+        />
+      </div>
       <Footer />
 
       <style>{`

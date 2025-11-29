@@ -2547,3 +2547,39 @@ h6,
   line-height: 1.1 !important;
   letter-spacing: -0.01em !important;
 }
+
+/* GLOBAL STYLE CHO NÚT LOGOUT – CHỮ ĐỎ RỰC TOÀN CẦU */
+#nav-logout,
+[data-logout="true"],
+button[title="Thoát"],
+button:has(> svg[data-icon="log-out"]),
+/* Cách chính xác nhất nếu bạn dùng itemId */
+#nav-logout span,
+button[onclick*="logout"] span {
+  color: #ef4444 !important;
+  /* Đỏ rực Tailwind red-500 */
+  font-weight: 900 !important;
+  /* Đen đét */
+  text-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Khi hover → đỏ sáng hơn + phát sáng */
+#nav-logout:hover span,
+button[title="Thoát"]:hover span {
+  color: #fca5a5 !important;
+  /* Đỏ nhạt hơn */
+  text-shadow: 0 0 12px rgba(252, 165, 165, 0.8),
+    0 4px 8px rgba(239, 68, 68, 0.6) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Mobile cũng đỏ rực luôn */
+@media (max-width: 768px) {
+
+  #nav-logout,
+  button[title="Thoát"] {
+    background: linear-gradient(135deg, #dc2626, #ec4899) !important;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5) !important;
+  }
+}

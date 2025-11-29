@@ -9,7 +9,6 @@ import {
   type Lesson,
   type Word,
 } from "../data/vocabularyLessons";
-
 interface VocabularyPageProps {
   onNavigate: (page: string) => void;
 }
@@ -269,11 +268,9 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 </h2>
                 <button
                   onClick={() => setSelectedLesson(null)}
-                  className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60
-                "
+                  className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60"
                   style={{
-                    textShadow: `
-        0 4px 10px rgba(0, 0, 0, 0.8),
+                    textShadow: `0 4px 10px rgba(0, 0, 0, 0.8),
         0 0 20px rgba(0, 0, 0, 0.9),
         0 0 40px rgba(0, 0, 0, 0.7),
         0 0 60px rgba(0, 0, 0, 0.5)

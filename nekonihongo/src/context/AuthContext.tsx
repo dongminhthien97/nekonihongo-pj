@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-// 1. Danh sách user cứng (có password để so sánh)
+// 3 USER CỨNG – KHÔNG CHO ĐĂNG KÝ
 const HARDCODED_USERS = [
   {
     id: "1",
@@ -32,21 +32,18 @@ const HARDCODED_USERS = [
   },
 ] as const;
 
-// 2. Type SafeUser: KHÔNG có password (dùng để lưu vào localStorage và state)
 type SafeUser = {
   id: string;
   email: string;
   name: string;
   role: "admin" | "user";
 };
-
-// 3. Type User: là SafeUser hoặc null → CHỈ ĐỊNH NGHĨA 1 LẦN DUY NHẤT!!!
 type User = SafeUser | null;
 
 interface AuthContextType {
   user: User;
   login: (email: string, password: string) => boolean;
-  logout: () => void;
+  logout: () => void; // ← ĐÃ ĐƯỢC VIẾT LẠI CHUẨN
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,17 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("neko_user");
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        // Đảm bảo dữ liệu hợp lệ
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "id" in parsed &&
-          "role" in parsed
-        ) {
-          setUser(parsed as SafeUser);
-        }
-      } catch (e) {
+        setUser(JSON.parse(saved));
+      } catch {
         localStorage.removeItem("neko_user");
       }
     }
@@ -79,9 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const found = HARDCODED_USERS.find(
       (u) => u.email === email && u.password === password
     );
-
     if (found) {
-      // Tạo object an toàn, loại bỏ password
       const { password: _, ...safeUser } = found;
       setUser(safeUser);
       localStorage.setItem("neko_user", JSON.stringify(safeUser));
@@ -90,9 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  // LOGOUT HOÀN HẢO – XÓA HẾT + VỀ LOGIN NGAY
   const logout = () => {
     setUser(null);
     localStorage.removeItem("neko_user");
+    // Ép reload để AppContent tự chuyển về LoginPage
+    window.location.reload();
   };
 
   return (
