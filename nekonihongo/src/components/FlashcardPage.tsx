@@ -55,11 +55,11 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
       <Background />
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 py-12 flex flex-col items-center">
-        <div className="text-center mb-8">
-          <h2 className="text-4xl mb-4 text-gray-800">
+        <div className="text-center mb-12 relative z-10 animate-float hero-text-glow">
+          <h2 className="text-5xl md:text-5xl font-extrabold text-white bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,199,234,0.8)]">
             Luyện Tập Flashcard 🎴
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-2xl">
             Nhấn vào thẻ để lật và xem đáp án! 🐾
           </p>
         </div>
@@ -258,6 +258,15 @@ export function FlashcardPage({ onNavigate }: FlashcardPageProps) {
         .delay-2 {
           animation-delay: 0.6s;
         }
+          .hero-text-glow {
+    text-shadow: 
+      0 0 20px #FF69B4,
+      0 0 40px #A020F0,
+      0 0 60px #00FFFF,
+      0 0 80px #FF69B4,
+      0 0 100px #A020F0,
+      0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
       `}</style>
     </div>
   );

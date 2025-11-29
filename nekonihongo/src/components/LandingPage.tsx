@@ -1,8 +1,14 @@
-import { BookOpen, FileText, Languages, CreditCard } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  Languages,
+  CreditCard,
+  ClipboardCheck,
+} from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-
+import { useAuth } from "../context/AuthContext";
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
@@ -15,7 +21,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <Background />
       {/* Features Section */}
       <section className="container mx-auto px-4 sm:px-6 py-16 lg:py-24">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Vocabulary Card */}
           <button
             onClick={() => onNavigate("vocabulary")}
@@ -92,6 +98,26 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <div className="flex gap-2 pt-2">
                 <span className="text-2xl animate-wiggle delay-3">🃏</span>
                 <span className="text-2xl">✨</span>
+              </div>
+            </div>
+          </button>
+
+          {/* Exercise Card */}
+          <button
+            onClick={() => onNavigate("exercise")}
+            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+          >
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D8C8FF] via-[#FFC7EA] to-[#FFF6E9] flex items-center justify-center group-hover:animate-bounce-subtle">
+                <ClipboardCheck className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-xl sm:text-2xl text-gray-800">Bài Tập</h3>
+              <p className="text-sm sm:text-base text-gray-600">
+                Làm bài tập trắc nghiệm để kiểm tra kiến thức của bạn
+              </p>
+              <div className="flex gap-2 pt-2">
+                <span className="text-2xl animate-wiggle delay-4">📝</span>
+                <span className="text-2xl">💯</span>
               </div>
             </div>
           </button>

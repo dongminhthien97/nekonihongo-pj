@@ -100,7 +100,7 @@ export function GrammarPage({
                     setGrammarPage(1);
                     setWordPage(1);
                   }}
-                  className="group relative w-56 h-56 rounded-3xl bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
+                  className="group relative w-56 h-56 rounded-[32px] bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
                 >
                   <div className="text-4xl animate-pulse-soft">
                     {lesson.icon}
@@ -196,7 +196,7 @@ export function GrammarPage({
                 {paginatedGrammar.map((g, i) => (
                   <div
                     key={i}
-                    className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-purple-200 
+                    className="bg-white/80 backdrop-blur-xl rounded-[32px] p-8 shadow-2xl border-4 border-purple-200 
                  hover:border-pink-400 hover:scale-[1.02] hover:shadow-pink-500/30 
                  transition-all duration-500 group"
                   >

@@ -85,7 +85,7 @@ export function KanjiPage({
                     setSelectedLesson(lesson.id);
                     setKanjiPage(1);
                   }}
-                  className="group relative bg-white/80 rounded-3xl p-10 shadow-2xl border-4 border-white 
+                  className="group relative bg-white/80 rounded-[32px] p-10 shadow-2xl border-4 border-white 
                              hover:border-pink-400 hover:scale-110 hover:shadow-pink-500/50 
                              transition-all duration-500 flex flex-col items-center gap-6"
                 >
@@ -177,7 +177,7 @@ export function KanjiPage({
               {paginatedKanji.map((k, i) => (
                 <div
                   key={i}
-                  className="group bg-white/80 rounded-3xl p-8 shadow-2xl border-4 border-white 
+                  className="group bg-white/80 rounded-[32px] p-8 shadow-2xl border-4 border-white 
                  hover:border-pink-400 hover:scale-105 hover:-translate-y-4 
                  transition-all duration-500 cursor-pointer text-center relative overflow-hidden"
                 >

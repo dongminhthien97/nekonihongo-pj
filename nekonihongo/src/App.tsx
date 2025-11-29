@@ -1,6 +1,8 @@
 // src/App.tsx
 import { useState, useEffect } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SplashScreen } from "./components/SplashScreen";
+import { LoginPage } from "./components/LoginPage";
 import { LandingPage } from "./components/LandingPage";
 import { VocabularyPage } from "./components/VocabularyPage";
 import { GrammarPage } from "./components/GrammarPage";
@@ -17,36 +19,17 @@ type Page =
   | "flashcard"
   | "exercise";
 
-export default function App() {
+function AppContent() {
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>("splash");
 
-  // SEO metadata
   useEffect(() => {
-    const titles: Record<Page, string> = {
-      splash: "Neko Nihongo",
-      landing: "Neko Nihongo - Học Tiếng Nhật Dễ Thương",
-      vocabulary: "Từ Vựng Tiếng Nhật - Neko Nihongo",
-      grammar: "Ngữ Pháp Tiếng Nhật - Neko Nihongo",
-      kanji: "Kanji Tiếng Nhật - Neko Nihongo",
-      flashcard: "Flashcard Tiếng Nhật - Neko Nihongo",
-      exercise: "Bài Tập Tiếng Nhật - Neko Nihongo", // ĐÃ THÊM TIÊU ĐỀ CHO EXERCISE!!!
-    };
-
-    document.title = titles[currentPage];
-
-    const metaDescription = document.querySelector('meta[name="description"]');
-    const desc =
-      "Học tiếng Nhật siêu dễ thương cùng mèo Neko! Từ vựng, Kanji, Ngữ pháp, Flashcard và Bài tập trắc nghiệm kawaii!";
-
-    if (metaDescription) {
-      metaDescription.setAttribute("content", desc);
-    } else {
-      const meta = document.createElement("meta");
-      meta.name = "description";
-      meta.content = desc;
-      document.head.appendChild(meta);
+    // Nếu chưa login → luôn vào login
+    if (!user) {
+      setCurrentPage("splash");
+      // Không làm gì thêm, sẽ tự redirect về login ở LoginPage
     }
-  }, [currentPage]);
+  }, [user]);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as Page);
@@ -54,8 +37,15 @@ export default function App() {
   };
 
   const handleSplashComplete = () => {
-    setCurrentPage("landing");
+    if (user) {
+      setCurrentPage("landing");
+    }
   };
+
+  // Nếu chưa login → hiện LoginPage
+  if (!user) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="min-h-screen">
@@ -75,5 +65,13 @@ export default function App() {
         <ExercisePage onNavigate={handleNavigate} />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

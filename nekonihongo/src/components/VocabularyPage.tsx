@@ -207,10 +207,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       setWordPage(1);
                       setSearchQuery("");
                     }}
-                    className="group font-black text-black relative overflow-hidden rounded-3xl 
-                    bg-white/80 backdrop-blur-xl border-4 border-white/50 hover:border-pink-300 
-                    hover:scale-110 hover:shadow-2xl hover:shadow-pink-500/40 transition-all 
-                    duration-500 flex flex-col items-center justify-center gap-4 px-6 shadow-xl"
+                    className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 animate-slide-in overflow-hidden"
                   >
                     <div
                       className="text-4xl animate-pulse-soft"
@@ -291,7 +288,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
               {currentWords.map((word, idx) => (
                 <div
                   key={idx}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-white/40 hover:border-pink-400 hover:bg-white/25 hover:scale-105 transition-all duration-400 shadow-xl"
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-white/40 hover:border-pink-400 hover:bg-white/25 hover:scale-105 transition-all duration-400 shadow-xl rounded-[32px]"
                 >
                   <div className="text-center space-y-4">
                     <p className="text-5xl font-black text-black">
@@ -387,6 +384,36 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         .animate-pulse-soft {
           animation: pulse-soft 2s ease-in-out infinite;
         }
+          .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+           @keyframes slide-in {
+          0% {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+           .animate-slide-in {
+          animation: slide-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+          
   `}</style>
     </div>
   );

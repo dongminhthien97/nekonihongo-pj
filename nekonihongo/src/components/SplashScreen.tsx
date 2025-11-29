@@ -1,16 +1,18 @@
 import { useEffect } from "react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useAuth } from "../context/AuthContext";
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
+  const { user } = useAuth();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
-    }, 3000);
-
+    }, 3500);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
