@@ -159,71 +159,190 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Confetti khi login thành công */}
+        {/* Success Confetti */}
         {confetti && (
           <div className="fixed inset-0 pointer-events-none z-50">
-            {Array.from({ length: 60 }).map((_, i) => (
+            {Array.from({ length: 50 }).map((_, i) => (
               <div
                 key={i}
-                className="absolute text-4xl animate-confetti"
+                className="absolute animate-confetti"
                 style={
                   {
                     left: "50%",
                     top: "50%",
+                    fontSize: "2rem",
                     animationDelay: `${i * 0.02}s`,
-                    "--confetti-x": `${(Math.random() - 0.5) * 120}vw`,
-                    "--confetti-y": `${-300 - Math.random() * 500}px`,
+                    "--confetti-x": `${(Math.random() - 0.5) * 100}vw`,
+                    "--confetti-y": `${-300 - Math.random() * 400}px`,
                     "--confetti-rotate": `${Math.random() * 720}deg`,
                   } as React.CSSProperties
                 }
               >
-                {
-                  [
-                    "Cat",
-                    "Cherry Blossom",
-                    "Party",
-                    "Sparkles",
-                    "Paw",
-                    "Heart",
-                  ][i % 6]
-                }
+                {["🐱", "🌸", "🎉", "✨", "🐾", "💕"][i % 6]}
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Toàn bộ CSS giữ nguyên – siêu đẹp, không thiếu hiệu ứng nào */}
       <style>{`
-        /* (Giữ nguyên toàn bộ style bạn đã có trước đó – mình không cắt bớt) */
-        .hero-text-glow { text-shadow: 0 0 20px #FF69B4, 0 0 40px #A020F0, 0 0 60px #00FFFF, 0 0 80px #FF69B4, 0 0 100px #A020F0, 0 4px 20px rgba(0,0,0,0.9); filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); }
-        @keyframes scroll-bg { 0% { transform: translateX(0); } 100% { transform: translateX(-100vw); } }
-        .animate-scroll-bg { animation: scroll-bg 35s linear infinite; }
-        @keyframes bounce-gentle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
-        .animate-bounce-gentle { animation: bounce-gentle 2.5s ease-in-out infinite; }
-        @keyframes fade-in-scale { 0% { opacity:0; transform:scale(0); } 100% { opacity:1; transform:scale(1); } }
-        .animate-fade-in-scale { animation: fade-in-scale 0.9s ease-out; }
-        @keyframes slide-up { 0% { opacity:0; transform:translateY(50px); }100% { opacity:1; transform:translateY(0); } }
-        .animate-slide-up { animation: slide-up 0.7s ease-out 0.4s both; }
-        @keyframes sakura-fall { 0% { transform: translateY(-10vh) rotate(0deg); } 100% { transform: translateY(110vh) rotate(360deg) translateX(50px); } }
-        .animate-sakura-fall { animation: sakura-fall linear infinite; }
-        @keyframes confetti { 0% { transform: translate(0,0) scale(0) rotate(0); opacity:1; } 100% { transform: translate(var(--confetti-x), var(--confetti-y)) scale(0.8) rotate(var(--confetti-rotate)); opacity:0; } }
-        .animate-confetti { animation: confetti 3s ease-out forwards; }
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-        @keyframes ping-slow { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.3); opacity: 0.6; } }
-        .animate-ping-slow { animation: ping-slow 4s ease-in-out infinite; }
-        .animate-wiggle-1 { animation: wiggle-1 3s ease-in-out infinite; }
-        .animate-wiggle-2 { animation: wiggle-2 3s ease-in-out infinite 0.5s; }
-        .animate-wiggle-3 { animation: wiggle-3 3s ease-in-out infinite 1s; }
-        .animate-wiggle-4 { animation: wiggle-4 3s ease-in-out infinite 1.5s; }
-        @keyframes wiggle-1 { 0%,100%{transform:rotate(0)}50%{transform:rotate(-20deg)} }
-        @keyframes wiggle-2 { 0%,100%{transform:rotate(0)}50%{transform:rotate(20deg)} }
-        @keyframes wiggle-3 { 0%,100%{transform:rotate(0)}50%{transform:rotate(18deg)} }
-        @keyframes wiggle-4 { 0%,100%{transform:rotate(0)}50%{transform:rotate(-18deg)} }
-        @keyframes shake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-12px)}75%{transform:translateX(12px)} }
-        .animate-shake { animation: shake 0.6s ease-in-out; }
-        button:hover { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><text y="20" font-size="24">Paw</text></svg>') 16 16, pointer; }
+        .hero-text-glow {
+          text-shadow: 
+            0 0 20px #FF69B4,
+            0 0 40px #A020F0,
+            0 0 60px #00FFFF,
+            0 0 80px #FF69B4,
+            0 0 100px #A020F0,
+            0 4px 20px rgba(0,0,0,0.9);
+          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+        }
+
+        @keyframes scroll-bg {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100vw); }
+        }
+
+        .animate-scroll-bg {
+          animation: scroll-bg 30s linear infinite;
+        }
+
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-10px); }
+          75% { transform: translateX(10px); }
+        }
+
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes bounce-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+
+        .animate-bounce-gentle {
+          animation: bounce-gentle 2s ease-in-out infinite;
+        }
+
+        @keyframes fade-in-scale {
+          0% { 
+            opacity: 0;
+            transform: scale(0);
+          }
+          100% { 
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fade-in-scale {
+          animation: fade-in-scale 0.8s ease-out;
+        }
+
+        @keyframes slide-up {
+          0% { 
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          100% { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out 0.3s both;
+        }
+
+        @keyframes scale-in {
+          0% { transform: scale(0); }
+          100% { transform: scale(1); }
+        }
+
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out;
+        }
+
+        @keyframes sakura-fall {
+          0% {
+            transform: translateY(0) rotate(0deg) translateX(0);
+          }
+          100% {
+            transform: translateY(100vh) rotate(360deg) translateX(50px);
+          }
+        }
+
+        .animate-sakura-fall {
+          animation: sakura-fall 10s linear infinite;
+        }
+
+        @keyframes wiggle-1 {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-15deg); }
+        }
+
+        .animate-wiggle-1 {
+          animation: wiggle-1 2s ease-in-out infinite;
+        }
+
+        @keyframes wiggle-2 {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(15deg); }
+        }
+
+        .animate-wiggle-2 {
+          animation: wiggle-2 2s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes wiggle-3 {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(15deg); }
+        }
+
+        .animate-wiggle-3 {
+          animation: wiggle-3 2s ease-in-out infinite 1s;
+        }
+
+        @keyframes wiggle-4 {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-15deg); }
+        }
+
+        .animate-wiggle-4 {
+          animation: wiggle-4 2s ease-in-out infinite 1.5s;
+        }
+
+        @keyframes confetti {
+          0% {
+            transform: translate(0, 0) scale(0) rotate(0deg);
+            opacity: 1;
+          }
+          50% {
+            transform: translate(var(--confetti-x), calc(var(--confetti-y) / 2)) scale(1) rotate(calc(var(--confetti-rotate) / 2));
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--confetti-x), var(--confetti-y)) scale(0.8) rotate(var(--confetti-rotate));
+            opacity: 0;
+          }
+        }
+
+        .animate-confetti {
+          animation: confetti 2.5s ease-out forwards;
+        }
+
+        input::placeholder {
+          color: #d8b4d8;
+        }
+
+        input:focus {
+          transform: translateY(-2px);
+        }
+
+        /* Paw cursor effect */
+        button:hover {
+          cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23ff69b4"><text y="20" font-size="20">🐾</text></svg>') 12 12, pointer;
+        }
       `}</style>
     </div>
   );
