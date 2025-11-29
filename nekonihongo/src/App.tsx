@@ -15,7 +15,7 @@ type Page =
   | "grammar"
   | "kanji"
   | "flashcard"
-  | "exercise"; // ĐÃ THÊM "exercise" VÀO ĐÂY!!!
+  | "exercise";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("splash");
@@ -71,7 +71,6 @@ export default function App() {
       {currentPage === "flashcard" && (
         <FlashcardPage onNavigate={handleNavigate} />
       )}
-      {/* ĐÃ THÊM EXERCISE PAGE VÀO ĐÂY!!! */}
       {currentPage === "exercise" && (
         <ExercisePage onNavigate={handleNavigate} />
       )}

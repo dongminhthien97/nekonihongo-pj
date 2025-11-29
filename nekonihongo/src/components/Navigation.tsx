@@ -19,7 +19,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: "grammar", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji", label: "Kanji", icon: FileText },
     { id: "flashcard", label: "Flashcard", icon: CreditCard },
-    { id: "excercise", label: "Bài tập", icon: Dumbbell },
+    { id: "exercise", label: "Bài tập", icon: Dumbbell },
   ];
 
   return (

@@ -1,5 +1,5 @@
 // src/pages/ExercisePage.tsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -181,33 +181,42 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
                 {
                   topic: "vocabulary" as Topic,
                   title: "Từ Vựng",
-                  icon: "Dictionary",
+                  icon: "😺😺😺😺😺😺",
                   color: "from-pink-500 to-purple-600",
                 },
                 {
                   topic: "kanji" as Topic,
                   title: "Kanji",
-                  icon: "Kanji",
+                  icon: "😺😺😺😺😺😺",
                   color: "from-cyan-500 to-blue-600",
                 },
                 {
                   topic: "grammar" as Topic,
                   title: "Ngữ Pháp",
-                  icon: "Grammar Book",
+                  icon: "😺😺😺😺😺😺",
                   color: "from-yellow-500 to-orange-600",
                 },
               ].map((item) => (
                 <button
                   key={item.topic}
                   onClick={() => setSelectedTopic(item.topic)}
-                  className={`group relative overflow-hidden rounded-3xl p-12 
-                    bg-gradient-to-br ${item.color} 
-                    hover:scale-105 transition-all duration-500 shadow-2xl`}
+                  className={`group relative overflow-hidden rounded-3xl 
+              w-80 h-80 sm:w-96 sm:h-96 lg:w-96 lg:h-96
+              bg-gradient-to-br ${item.color} 
+              hover:scale-110 transition-all duration-500 shadow-2xl 
+              flex flex-col items-center justify-center gap-6 
+              cursor-pointer`}
                 >
-                  <div className="absolute inset-0 bg-white/20 group-hover:bg-white/40 transition" />
+                  <div className="absolute inset-0 bg-white/80 group-hover:bg-white/40 transition" />
                   <div className="relative z-10 text-center">
-                    <div className="text-9xl mb-6">{item.icon}</div>
-                    <p className="text-5xl font-black text-white drop-shadow-2xl">
+                    <div
+                      className="text-14xl sm:text-15xl lg:text-16xl xl:text-17xl 
+                mb-6 drop-shadow-2xl 
+                select-none"
+                    >
+                      {item.icon}
+                    </div>
+                    <p className="text-4xl font-black text-white drop-shadow-2xl hero-text-glow animate-pulse-soft">
                       {item.title}
                     </p>
                   </div>
@@ -264,7 +273,7 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
               ← Quay lại danh sách
             </button>
 
-            <h2 className="text-5xl font-black text-white text-center mb-10 hero-text-glow">
+            <h2 className="text-5xl font-black text-white text-center mb-10 hero-text-glow ">
               {selectedExercise.title}
             </h2>
 
@@ -272,7 +281,7 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
               {questions.map((q, i) => (
                 <div
                   key={i}
-                  className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-pink-200"
+                  className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border-4 border-pink-200"
                 >
                   <p className="text-3xl font-black text-black mb-6">
                     Câu {i + 1}: {q.q}
@@ -314,7 +323,7 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
         {/* Kết quả */}
         {showResult && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-2xl z-50 flex items-center justify-center p-8">
-            <div className="bg-white/95 rounded-3xl p-12 max-w-2xl w-full shadow-2xl border-8 border-pink-400">
+            <div className="bg-white/80 rounded-3xl p-12 max-w-2xl w-full shadow-2xl border-8 border-pink-400">
               <div className="text-center">
                 <div className="text-9xl mb-8">{icon}</div>
                 <h2 className="text-6xl font-black text-pink-600 mb-6">
@@ -346,7 +355,32 @@ export function ExercisePage({ onNavigate }: ExercisePageProps) {
           </div>
         )}
       </main>
+      <style>{`
+      @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+      .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+       .hero-text-glow {
+    text-shadow: 
+      0 0 20px #FF69B4,
+      0 0 40px #A020F0,
+      0 0 60px #00FFFF,
+      0 0 80px #FF69B4,
+      0 0 100px #A020F0,
+      0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
 
+     @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }    
+        .animate-pulse-soft {
+          animation: pulse-soft 2s ease-in-out infinite;
+        }
+  `}</style>
       <Footer />
     </div>
   );
