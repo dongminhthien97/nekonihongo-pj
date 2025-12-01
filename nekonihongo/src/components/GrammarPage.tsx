@@ -58,7 +58,7 @@ export function GrammarPage({
   }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#D8C8FF]/20 to-[#C7FFF1]/30 relative">
+    <div className="min-h-screen bg-linear-to-br from-[#FFF6E9] via-[#D8C8FF]/20 to-[#C7FFF1]/30 relative">
       <Background />
       <Navigation currentPage="grammar" onNavigate={onNavigate} />
 
@@ -66,7 +66,7 @@ export function GrammarPage({
         {/* Tiêu đề */}
         <div className="text-center mb-12">
           <h1
-            className="relative block 
+            className="relative block  
       px-10 md:px-14 lg:px-20       
       py-8 md:py-10 lg:py-12        
       text-6xl sm:text-6xl md:text-7xl lg:text-10xl 
@@ -91,53 +91,55 @@ export function GrammarPage({
         {/* Danh sách 25 bài học */}
         {!selectedLesson && !searchQuery && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-7xl mx-auto mb-12">
-              {currentLessons.map((lesson) => (
-                <button
-                  key={lesson.id}
-                  onClick={() => {
-                    setSelectedLesson(lesson.id);
-                    setGrammarPage(1);
-                    setWordPage(1);
-                  }}
-                  className="group relative w-56 h-56 rounded-[32px] bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
-                >
-                  <div className="text-4xl animate-pulse-soft">
-                    {lesson.icon}
-                  </div>
-                  <div className="text-center">
-                    <p className="hero-text-glow text-white text-2xl">
-                      Bài {lesson.id}
-                    </p>
-                    <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
-                      {lesson.title}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <div className="animate-fade-in">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-7xl mx-auto mb-12 ">
+                {currentLessons.map((lesson) => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => {
+                      setSelectedLesson(lesson.id);
+                      setGrammarPage(1);
+                      setWordPage(1);
+                    }}
+                    className="group relative w-56 h-56 rounded-[32px] bg-white/80 backdrop-blur-xl border-4 border-purple-300 hover:border-pink-500 hover:scale-110 transition-all duration-500 shadow-2xl flex flex-col items-center justify-center gap-4"
+                  >
+                    <div className="text-4xl animate-pulse-soft">
+                      {lesson.icon}
+                    </div>
+                    <div className="text-center">
+                      <p className="hero-text-glow text-white text-2xl">
+                        Bài {lesson.id}
+                      </p>
+                      <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
+                        {lesson.title}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-            {/* Phân trang bài học */}
-            <div className="flex justify-center items-center gap-8 mt-12">
-              <button
-                onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
-                disabled={lessonPage === 1}
-                className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
-              >
-                <ChevronLeft className="w-10 h-10" />
-              </button>
-              <span className="text-2xl hero-text-glow text-white font-bold ">
-                Trang {lessonPage} / {totalLessonPages}
-              </span>
-              <button
-                onClick={() =>
-                  setLessonPage((p) => Math.min(totalLessonPages, p + 1))
-                }
-                disabled={lessonPage === totalLessonPages}
-                className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
-              >
-                <ChevronRight className="w-10 h-10" />
-              </button>
+              {/* Phân trang bài học */}
+              <div className="flex justify-center items-center gap-8 mt-12">
+                <button
+                  onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
+                  disabled={lessonPage === 1}
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+                >
+                  <ChevronLeft className="w-10 h-10" />
+                </button>
+                <span className="text-2xl hero-text-glow text-white font-bold ">
+                  Trang {lessonPage} / {totalLessonPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setLessonPage((p) => Math.min(totalLessonPages, p + 1))
+                  }
+                  disabled={lessonPage === totalLessonPages}
+                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+                >
+                  <ChevronRight className="w-10 h-10" />
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -208,7 +210,7 @@ export function GrammarPage({
                     </div>
 
                     {/* Cấu trúc */}
-                    <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-6 mb-6 shadow-md">
+                    <div className="bg-linear-to-r from-pink-100 to-purple-100 rounded-2xl p-6 mb-6 shadow-md">
                       <p className="text-sm font-bold text-pink-700 mb-2">
                         CẤU TRÚC
                       </p>
@@ -218,7 +220,7 @@ export function GrammarPage({
                     </div>
 
                     {/* Ý nghĩa */}
-                    <div className="bg-gradient-to-r from-purple-100 to-cyan-100 rounded-2xl p-6 mb-8 shadow-md">
+                    <div className="bg-linear-to-r from-purple-100 to-cyan-100 rounded-2xl p-6 mb-8 shadow-md">
                       <p className="text-sm font-bold text-purple-700 mb-2">
                         Ý NGHĨA
                       </p>
@@ -343,7 +345,20 @@ export function GrammarPage({
         }
     .animate-bounce-slow {
           animation: bounce-slow 2s ease-in-out infinite;
-    
+    .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+                  @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
           
   `}</style>
     </div>

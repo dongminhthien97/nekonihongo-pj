@@ -77,7 +77,7 @@ export function KanjiPage({
         {/* NẾU CHƯA CHỌN BÀI HỌC → HIỂN THỊ 25 BUTTON */}
         {!selectedLesson && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-16 ">
               {currentLessons.map((lesson) => (
                 <button
                   key={lesson.id}
@@ -101,7 +101,7 @@ export function KanjiPage({
                     </p>
                   </div>
                   <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-4xl animate-bounce">Paw</span>
+                    <span className="text-4xl animate-bounce">🐾</span>
                   </div>
                 </button>
               ))}
@@ -302,6 +302,20 @@ export function KanjiPage({
       0 0 100px #A020F0,
       0 4px 20px rgba(0,0,0,0.9);
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+                    .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+                  @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
   `}</style>
     </div>
   );

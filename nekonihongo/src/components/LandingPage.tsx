@@ -4,12 +4,12 @@ import {
   Languages,
   CreditCard,
   ClipboardCheck,
-  LogOut,
 } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
 import { useAuth } from "../context/AuthContext";
+
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
@@ -17,26 +17,20 @@ interface LandingPageProps {
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    if (confirm("Thoát ra thật hả mèo ơi?")) {
-      logout(); // → tự động reload → về LoginPage
-    }
-  };
-
   if (!user) return null; // An toàn tuyệt đối
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
+    <div className="min-h-screen bg-linear-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
       {/* Navigation */}
       <Navigation currentPage="landing" onNavigate={onNavigate} />
       <Background />
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 sm:px-6 py-16 lg:py-24">
+      <section className="container animate-fade-in mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Vocabulary Card */}
           <button
             onClick={() => onNavigate("vocabulary")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 overflow-hidden "
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FFC7EA] to-[#D8C8FF] flex items-center justify-center group-hover:animate-bounce-subtle">
@@ -56,7 +50,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Grammar Card */}
           <button
             onClick={() => onNavigate("grammar")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer "
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D8C8FF] to-[#C7FFF1] flex items-center justify-center group-hover:animate-bounce-subtle">
@@ -153,10 +147,9 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           }}
         />
       </div>
-      {/* Footer */}
-      {/* <div className="fixed bottom-0 right-0 pointer-events-none z-50 hidden lg:block"> */}
+
       <Footer />
-      {/* </div> */}
+
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -246,6 +239,20 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           animation: sparkle 2s ease-in-out infinite;
         }
 
+                .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+                  @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
     </div>
   );

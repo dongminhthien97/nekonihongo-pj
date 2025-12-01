@@ -9,64 +9,55 @@ import { GrammarPage } from "./components/GrammarPage";
 import { KanjiPage } from "./components/KanjiPage";
 import { FlashcardPage } from "./components/FlashcardPage";
 import { ExercisePage } from "./components/ExercisePage";
-import { Navigation } from "./components/Navigation";
-type Page =
-  | "splash"
-  | "landing"
-  | "vocabulary"
-  | "grammar"
-  | "kanji"
-  | "flashcard"
-  | "exercise";
 
 function AppContent() {
-  const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState<string>("splash");
+  const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
 
-  useEffect(() => {
-    if (!user) setCurrentPage("splash");
-  }, [user]);
+  // 1. Đang load → hiện trắng (hoặc loading spinner nhẹ)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+        <div className="text-4xl text-purple-600">にゃん…</div>
+      </div>
+    );
+  }
+
+  // 2. Chưa đăng nhập → LoginPage (không splash)
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  // 3. Đã đăng nhập + chưa thấy splash → hiện SplashScreen 1 lần duy nhất
+  if (!hasSeenSplash) {
+    return <SplashScreen onComplete={markSplashAsSeen} />;
+  }
+
+  // 4. Đã thấy splash → vào app bình thường
+  return <MainApp />;
+}
+
+function MainApp() {
+  const [currentPage, setCurrentPage] = useState<string>("landing");
 
   const handleNavigate = (page: string) => {
-    if (!user && page !== "splash") {
-      alert("Mèo ơi, phải đăng nhập trước nha~");
-      return;
-    }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSplashComplete = () => {
-    if (user) setCurrentPage("landing");
-  };
-
-  // CHƯA LOGIN → CHỈ ĐƯỢC XEM LOGINPAGE
-  if (!user) return <LoginPage />;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50">
-      {/* 2. NỘI DUNG CHÍNH – Đẩy xuống để không bị navigation che */}
-      <div className={currentPage === "splash" ? "pt-0" : "pt-24"}>
-        {currentPage === "splash" && (
-          <SplashScreen onComplete={handleSplashComplete} />
-        )}
-        {currentPage === "landing" && (
-          <LandingPage onNavigate={handleNavigate} />
-        )}
-        {currentPage === "vocabulary" && (
-          <VocabularyPage onNavigate={handleNavigate} />
-        )}
-        {currentPage === "grammar" && (
-          <GrammarPage onNavigate={handleNavigate} />
-        )}
-        {currentPage === "kanji" && <KanjiPage onNavigate={handleNavigate} />}
-        {currentPage === "flashcard" && (
-          <FlashcardPage onNavigate={handleNavigate} />
-        )}
-        {currentPage === "exercise" && (
-          <ExercisePage onNavigate={handleNavigate} />
-        )}
-      </div>
+    <div className="min-h-screen  page-transition bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50 pt-24">
+      {currentPage === "landing" && <LandingPage onNavigate={handleNavigate} />}
+      {currentPage === "vocabulary" && (
+        <VocabularyPage onNavigate={handleNavigate} />
+      )}
+      {currentPage === "grammar" && <GrammarPage onNavigate={handleNavigate} />}
+      {currentPage === "kanji" && <KanjiPage onNavigate={handleNavigate} />}
+      {currentPage === "flashcard" && (
+        <FlashcardPage onNavigate={handleNavigate} />
+      )}
+      {currentPage === "exercise" && (
+        <ExercisePage onNavigate={handleNavigate} />
+      )}
     </div>
   );
 }

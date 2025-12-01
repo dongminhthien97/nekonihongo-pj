@@ -132,6 +132,11 @@
     --default-mono-font-family: var(--font-mono);
     --default-mono-font-feature-settings: var(--font-mono--font-feature-settings);
     --default-mono-font-variation-settings: var(--font-mono--font-variation-settings);
+    --kawaii-pink: #FFB6C1;
+        --kawaii-mint: #98FB98;
+        --kawaii-cream: #FFFAF0;
+        --kawaii-lavender: #E0BBE3;
+        --kawaii-dark-pink: #FF9FB0;
   }
 }
 
@@ -400,6 +405,168 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+      font-family: 'Poppins', sans-serif;
+        overflow-x: hidden;
+      }
+      
+      .japanese-text {
+        font-family: 'Noto Sans JP', sans-serif;
+      }
+      
+      /* Paw Cursor */
+      .paw-cursor {
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFB6C1' d='M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-3c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm8 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM6 13c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E"), pointer;
+      }
+      
+      /* Sakura Petal Animation */
+      @keyframes sakura-fall {
+        0% {
+          transform: translateY(-10vh) rotate(0deg);
+          opacity: 1;
+        }
+      
+        100% {
+          transform: translateY(110vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+      
+      .sakura-petal {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #FFB6C1;
+        border-radius: 50% 0 50% 50%;
+        opacity: 0.6;
+        pointer-events: none;
+        z-index: 1;
+      }
+      
+      /* Floating Animation */
+      @keyframes float {
+      
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+      
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+      
+      .float-animation {
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      /* Bounce Animation */
+      @keyframes bounce-gentle {
+      
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+      
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      
+      .bounce-gentle {
+        animation: bounce-gentle 2s ease-in-out infinite;
+      }
+      
+      /* Blink Animation */
+      @keyframes blink {
+      
+        0%,
+        90%,
+        100% {
+          opacity: 1;
+        }
+      
+        95% {
+          opacity: 0;
+        }
+      }
+      
+      .cat-blink {
+        animation: blink 5s infinite;
+      }
+      
+      /* Glow Effect */
+      .glow-hover {
+        transition: all 0.3s ease;
+      }
+      
+      .glow-hover:hover {
+        box-shadow: 0 0 20px rgba(255, 182, 193, 0.6);
+        transform: translateY(-5px);
+      }
+      
+      /* 3D Flip Animation */
+      .flip-card {
+        perspective: 1000px;
+      }
+      
+      .flip-card-inner {
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+      }
+      
+      .flip-card.flipped .flip-card-inner {
+        transform: rotateY(180deg);
+      }
+      
+      .flip-card-front,
+      .flip-card-back {
+        backface-visibility: hidden;
+      }
+      
+      .flip-card-back {
+        transform: rotateY(180deg);
+      }
+      
+      /* Confetti Animation */
+      @keyframes confetti-fall {
+        0% {
+          transform: translateY(-100vh) rotate(0deg);
+          opacity: 1;
+        }
+      
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      
+      .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        pointer-events: none;
+        z-index: 100;
+      }
+      
+      /* Conveyor Belt Animation */
+      @keyframes conveyor {
+        0% {
+          background-position: 0 0;
+        }
+      
+        100% {
+          background-position: 40px 0;
+        }
+      }
+      
+      .conveyor-belt {
+        background-image: repeating-linear-gradient(90deg,
+            #FFB6C1,
+            #FFB6C1 10px,
+            #FF9FB0 10px,
+            #FF9FB0 20px);
+        animation: conveyor 1s linear infinite;
+      }
   }
 
   :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h1 {
@@ -443,7 +610,7 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
-}
+
 
 @layer utilities {
   .pointer-events-none {
@@ -2556,10 +2723,8 @@ button:has(> svg[data-icon="log-out"]),
 /* Cách chính xác nhất nếu bạn dùng itemId */
 #nav-logout span,
 button[onclick*="logout"] span {
-  color: #ef4444 !important;
-  /* Đỏ rực Tailwind red-500 */
-  font-weight: 900 !important;
-  /* Đen đét */
+  color: #ef4444 !important;           /* Đỏ rực Tailwind red-500 */
+  font-weight: 900 !important;         /* Đen đét */
   text-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
   letter-spacing: 0.5px !important;
 }
@@ -2567,19 +2732,18 @@ button[onclick*="logout"] span {
 /* Khi hover → đỏ sáng hơn + phát sáng */
 #nav-logout:hover span,
 button[title="Thoát"]:hover span {
-  color: #fca5a5 !important;
-  /* Đỏ nhạt hơn */
+  color: #fca5a5 !important;           /* Đỏ nhạt hơn */
   text-shadow: 0 0 12px rgba(252, 165, 165, 0.8),
-    0 4px 8px rgba(239, 68, 68, 0.6) !important;
+               0 4px 8px rgba(239, 68, 68, 0.6) !important;
   transition: all 0.3s ease !important;
 }
 
 /* Mobile cũng đỏ rực luôn */
 @media (max-width: 768px) {
-
   #nav-logout,
   button[title="Thoát"] {
     background: linear-gradient(135deg, #dc2626, #ec4899) !important;
     box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5) !important;
   }
 }
+

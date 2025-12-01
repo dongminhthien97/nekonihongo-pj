@@ -18,8 +18,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [lessonPage, setLessonPage] = useState(1);
   const [wordPage, setWordPage] = useState(1);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-
   const LESSONS_PER_PAGE = 12;
   const WORDS_PER_PAGE = 10;
 
@@ -93,11 +91,11 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           </h1>
           {/* THANH TÌM KIẾM SIÊU ĐỈNH – VIỀN NỔI BẬT + TEXT CĂN GIỮA */}
           <div className="max-w-4xl mx-auto">
-            <div className="relative group">
+            <div className="relative group ">
               {/* VIỀN NEON CHẠY VÒNG QUANH – SIÊU SÁNG, SIÊU ĐẸP */}
               <div
                 className="absolute -inset-1.5 rounded-full 
-                    bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 
+                    bg-linear-to-r from-pink-500 via-purple-600 to-cyan-500 
                     opacity-90 group-focus-within:opacity-100
                     animate-border-spin"
               />
@@ -105,7 +103,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
               {/* VIỀN NEON THỨ 2 – TĂNG ĐỘ DÀY + SÁNG */}
               <div
                 className="absolute -inset-3 rounded-full 
-                    bg-gradient-to-r from-pink-400 via-purple-500 to-cyan-400 
+                    bg-linear-to-r from-pink-400 via-purple-500 to-cyan-400 
                     blur-xl opacity-60 group-focus-within:opacity-90 
                     animate-border-spin delay-75"
               />
@@ -163,7 +161,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                    shadow-xl hover:shadow-2xl hover:shadow-pink-500/30"
                   >
                     <div
-                      className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 
+                      className="absolute inset-0 rounded-2xl bg-linear-to-r from-pink-500 via-purple-500 to-cyan-500 
                         opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500 -z-10"
                     />
                     <div className="flex items-center justify-between gap-6">
@@ -195,10 +193,9 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         {!selectedLesson ? (
           <>
             {/* Danh sách bài học + phân trang */}
-            <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16">
+            <div className="max-w-7xl mx-auto ">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16 animate-fade-in">
                 {currentLessons.map((lesson) => (
-                  // <div className="w-full bg-white/70 flex flex-col items-center gap-4 overflow-hidden">
                   <button
                     key={lesson.id}
                     onClick={() => {
@@ -206,7 +203,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       setWordPage(1);
                       setSearchQuery("");
                     }}
-                    className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 animate-slide-in overflow-hidden"
+                    className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 overflow-hidden"
                   >
                     <div
                       className="text-4xl animate-pulse-soft"
@@ -261,8 +258,8 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         ) : (
           /* Trong bài học – từ vựng + phân trang */
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-right mb-10">
-              <div className="w-full flex flex-col items-center gap-4">
+            <div className="flex  items-center justify-right mb-10">
+              <div className="w-full  flex flex-col items-center gap-4">
                 <h2 className=" text-3xl hero-text-glow text-white">
                   {selectedLesson.icon} {selectedLesson.title}
                 </h2>
@@ -381,12 +378,11 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         .animate-pulse-soft {
           animation: pulse-soft 2s ease-in-out infinite;
         }
-          .animate-fade-in {
+                .animate-fade-in {
           animation: fade-in 0.6s ease-out forwards;
           opacity: 0;
         }
-
-        @keyframes fade-in {
+                  @keyframes fade-in {
           0% {
             opacity: 0;
             transform: translateY(30px);
@@ -396,21 +392,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             transform: translateY(0);
           }
         }
-           @keyframes slide-in {
-          0% {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-           .animate-slide-in {
-          animation: slide-in 0.6s ease-out forwards;
-          opacity: 0;
-        }
-          
+        
   `}</style>
     </div>
   );
