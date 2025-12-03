@@ -1,39 +1,32 @@
 // src/pages/LoginPage.tsx hoặc src/components/LoginPage.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
 import { Background } from "./Background";
 
 export function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Thêm loading cho đẹp
-
-  const { login, user } = useAuth();
-
-  // Nếu đã đăng nhập → tự động về trang chủ (dự phòng)
-  useEffect(() => {
-    if (user) {
-      // App.tsx đã xử lý chính, nhưng giữ lại để an toàn
-      window.location.href = "/";
-    }
-  }, [user]);
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    const success = login(email, password);
-
-    if (success) {
-    } else {
-      setError("Sai mật khẩu rồi nè mèo ơi! 😿");
+    try {
+      const success = await login(username, password);
+      if (!success) {
+        setError("Tên đăng nhập hoặc mật khẩu không đúng!");
+      }
+    } catch (err) {
+      setError("Đã có lỗi xảy ra. Vui lòng thử lại!");
+    } finally {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <Background />
@@ -94,17 +87,16 @@ export function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="relative">
             <div className="halo-glow-neko"></div>
-            <div className="relative bg-white/95 backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-2xl border-4 border-white/50">
+            <div className="relative bg-white rounded-[32px] backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-2xl border-4 border-white/50">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block mb-2 text-gray-700">
-                    <span className="mr-2 text-xl">Email</span> 📧
+                    <span className="mr-2 text-xl">Tên đăng nhập</span> 📧
                   </label>
                   <input
-                    type="email"
-                    placeholder="admin@neko.jp"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                     disabled={isLoading}
                     className="input-neko-focus ${error ? 'input-shake' : ''}"
@@ -118,7 +110,6 @@ export function LoginPage() {
                   <input
                     type="password"
                     placeholder="••••••••"
-                    value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}

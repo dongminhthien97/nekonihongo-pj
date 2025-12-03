@@ -8,16 +8,12 @@ import {
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import { useAuth } from "../context/AuthContext";
 
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
-  const { user, logout } = useAuth();
-
-  if (!user) return null; // An toàn tuyệt đối
   return (
     <div className="min-h-screen bg-linear-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
       {/* Navigation */}

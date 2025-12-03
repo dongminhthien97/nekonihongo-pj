@@ -10,6 +10,7 @@ import {
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
+import { User } from "lucide-react";
 
 export function Navigation({
   currentPage,
@@ -25,12 +26,13 @@ export function Navigation({
     { id: "kanji", label: "Kanji", icon: FileText },
     { id: "flashcard", label: "Flashcard", icon: CreditCard },
     { id: "exercise", label: "Bài tập", icon: Dumbbell },
+    { id: "mypage", label: "MyPage", icon: User },
     {
       id: "logout",
       label: "Thoát",
       icon: LogOut,
       itemId: "nav-logout",
-      isLogout: true, // Đánh dấu để xử lý riêng
+      isLogout: true,
     },
   ];
   const { user, logout } = useAuth();
