@@ -24,5 +24,6 @@ public class UserResponse {
     private int vocabularyProgress;
     private int kanjiProgress;
     private int grammarProgress;
+    private int exerciseProgress;
     private LocalDate joinDate;
 }

@@ -60,7 +60,7 @@ public class UserService implements IUserService {
         user.setVocabularyProgress(user.getVocabularyProgress() >= 0 ? user.getVocabularyProgress() : 0);
         user.setKanjiProgress(user.getKanjiProgress() >= 0 ? user.getKanjiProgress() : 0);
         user.setGrammarProgress(user.getGrammarProgress() >= 0 ? user.getGrammarProgress() : 0);
-
+        user.setExerciseProgress(user.getExerciseProgress() >= 0 ? user.getExerciseProgress() : 0);
         return userRepository.save(user);
     }
 
@@ -78,6 +78,7 @@ public class UserService implements IUserService {
         existing.setVocabularyProgress(updatedUser.getVocabularyProgress());
         existing.setKanjiProgress(updatedUser.getKanjiProgress());
         existing.setGrammarProgress(updatedUser.getGrammarProgress());
+        existing.setExerciseProgress(updatedUser.getExerciseProgress());
 
         return userRepository.save(existing);
     }

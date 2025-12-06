@@ -1,52 +1,53 @@
 // src/main/java/com/nekonihongo/backend/controller/UserController.java
 package com.nekonihongo.backend.controller;
 
-import com.nekonihongo.backend.dto.ApiResponse;
-import com.nekonihongo.backend.dto.UserRequest;
-import com.nekonihongo.backend.dto.UserResponse;
+import com.nekonihongo.backend.dto.*;
 import com.nekonihongo.backend.entity.User;
+import com.nekonihongo.backend.repository.UserRepository;
 import com.nekonihongo.backend.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // Vite FE
+@CrossOrigin(origins = "http://localhost:5173") // ĐÃ SỬA: Vite chạy ở 5173
 public class UserController {
 
     private final IUserService userService;
+    private final UserRepository userRepository;
 
-    // 1. Lấy danh sách tất cả user
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
+    /* ====================== ADMIN ROUTES ====================== */
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
+    @GetMapping("/api/admin/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         List<UserResponse> users = userService.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(ApiResponse.success(users, "Lấy danh sách user thành công!"));
     }
 
-    // 2. Lấy 1 user theo ID
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/{id}")
+    @GetMapping("/api/admin/users/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
         User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
-
         return ResponseEntity.ok(ApiResponse.success(toResponse(user)));
     }
 
-    // 3. Tạo user mới (admin tạo)
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
+    @PostMapping("/api/admin/users")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserRequest request) {
         try {
             User user = User.builder()
@@ -68,21 +69,19 @@ public class UserController {
         }
     }
 
-    // 4. Cập nhật user
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
+    @PutMapping("/api/admin/users/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRequest request) {
         try {
             User user = User.builder()
-                    .email(request.getEmail())
                     .username(request.getUsername())
                     .fullName(request.getFullName())
                     .avatarUrl(request.getAvatarUrl())
-                    .role(request.getRole() != null ? request.getRole() : User.Role.USER)
-                    .level(request.getLevel() != null && request.getLevel() > 0 ? request.getLevel() : 1)
-                    .points(request.getPoints() != null && request.getPoints() >= 0 ? request.getPoints() : 0)
+                    .role(request.getRole())
+                    .level(request.getLevel())
+                    .points(request.getPoints())
                     .build();
 
             User updated = userService.updateUser(id, user);
@@ -92,9 +91,8 @@ public class UserController {
         }
     }
 
-    // 5. Xóa user
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/admin/users/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteById(id);
@@ -104,8 +102,29 @@ public class UserController {
         }
     }
 
-    // Helper: convert Entity → DTO
-    @PreAuthorize("hasRole('ADMIN')")
+    /* ====================== USER ROUTES (cá nhân) ====================== */
+
+    // API CẬP NHẬT AVATAR – FIX: resolve authenticated user reliably
+    @PatchMapping("/api/user/me/avatar") // ĐÚNG CHÍNH XÁC
+    public ResponseEntity<ApiResponse<UserResponse>> updateAvatar(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody Map<String, String> body) {
+
+        String avatarUrl = body.get("avatarUrl");
+        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+            currentUser.setAvatarUrl(avatarUrl.trim());
+            userRepository.save(currentUser);
+        }
+        return ResponseEntity.ok(ApiResponse.success(toResponse(currentUser)));
+    }
+
+    // API lấy thông tin user hiện tại
+    @GetMapping("/api/user/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(ApiResponse.success(toResponse(currentUser)));
+    }
+
+    // Helper method
     private UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getId(),
@@ -119,6 +138,7 @@ public class UserController {
                 user.getVocabularyProgress(),
                 user.getKanjiProgress(),
                 user.getGrammarProgress(),
+                user.getExerciseProgress(),
                 user.getJoinDate());
     }
 }
