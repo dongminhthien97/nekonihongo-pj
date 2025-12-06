@@ -1,139 +1,224 @@
 import { useEffect, useState } from "react";
 import { Footer } from "../../components/Footer";
+import api from "../../api/auth";
 
 interface User {
   id: number;
-  name: string;
+  username: string;
+  fullName?: string;
   email: string;
-  role: string;
+  role: "USER" | "ADMIN";
   level: number;
-  totalScore: number;
-  streak: number;
+  points: number;
+  streak?: number;
   joinDate: string;
-  avatar: string;
-}
-
-interface UserProgress {
-  userId: number;
-  topic: string;
-  studied: number;
-  total: number;
-  score: number;
+  avatarUrl?: string;
+  vocabularyProgress?: number;
+  kanjiProgress?: number;
+  grammarProgress?: number;
+  exerciseProgress?: number;
+  password?: string;
 }
 interface DashboardAdminProps {
   onNavigate: (page: string) => void;
 }
 
 export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
+  const PLACEHOLDER_AVATAR =
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23e0e7ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='12' fill='%234336ca'>New</text></svg>";
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState<Partial<User>>({});
   const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<Partial<User>>({});
   const [error, setError] = useState("");
 
-  // Fake progress giữ nguyên
-  const [userProgress] = useState<UserProgress[]>([
-    { userId: 1, topic: "Hiragana", studied: 46, total: 46, score: 98 },
-    { userId: 1, topic: "Katakana", studied: 42, total: 46, score: 85 },
-    { userId: 3, topic: "Kanji N5", studied: 95, total: 100, score: 92 },
-  ]);
-
-  // 🔥 Load USERS từ backend
+  // LẤY DANH SÁCH USER
   useEffect(() => {
-    const fetchUsers = async () => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await api.get("/admin/users");
+      const userList: User[] = res.data.data || [];
+      setUsers(userList);
+      setSelectedUser(userList[0] || null);
+    } catch (err: any) {
+      setError("Không thể tải danh sách user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveCreate = async () => {
+    // Kiểm tra bắt buộc
+    if (!form.username?.trim()) {
+      alert("Tên đăng nhập không được để trống!");
+      return;
+    }
+    if (!form.email?.trim()) {
+      alert("Email không được để trống!");
+      return;
+    }
+    if (!form.email.includes("@")) {
+      alert("Email không hợp lệ!");
+      return;
+    }
+
+    try {
+      // Gửi đúng format backend mong đợi
+      await api.post("/admin/users", {
+        username: form.username.trim(),
+        email: form.email.trim(),
+        fullName: form.fullName?.trim() || null,
+        avatarUrl: form.avatarUrl?.trim() || null,
+        password: form.password?.trim() || "123456", // mặc định nếu trống
+        role: form.role || "USER",
+        level: form.level || 1,
+        points: form.points || 0,
+      });
+
+      alert("Tạo user thành công! Mèo mới đã xuất hiện!");
+      setIsCreating(false);
+      setForm({});
+      fetchUsers(); // reload danh sách
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Tạo user thất bại";
+      alert(msg);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!form.id) return;
+    if (!form.username?.trim() || !form.email?.trim()) {
+      alert("Tên và email không được để trống!");
+      return;
+    }
+
+    try {
+      await api.put(`/admin/users/${form.id}`, {
+        username: form.username.trim(),
+        email: form.email.trim(),
+        fullName: form.fullName?.trim() || null,
+        avatarUrl: form.avatarUrl?.trim() || null,
+        role: form.role || "USER",
+        level: form.level || 1,
+        points: form.points || 0,
+      });
+
+      alert("Cập nhật thành công!");
+      setIsEditing(false);
+      setForm({});
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Cập nhật thất bại");
+    }
+  };
+
+  // XÓA USER
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Xóa user này thật chứ?")) return;
+    try {
+      await api.delete(`/admin/users/${id}`); // DÙNG api
+      alert("Xóa thành công!");
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Xóa thất bại");
+    }
+  };
+
+  const handleBack = () => {
+    onNavigate("landing"); // Dùng onNavigate như hệ thống của bạn
+  };
+  // THÊM GẦN ĐẦU FILE, SAU useState
+  const [userProgress, setUserProgress] = useState<any[]>([]);
+
+  // THAY ĐỔI useEffect – LẤY CẢ PROGRESS CỦA TẤT CẢ USER
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const res = await api.get("/admin/users"); // API trả về đầy đủ progress
 
-        const res = await fetch("http://localhost:8080/api/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const userList: User[] = res.data?.data || res.data || [];
 
-        if (!res.ok) throw new Error("Không tải được danh sách user");
+        setUsers(userList);
+        setSelectedUser(userList[0] || null);
 
-        const data: User[] = await res.json();
-        setUsers(data);
-        setSelectedUser(data[0] || null);
+        // TẠO PROGRESS DATA THẬT TỪ DỮ LIỆU THẬT TRONG DB
+        const progressList = userList
+          .map((user: any) => [
+            {
+              userId: user.id,
+              topic: "Từ vựng",
+              studied: user.vocabularyProgress || 0,
+              total: 500,
+              score: Math.round(((user.vocabularyProgress || 0) / 500) * 100),
+            },
+            {
+              userId: user.id,
+              topic: "Kanji",
+              studied: user.kanjiProgress || 0,
+              total: 300,
+              score: Math.round(((user.kanjiProgress || 0) / 300) * 100),
+            },
+            {
+              userId: user.id,
+              topic: "Ngữ pháp",
+              studied: user.grammarProgress || 0,
+              total: 150,
+              score: Math.round(((user.grammarProgress || 0) / 150) * 100),
+            },
+            {
+              userId: user.id,
+              topic: "Bài tập",
+              studied: user.exerciseProgress || 0,
+              total: 200,
+              score: Math.round(((user.exerciseProgress || 0) / 200) * 100),
+            },
+          ])
+          .flat();
+
+        setUserProgress(progressList);
       } catch (err: any) {
-        setError(err.message || "Lỗi không xác định");
+        console.error("Lỗi:", err);
+        setError("Không thể tải dữ liệu");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const handleEdit = (user: User) => {
-    setEditForm(user);
-    setIsEditing(true);
-    setIsCreating(false);
-  };
-
-  const handleCreate = () => {
-    setEditForm({
-      name: "",
-      email: "",
-      role: "user",
-      level: 1,
-      totalScore: 0,
-      streak: 0,
-      joinDate: new Date().toISOString().split("T")[0],
-      avatar: "https://via.placeholder.com/100?text=New",
-    });
-    setIsCreating(true);
-    setIsEditing(false);
-  };
-
-  const handleSave = () => {
-    // TẠM THỜI: vẫn dùng local state (vì bạn chưa có API create/update)
-    if (isCreating) {
-      const newUser: User = {
-        id: Math.max(0, ...users.map((u) => u.id)) + 1,
-        ...editForm,
-      } as User;
-      setUsers([...users, newUser]);
-      setSelectedUser(newUser);
-    } else {
-      setUsers(
-        users.map((u) => (u.id === editForm.id ? (editForm as User) : u))
-      );
-      setSelectedUser(editForm as User);
-    }
-
-    setIsEditing(false);
-    setIsCreating(false);
-    setEditForm({});
-  };
-
-  const handleDelete = (userId: number) => {
-    if (window.confirm("Bạn có chắc muốn xóa user này?")) {
-      setUsers(users.filter((u) => u.id !== userId));
-      if (selectedUser?.id === userId) {
-        setSelectedUser(users[0] || null);
-      }
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/";
-  };
-
+  // TÍNH TIẾN ĐỘ CỦA USER ĐƯỢC CHỌN
   const currentProgress = selectedUser
     ? userProgress.filter((p) => p.userId === selectedUser.id)
     : [];
 
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-3xl">
+        Đang tải...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 text-2xl">
+        {error}
+      </div>
+    );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-4xl text-indigo-800">Admin Dashboard 👑</h1>
           <button
-            onClick={handleLogout}
+            onClick={handleBack}
             className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
           >
             Đăng xuất
@@ -146,8 +231,8 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl text-indigo-700">Quản lý người dùng</h2>
               <button
-                onClick={handleCreate}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                onClick={handleSaveCreate}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium shadow-md"
               >
                 ➕ Thêm User
               </button>
@@ -177,44 +262,48 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                     >
                       <td className="p-3">
                         <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-10 h-10 rounded-full object-cover"
+                          src={user.avatarUrl || PLACEHOLDER_AVATAR}
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
                           onError={(e) => {
                             e.currentTarget.src =
                               "https://i.imgur.com/Q4FfVmL.jpeg";
                           }}
                         />
                       </td>
-                      <td className="p-3 text-indigo-800">{user.name}</td>
+                      <td className="p-3 text-indigo-800 font-medium">
+                        {user.username}
+                      </td>
                       <td className="p-3 text-gray-600">{user.email}</td>
                       <td className="p-3 text-center">
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold">
                           {user.level}
                         </span>
                       </td>
-                      <td className="p-3 text-center text-pink-600">
-                        {user.totalScore}
+                      <td className="p-3 text-center text-pink-600 font-bold">
+                        {user.points.toLocaleString()}
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2 justify-center">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEdit(user);
+                              handleSaveEdit();
                             }}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition shadow-md"
+                            title="Sửa"
                           >
-                            ✏️
+                            Edit
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(user.id);
                             }}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-md"
+                            title="Xóa"
                           >
-                            🗑️
+                            Delete
                           </button>
                         </div>
                       </td>
@@ -224,28 +313,29 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
               </table>
             </div>
 
-            {/* Edit/Create Form */}
+            {/* Edit/Create Form – GIỮ NGUYÊN STYLE ĐẸP LUNG LINH */}
             {(isEditing || isCreating) && (
-              <div className="mt-6 p-6 bg-blue-50 rounded-xl border-2 border-blue-200">
-                <h3 className="text-xl text-indigo-700 mb-4">
+              <div className="mt-6 p-6 bg-blue-50 rounded-xl border-2 border-blue-200 shadow-lg">
+                <h3 className="text-xl font-bold text-indigo-700 mb-4">
                   {isCreating ? "Tạo User Mới" : "Chỉnh sửa User"}
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">
-                      Tên:
+                    <label className="block text-sm text-gray-700 mb-1 font-medium">
+                      Tên đăng nhập:
                     </label>
                     <input
                       type="text"
-                      value={editForm.name || ""}
+                      value={editForm.username || ""}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, name: e.target.value })
+                        setEditForm({ ...editForm, username: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none"
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                      placeholder="username"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">
+                    <label className="block text-sm text-gray-700 mb-1 font-medium">
                       Email:
                     </label>
                     <input
@@ -254,11 +344,12 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                       onChange={(e) =>
                         setEditForm({ ...editForm, email: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none"
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                      placeholder="email@example.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">
+                    <label className="block text-sm text-gray-700 mb-1 font-medium">
                       Level:
                     </label>
                     <input
@@ -267,48 +358,68 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          level: parseInt(e.target.value),
+                          level: parseInt(e.target.value) || 1,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none"
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                      min="1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">
+                    <label className="block text-sm text-gray-700 mb-1 font-medium">
                       Điểm:
                     </label>
                     <input
                       type="number"
-                      value={editForm.totalScore || 0}
+                      value={editForm.points || 0}
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          totalScore: parseInt(e.target.value),
+                          points: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none"
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                      min="0"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm text-gray-700 mb-1">
+                    <label className="block text-sm text-gray-700 mb-1 font-medium">
                       Avatar URL:
                     </label>
                     <input
                       type="text"
-                      value={editForm.avatar || ""}
+                      value={editForm.avatarUrl || ""}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, avatar: e.target.value })
+                        setEditForm({ ...editForm, avatarUrl: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none"
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                      placeholder="https://example.com/avatar.jpg"
                     />
                   </div>
+                  {isCreating && (
+                    <div className="col-span-2">
+                      <label className="block text-sm text-gray-700 mb-1 font-medium">
+                        Mật khẩu (để trống = 123456):
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.password || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, password: e.target.value })
+                        }
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 outline-none transition"
+                        placeholder="Mật khẩu"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-3 mt-4">
+
+                <div className="flex gap-4 mt-6">
                   <button
-                    onClick={handleSave}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                    onClick={isCreating ? handleSaveCreate : handleSaveEdit}
+                    className="flex-1 px-6 py-3 bg-indigo-600 text-white text-lg font-bold rounded-lg hover:bg-indigo-700 transition shadow-xl"
                   >
-                    💾 Lưu
+                    Lưu
                   </button>
                   <button
                     onClick={() => {
@@ -316,9 +427,9 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                       setIsCreating(false);
                       setEditForm({});
                     }}
-                    className="flex-1 px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition"
+                    className="flex-1 px-6 py-3 bg-gray-400 text-white text-lg font-bold rounded-lg hover:bg-gray-500 transition shadow-xl"
                   >
-                    ❌ Hủy
+                    Hủy
                   </button>
                 </div>
               </div>
@@ -328,17 +439,17 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
           {/* RIGHT COLUMN - User Progress */}
           <div className="bg-white rounded-2xl shadow-xl p-6 overflow-auto">
             <h2 className="text-2xl text-indigo-700 mb-6">
-              Tiến độ: {selectedUser?.name || "Chọn user"}
+              Tiến độ: {selectedUser?.username || "Chọn user"}
             </h2>
 
             {selectedUser && (
               <>
                 {/* User Summary Card */}
-                <div className="bg-gradient-to-r from-indigo-100 to-purple-100 p-6 rounded-xl mb-6">
+                <div className="bg-linear-to-r from-indigo-100 to-purple-100 p-6 rounded-xl mb-6">
                   <div className="flex items-center gap-4 mb-4">
                     <img
-                      src={selectedUser.avatar}
-                      alt={selectedUser.name}
+                      src={selectedUser.avatarUrl || PLACEHOLDER_AVATAR}
+                      alt={selectedUser.username}
                       className="w-20 h-20 rounded-full border-4 border-white object-cover shadow-lg"
                       onError={(e) => {
                         e.currentTarget.src =
@@ -347,7 +458,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                     />
                     <div>
                       <h3 className="text-2xl text-indigo-800">
-                        {selectedUser.name}
+                        {selectedUser.username}
                       </h3>
                       <p className="text-gray-600">{selectedUser.email}</p>
                     </div>
@@ -361,7 +472,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl text-pink-600">
-                        {selectedUser.totalScore}
+                        {selectedUser.points}
                       </div>
                       <div className="text-xs text-gray-600">Điểm</div>
                     </div>
@@ -388,7 +499,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                       return (
                         <div
                           key={index}
-                          className="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 rounded-xl border-2 border-indigo-100"
+                          className="bg-linear-to-r from-indigo-50 to-purple-50 p-5 rounded-xl border-2 border-indigo-100"
                         >
                           <div className="flex justify-between items-center mb-3">
                             <h3 className="text-lg text-indigo-800">
@@ -408,7 +519,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                               <div
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                                className="h-full bg-linear-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>

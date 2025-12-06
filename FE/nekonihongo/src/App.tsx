@@ -8,7 +8,9 @@ import { GrammarPage } from "./components/GrammarPage";
 import { KanjiPage } from "./components/KanjiPage";
 import { FlashcardPage } from "./components/FlashcardPage";
 import { ExercisePage } from "./components/ExercisePage";
-import MyPage from "./pages/MyPage";
+import { MyPage } from "./pages/MyPage";
+import { DashboardAdmin } from "./pages/admin/DashboardAdmin";
+import { MyPageUser } from "./pages/user/MyPageUser";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -97,6 +99,10 @@ function MainApp() {
         <ExercisePage onNavigate={handleNavigate} />
       )}
       {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
+      {currentPage === "admin" && (
+        <DashboardAdmin onNavigate={handleNavigate} />
+      )}
+      {currentPage === "user" && <MyPageUser onNavigate={handleNavigate} />}
     </div>
   );
 }

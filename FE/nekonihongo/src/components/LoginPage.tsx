@@ -67,8 +67,8 @@ export function LoginPage() {
         {/* Bouncing Neko */}
         <div className="mb-8 animate-bounce-gentle">
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-500 blur-3xl opacity-60 animate-pulse-slow"></div>
-            <div className="absolute inset-2 rounded-full bg-gradient-to-br from-pink-300 to-purple-400 blur-xl opacity-50 animate-spin-slow"></div>
+            <div className="absolute inset-0 rounded-full bg-linear-to-br from-pink-400 via-purple-400 to-indigo-500 blur-3xl opacity-60 animate-pulse-slow"></div>
+            <div className="absolute inset-2 rounded-full bg-linear-to-br from-pink-300 to-purple-400 blur-xl opacity-50 animate-spin-slow"></div>
             <div className="relative z-10 w-full h-full flex items-center justify-center">
               <ImageWithFallback
                 src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"

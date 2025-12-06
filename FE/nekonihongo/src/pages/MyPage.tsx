@@ -1,22 +1,42 @@
+// src/pages/MyPage.tsx
+import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { MyPageUser } from "./user/MyPageUser";
-import { DashboardAdmin } from "./admin/DashboardAdmin";
 
 interface MyPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (path: string) => void;
 }
 
-export default function MyPage({ onNavigate }: MyPageProps) {
+export function MyPage({ onNavigate }: MyPageProps) {
   const { user } = useAuth();
 
-  if (!user) {
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      onNavigate("/login");
+      return;
+    }
 
-  // Route based on role
-  if (user.role === "admin") {
-    return <DashboardAdmin onNavigate={onNavigate} />;
-  }
+    // Role check: navigate using simple page ids to match `MainApp`
+    if (user.role === "ADMIN") {
+      onNavigate("admin");
+    } else {
+      onNavigate("user");
+    }
+  }, [user, onNavigate]);
 
-  return <MyPageUser onNavigate={onNavigate} />;
+  // Hiển thị loading cute trong lúc kiểm tra
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-pink-100 via-purple-100 to-indigo-100">
+      <div className="text-center">
+        <div className="text-9xl animate-bounce mb-8">Cat Face</div>
+        <p className="text-4xl font-bold text-purple-700 animate-pulse">
+          Đang đưa mèo về nhà...
+        </p>
+        <p className="text-xl text-gray-600 mt-4">
+          {user?.username
+            ? `Chào ${user.username} Sparkles`
+            : "Đang kiểm tra quyền..."}
+        </p>
+      </div>
+    </div>
+  );
 }

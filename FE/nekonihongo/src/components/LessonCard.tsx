@@ -17,8 +17,10 @@ export function LessonCard({ lesson, onSelect }: LessonCardProps) {
                  flex items-center justify-center gap-4 px-6 shadow-xl overflow-hidden"
     >
       {/* Glow khi hover */}
-      <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-purple-400/20 
-                      opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl" />
+      <div
+        className="absolute inset-0 bg-linear-to-r from-pink-400/20 to-purple-400/20 
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl"
+      />
 
       {/* Icon */}
       <div className="relative z-10 text-5xl group-hover:animate-bounce">

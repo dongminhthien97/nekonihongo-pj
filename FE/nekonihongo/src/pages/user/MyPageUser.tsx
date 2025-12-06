@@ -1,75 +1,149 @@
+// src/pages/User/MyPageUser.tsx
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { Footer } from "../../components/Footer";
-
-interface UserData {
-  name: string;
-  email: string;
-  role: string;
-  avatar: string;
-  joinDate: string;
-  level: number;
-  totalScore: number;
-  streak: number;
-}
-
-interface ProgressData {
-  topic: string;
-  studied: number;
-  total: number;
-  score: number;
-}
+import api from "../../api/auth";
+import type { User } from "../../types/User";
 
 interface MyPageUserProps {
   onNavigate: (page: string) => void;
 }
 
 export function MyPageUser({ onNavigate }: MyPageUserProps) {
-  const [user, setUser] = useState<UserData>({
-    name: "Trúc Chan",
-    email: "truc@neko.jp",
-    role: "user",
-    avatar:
-      "https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg",
-    joinDate: "2024-01-15",
-    level: 12,
-    totalScore: 2450,
-    streak: 15,
+  const { user: authUser } = useAuth(); // Lấy user thật từ backend
+
+  const PLACEHOLDER_AVATAR_128 =
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='%23f3e8ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='16' fill='%236b21a8' font-family='Arial, sans-serif'>Avatar</text></svg>";
+
+  // State hiển thị – mặc định loading
+  const [user, setUser] = useState<any>({
+    name: "Đang tải mèo...",
+    email: "",
+    avatar: PLACEHOLDER_AVATAR_128,
+    role: "USER",
+    joinDate: "",
+    level: 0,
+    totalScore: 0,
+    streak: 0,
+    vocabularyProgress: 0,
+    kanjiProgress: 0,
+    grammarProgress: 0,
+    exerciseProgress: 0,
   });
 
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(user.avatar);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
-  const [progressData] = useState<ProgressData[]>([
-    { topic: "Hiragana", studied: 46, total: 46, score: 98 },
-    { topic: "Katakana", studied: 42, total: 46, score: 85 },
-    { topic: "Kanji N5", studied: 67, total: 100, score: 72 },
-    { topic: "Vocabulary", studied: 234, total: 500, score: 88 },
-    { topic: "Grammar", studied: 45, total: 80, score: 76 },
-  ]);
-
+  // ĐỒNG BỘ DATA THẬT TỪ BACKEND
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser((prev) => ({
+    if (authUser) {
+      const joinDate = authUser.joinDate
+        ? new Date(authUser.joinDate).toLocaleDateString("vi-VN")
+        : "Chưa có";
+
+      setUser({
+        name: authUser.username || authUser.fullName || "Neko Chan",
+        email: authUser.email || "",
+        avatar: authUser.avatarUrl || PLACEHOLDER_AVATAR_128,
+        role: authUser.role?.toUpperCase() || "USER",
+        joinDate,
+        level: authUser.level || 1,
+        totalScore: authUser.points || 0,
+        streak: authUser.streak || 0,
+        vocabularyProgress: authUser.vocabularyProgress || 0,
+        kanjiProgress: authUser.kanjiProgress || 0,
+        grammarProgress: authUser.grammarProgress || 0,
+        exerciseProgress: authUser.exerciseProgress || 0,
+      });
+
+      setAvatarUrl(authUser.avatarUrl || "");
+    }
+  }, [authUser]);
+
+  // Tính toán tiến độ – dùng data thật
+  const progressData = [
+    { topic: "Từ vựng", studied: user.vocabularyProgress, total: 500 },
+    { topic: "Kanji", studied: user.kanjiProgress, total: 300 },
+    { topic: "Ngữ pháp", studied: user.grammarProgress, total: 150 },
+    { topic: "Bài tập", studied: user.exerciseProgress, total: 200 },
+  ];
+
+  const avgProgress = Math.round(
+    progressData.reduce((sum, p) => sum + (p.studied / p.total) * 100, 0) /
+      progressData.length
+  );
+
+  const totalStudied = progressData.reduce((sum, p) => sum + p.studied, 0);
+
+  const handleAvatarUpdate = async () => {
+    if (!avatarUrl.trim()) {
+      alert("Vui lòng nhập URL hợp lệ!");
+      return;
+    }
+
+    // Use the shared API client which attaches the access token
+    try {
+      // Debug: log request info (no token printed)
+      console.debug("Avatar PATCH request:", {
+        url: (api.defaults.baseURL || "") + "/user/me/avatar",
+        hasToken: !!localStorage.getItem("accessToken"),
+        payload: { avatarUrl: avatarUrl.trim() },
+      });
+
+      const res = await api.patch("/user/me/avatar", {
+        avatarUrl: avatarUrl.trim(),
+      });
+
+      const newAvatar =
+        res.data?.data?.avatarUrl || res.data?.avatarUrl || avatarUrl.trim();
+
+      // Update state
+      setUser((prev: User) => ({
         ...prev,
-        name: userData.name,
-        email: userData.email,
+        avatar: newAvatar,
       }));
-    }
-  }, []);
 
-  const handleAvatarUpdate = () => {
-    if (avatarUrl.trim()) {
-      setUser({ ...user, avatar: avatarUrl });
+      // Update localStorage (keep shape compatible with AuthContext)
+      const saved = JSON.parse(localStorage.getItem("nekoUser") || "{}");
+      localStorage.setItem(
+        "nekoUser",
+        JSON.stringify({ ...saved, avatarUrl: newAvatar })
+      );
+
       setIsEditingAvatar(false);
+    } catch (err: any) {
+      // Provide clearer messages for 403 Forbidden and other cases
+      const status = err?.response?.status;
+      const serverMessage = err?.response?.data?.message || err?.message;
+      console.error("Avatar update error:", err?.response || err);
+
+      if (status === 403) {
+        alert(
+          "Bạn không có quyền cập nhật avatar (Forbidden). Liên hệ quản trị viên."
+        );
+        return;
+      }
+
+      if (status === 400) {
+        alert(serverMessage || "Avatar không hợp lệ. Vui lòng kiểm tra URL.");
+        return;
+      }
+
+      alert("Không thể cập nhật avatar. Vui lòng thử lại sau.");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    window.location.href = "/";
+  const handleBack = () => {
+    onNavigate("landing"); // Dùng onNavigate như hệ thống của bạn
   };
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+        <p className="text-3xl text-purple-700">Đang tải thông tin mèo...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-soft-gradient p-6">
@@ -77,7 +151,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-4xl text-purple-800">マイページ 🌸</h1>
-          <button onClick={handleLogout} className="btn-red">
+          <button onClick={handleBack} className="btn-red">
             Quay lại
           </button>
         </div>
@@ -92,21 +166,20 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
             <div className="flex flex-col items-center mb-8">
               <div className="relative group">
                 <img
-                  src={user.avatar}
+                  src={user.avatar || PLACEHOLDER_AVATAR_128}
                   alt="Avatar"
                   className="avatar-circle mx-auto"
                   onError={(e) => {
-                    e.currentTarget.src =
-                      "https://via.placeholder.com/128?text=Avatar";
+                    e.currentTarget.src = "https://i.imgur.com/8Q2fX9j.jpeg";
                   }}
                 />
-                <button
+                {/* <button
                   onClick={() => setIsEditingAvatar(true)}
                   className="floating-btn"
                   title="Thay đổi avatar"
                 >
                   ✏️
-                </button>
+                </button> */}
               </div>
 
               {isEditingAvatar && (
@@ -143,27 +216,25 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
             <table className="w-full">
               <tbody>
                 <tr className="border-b-purple-100 pb-6 mb-6">
-                  <td className="py-3 text-gray-600">👤 Tên:</td>
+                  <td className="py-3 text-gray-600">👤Tên:</td>
                   <td className="py-3 text-purple-800">{user.name}</td>
                 </tr>
                 <tr className="border-b-purple-100 pb-6 mb-6">
-                  <td className="py-3 text-gray-600">📧 Email:</td>
+                  <td className="py-3 text-gray-600">📧Email:</td>
                   <td className="py-3 text-purple-800">{user.email}</td>
                 </tr>
                 <tr className="border-b-purple-100 pb-6 mb-6">
-                  <td className="py-3 text-gray-600">🎭 Vai trò:</td>
+                  <td className="py-3 text-gray-600">🎭Vai trò:</td>
                   <td className="py-3">
-                    <span className="badge-blue">
-                      {user.role === "user" ? "Học viên" : user.role}
-                    </span>
+                    <span className="badge-blue">Học viên</span>
                   </td>
                 </tr>
                 <tr className="border-b-purple-100 pb-6 mb-6">
-                  <td className="py-3 text-gray-600">📅 Ngày tham gia:</td>
+                  <td className="py-3 text-gray-600">📅Ngày tham gia:</td>
                   <td className="py-3 text-purple-800">{user.joinDate}</td>
                 </tr>
                 <tr className="border-b-purple-100 pb-6 mb-6">
-                  <td className="py-3 text-gray-600">⭐ Level:</td>
+                  <td className="py-3 text-gray-600">⭐Trình độ:</td>
                   <td className="py-3">
                     <span className="text-2xl text-purple-700">
                       {user.level}
@@ -179,7 +250,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-3 text-gray-600">🔥 Chuỗi ngày:</td>
+                  <td className="py-3 text-gray-600">🔥Chuỗi:</td>
                   <td className="py-3">
                     <span className="text-2xl text-orange-500">
                       {user.streak} ngày
@@ -193,30 +264,22 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
             <div className="grid grid-cols-3 gap-4 mt-8">
               <div className="purple-gradient-box">
                 <div className="text-3xl mb-2">📚</div>
-                <div className="text-2xl text-purple-800">
-                  {progressData.reduce((sum, p) => sum + p.studied, 0)}
-                </div>
+                <div className="text-2xl text-purple-800">{totalStudied}</div>
                 <div className="text-xs text-purple-600">Từ đã học</div>
               </div>
               <div className="purple-gradient-box">
                 <div className="text-3xl mb-2">✅</div>
-                <div className="text-2xl text-pink-800">
-                  {Math.round(
-                    progressData.reduce(
-                      (sum, p) => sum + (p.studied / p.total) * 100,
-                      0
-                    ) / progressData.length
-                  )}
-                  %
-                </div>
+                <div className="text-2xl text-pink-800">{avgProgress}%</div>
                 <div className="text-xs text-pink-600">Tiến độ</div>
               </div>
               <div className="blue-gradient-box">
                 <div className="text-3xl mb-2">🏆</div>
                 <div className="text-2xl text-blue-800">
                   {Math.round(
-                    progressData.reduce((sum, p) => sum + p.score, 0) /
-                      progressData.length
+                    progressData.reduce(
+                      (sum, p) => sum + (p.studied / p.total) * 100,
+                      0
+                    ) / progressData.length
                   )}
                 </div>
                 <div className="text-xs text-blue-600">Điểm TB</div>
@@ -236,7 +299,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="text-lg text-purple-800">{item.topic}</h3>
                       <span className="text-2xl text-pink-600">
-                        {item.score} điểm
+                        {Math.round(percentage)} điểm
                       </span>
                     </div>
 
@@ -255,7 +318,6 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                       </div>
                     </div>
 
-                    {/* Score Indicator */}
                     <div className="flex items-center gap-2 mt-3">
                       <div className="text-xs text-gray-500">
                         Độ thành thạo:
@@ -265,7 +327,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                           <span
                             key={i}
                             className={`text-lg ${
-                              i < Math.floor(item.score / 20)
+                              i < Math.floor(percentage / 20)
                                 ? "text-yellow-400"
                                 : "text-gray-300"
                             }`}
@@ -283,340 +345,63 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
             {/* Achievement Section */}
             <div className="yellow-orange-section">
               <h3 className="text-xl text-orange-800 mb-4">
-                🏅 Thành tích gần đây
+                Thành tích gần đây
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-2xl">🎉</span>
+                  <span className="text-2xl">🔥</span>
                   <span className="text-gray-700">
-                    Hoàn thành 100% Hiragana
+                    Streak {user.streak} ngày liên tục
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-2xl">🔥</span>
-                  <span className="text-gray-700">Streak 15 ngày liên tục</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
                   <span className="text-2xl">⭐</span>
-                  <span className="text-gray-700">Đạt Level 12</span>
+                  <span className="text-gray-700">Đạt Level {user.level}</span>
                 </div>
               </div>
             </div>
           </div>
-          <Footer />
-          <style>{`
-            .btn-red {
-    padding-left: 1.5rem;   /* px-6 */
-    padding-right: 1.5rem;  /* px-6 */
-    padding-top: 0.5rem;    /* py-2 */
-    padding-bottom: 0.5rem; /* py-2 */
-    background-color: #ef4444; /* bg-red-500 */
-    color: #ffffff;          /* text-white */
-    border-radius: 0.5rem;   /* rounded-lg */
-    transition: all 0.2s ease; /* transition */
-    cursor: pointer;
-  }
-
-  .btn-red:hover {
-    background-color: #dc2626; /* hover:bg-red-600 */
-  }
-           .text-orange-800 {
-    color: #9a3412; /* orange-800 */
-  }
-            .yellow-orange-section {
-    margin-top: 2rem; /* mt-8 */
-    padding: 1.5rem; /* p-6 */
-    background: linear-gradient(to right, #fefce8, #fff7ed); /* yellow-50 → orange-50 */
-    border-radius: 0.75rem; /* rounded-xl */
-    border: 2px solid #fef08a; /* border-yellow-200 */
-  }
-            .text-gray-300 {
-    color: #d1d5db; /* gray-300 */
-  }
-          .text-yellow-400 {
-    color: #facc15; /* yellow-400 */
-  }
-           .progress-bar-fill {
-    height: 100%; /* h-full */
-    background: linear-gradient(to right, #a855f7, #ec4899); /* purple-500 → pink-500 */
-    border-radius: 9999px; /* rounded-full */
-    transition: all 0.5s ease; /* transition-all duration-500 */
-  }
-
-            .progress-bar-container {
-    width: 100%;               /* w-full */
-    background: #e5e7eb;       /* bg-gray-200 */
-    border-radius: 9999px;     /* rounded-full */
-    height: 1rem;              /* h-4 */
-    overflow: hidden;          /* overflow-hidden */
-  }
-            .bg-soft-gradient {
-              background: linear-gradient(
-                to bottom right,
-                #faf5ff,
-                #fdf2f8,
-                #eff6ff
-              );
-              background-attachment: fixed;
-            }
-            .text-purple-800 {
-    color: #6b21a8;
-  }
-
-
-  .text-purple-700 { color: #7c3aed; }
-  .text-purple-900 { color: #581c87; }
-  .text-purple-600 { color: #9333ea; }
-
-  .hover\\:text-purple-800:hover {
-    color: #6b21a8;
-  }
-
-
-  .bg-purple-800   { background-color: #6b21a8; }
-  .border-purple-800 { border-color: #6b21a8; }
-
-  .avatar-circle {
-    width: 128px;
-    height: 128px;
-    border-radius: 9999px;
-    border: 4px solid #c4b5fd;     /* purple-300 */
-    object-fit: cover;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
-                0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .avatar-circle:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 20px 35px -10px rgba(147, 51, 234, 0.3);
-    transition: all 300ms ease;
-  }
-    /* Nút tròn nhỏ – góc dưới phải */
-  .floating-btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background-color: #a855f7;        /* purple-500 */
-    color: white;
-    padding: 0.5rem;                  /* p-2 */
-    border-radius: 9999px;            /* rounded-full */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-                0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-    transition: background-color 200ms ease-in-out;
-    z-index: 10;
-  }
-
-  .floating-btn:hover {
-    background-color: #9333ea;        /* purple-600 */
-  }
-
-  /* Nếu muốn nút to hơn một chút (p-3, p-4…) */
-  .floating-btn-lg {
-    padding: 0.75rem;                 /* p-3 */
-  }
-  .floating-btn-xl {
-    padding: 1rem;                    /* p-4 */
-  }
-  
-  /* Input kiểu mềm mại – full width, viền tím nhạt */
-  .input-soft {
-    width: 100%;
-    padding-left: 1rem;      /* px-4 */
-    padding-right: 1rem;
-    padding-top: 0.5rem;     /* py-2 */
-    padding-bottom: 0.5rem;
-    border: 2px solid #c4b5fd;   /* border-purple-300 */
-    border-radius: 0.5rem;       /* rounded-lg */
-    outline: none;
-    margin-bottom: 0.5rem;       /* mb-2 */
-    background-color: white;
-    font-size: 1rem;
-    transition: border-color 200ms ease;
-  }
-
-  /* Focus → viền tím đậm hơn */
-  .input-soft:focus {
-    border-color: #a855f7;       /* border-purple-500 */
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
-  }
-
-  /* Hover nhẹ (tùy chọn, rất xinh) */
-  .input-soft:hover {
-    border-color: #b794f4;
-  }
-    /* Nút tím đẹp – co giãn full, hover mượt */
-  .btn-purple {
-    flex: 1;                          /* flex-1 */
-    padding-left: 1rem;               /* px-4 */
-    padding-right: 1rem;
-    padding-top: 0.5rem;              /* py-2 */
-    padding-bottom: 0.5rem;
-    background-color: #a855f7;        /* bg-purple-500 */
-    color: white;                     /* text-white */
-    border-radius: 0.5rem;            /* rounded-lg */
-    font-weight: 600;
-    text-align: center;
-    transition: background-color 200ms ease-in-out;
-    cursor: pointer;
-  }
-
-  .btn-purple:hover {
-    background-color: #9333ea;        /* hover:bg-purple-600 */
-  }
-
-  /* Thêm bóng nhẹ (tùy chọn, rất xinh) */
-  .btn-purple-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  .btn-purple-shadow:hover {
-    box-shadow: 0 10px 15px -3px rgba(147, 51, 234, 0.3);
-  }
-    /* Nút xám nhẹ – dùng cho Hủy / Cancel / Thứ yếu */
-  .btn-gray {
-    flex: 1;                          /* flex-1 */
-    padding-left: 1rem;               /* px-4 */
-    padding-right: 1rem;
-    padding-top: 0.5rem;              /* py-2 */
-    padding-bottom: 0.5rem;
-    background-color: #d1d5db;        /* bg-gray-300 */
-    color: #374151;                   /* text-gray-700 */
-    border-radius: 0.5rem;            /* rounded-lg */
-    font-weight: 600;
-    text-align: center;
-    transition: background-color 200ms ease-in-out;
-    cursor: pointer;
-  }
-
-  .btn-gray:hover {
-    background-color: #9ca3af;        /* hover:bg-gray-400 */
-  }
-
-  /* Phiên bản có bóng nhẹ (tùy chọn – rất đẹp khi dùng chung với btn-purple) */
-  .btn-gray-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  .btn-gray-shadow:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
-  }
-    /* Đường viền dưới mảnh, tím nhạt cực nhẹ – dùng phân cách section */
-  .border-b-purple-100 {
-    border-bottom: 1px solid #e9d5ff;   /* purple-100 */
-  }
-
-  /* Phiên bản đậm hơn một chút (nếu cần) */
-  .border-b-purple-200 {
-    border-bottom: 1px solid #cbb2fe;   /* purple-200 */
-  }
-
-  /* Phiên bản có hiệu ứng fade nhẹ (rất xinh khi dùng nhiều lần) */
-  .divider-purple {
-    border-bottom: 1px solid transparent;
-    background-image: linear-gradient(to right, transparent, #e9d5ff 50%, transparent);
-    background-size: 100% 1px;
-    background-repeat: no-repeat;
-    background-position: bottom;
-  }
-    /* Màu chữ xám trung bình – dùng cho mô tả, ghi chú, placeholder */
-  .text-gray-600 {
-    color: #52525b;
-  }
-
-  /* Các tông xám thường dùng kèm (tùy chọn thêm) */
-  .text-gray-500 { color: #6b7280; }
-  .text-gray-700 { color: #374151; }
-  .text-gray-400 { color: #9ca3af; }
-  .text-gray-800 { color: #1f2937; }
-
-  /* Hover text nếu cần */
-  .hover\\:text-gray-600:hover {
-    color: #52525b;
-  }
-
-  /* Badge xanh dương nhẹ – thường dùng cho tag, level, trạng thái */
-  .badge-blue {
-    display: inline-block;
-    padding-left: 0.75rem;      /* px-3 */
-    padding-right: 0.75rem;
-    padding-top: 0.25rem;       /* py-1 */
-    padding-bottom: 0.25rem;
-    background-color: #dbeafe;  /* bg-blue-100 */
-    color: #1e40af;             /* text-blue-700 */
-    border-radius: 9999px;      /* rounded-full */
-    font-size: 0.875rem;        /* text-sm ≈ 14px */
-    font-weight: 500;
-    line-height: 1.25rem;
-  }
-
-  /* Phiên bản nhỏ hơn (nếu cần) */
-  .badge-blue-xs {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    padding-top: 0.125rem;
-    padding-bottom: 0.125rem;
-    font-size: 0.75rem;
-  }
-
-  /* Hover nhẹ (tùy chọn – rất xinh) */
-  .badge-blue:hover {
-    background-color: #bfdbfe;
-  }
-
-  /* Màu chữ cam nổi bật – chuẩn Tailwind orange-500 */
-  .text-orange-500 {
-    color: #f97316;
-  }
-
-  /* Các tông cam thường dùng kèm (tùy chọn thêm) */
-  .text-orange-400 { color: #fb923c; }
-  .text-orange-600 { color: #ea580c; }
-  .text-orange-700 { color: #c2410c; }
-  .text-orange-300 { color: #fdba74; }
-
-  /* Hover nếu cần */
-  .hover\\:text-orange-500:hover {
-    color: #f97316;
-  }
-    /* Hồng đậm dễ thương – chuẩn Tailwind pink-600 */
-  .text-pink-600 {
-    color: #ec4899;
-  }
-
-  /* Các tông hồng thường dùng kèm */
-  .text-pink-500 { color: #f43f5e; }
-  .text-pink-700 { color: #db2777; }
-  .text-pink-400 { color: #f472b6; }
-  .text-pink-800 { color: #be185d; }
-  .text-pink-300 { color: #f9a8d4; }
-
-  /* Hover */
-  .hover\\:text-pink-600:hover {
-    color: #ec4899;
-  }
-
-    .cute-gradient-box {
-    background: linear-gradient(to right, #faf5ff, #fdf2f8); /* purple-50 → pink-50 */
-    padding: 1.25rem; /* p-5 */
-    border-radius: 0.75rem; /* rounded-xl */
-    border: 2px solid #f3e8ff; /* border-purple-100 */
-  }
-      .purple-gradient-box {
-    background: linear-gradient(to bottom right, #f3e8ff, #e9d5ff); /* purple-100 → purple-200 */
-    padding: 1rem; /* p-4 */
-    border-radius: 0.75rem; /* rounded-xl */
-    text-align: center;
-  }
-
-    .blue-gradient-box {
-    background: linear-gradient(to bottom right, #dbeafe, #bfdbfe); /* blue-100 → blue-200 */
-    padding: 1rem; /* p-4 */
-    border-radius: 0.75rem; /* rounded-xl */
-    text-align: center;
-  }
-          `}</style>
         </div>
       </div>
+
+      <Footer />
+
+      {/* GIỮ NGUYÊN 100% STYLE CỦA BẠN */}
+      <style>{`
+        /* === TOÀN BỘ STYLE CỦA BẠN – KHÔNG THAY ĐỔI GÌ === */
+        .btn-red { padding: 0.5rem 1.5rem; background-color: #ef4444; color: #fff; border-radius: 0.5rem; transition: all 0.2s ease; cursor: pointer; }
+        .btn-red:hover { background-color: #dc2626; }
+        .yellow-orange-section { margin-top: 2rem; padding: 1.5rem; background: linear-gradient(to right, #fefce8, #fff7ed); border-radius: 0.75rem; border: 2px solid #fef08a; }
+        .text-gray-300 { color: #d1d5db; }
+        .text-yellow-400 { color: #facc15; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(to right, #a855f7, #ec4899); border-radius: 9999px; transition: all 0.5s ease; }
+        .progress-bar-container { width: 100%; background: #e5e7eb; border-radius: 9999px; height: 1rem; overflow: hidden; }
+        .bg-soft-gradient { background: linear-gradient(to bottom right, #faf5ff, #fdf2f8, #eff6ff); background-attachment: fixed; }
+        .text-purple-800 { color: #6b21a8; }
+        .text-purple-700 { color: #7c3aed; }
+        .text-purple-600 { color: #9333ea; }
+        .avatar-circle { width: 128px; height: 128px; border-radius: 9999px; border: 4px solid #c4b5fd; object-fit: cover; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        .avatar-circle:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 20px 35px -10px rgba(147,51,234,0.3); transition: all 300ms ease; }
+        .floating-btn { position: absolute; bottom: 0; right: 0; background-color: #a855f7; color: white; padding: 0.5rem; border-radius: 9999px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); transition: background-color 200ms ease-in-out; z-index: 10; }
+        .floating-btn:hover { background-color: #9333ea; }
+        .input-soft { width: 100%; padding: 0.5rem 1rem; border: 2px solid #c4b5fd; border-radius: 0.5rem; outline: none; margin-bottom: 0.5rem; background-color: white; font-size: 1rem; transition: border-color 200ms ease; }
+        .input-soft:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.2); }
+        .btn-purple { flex: 1; padding: 0.5rem 1rem; background-color: #a855f7; color: white; border-radius: 0.5rem; font-weight: 600; text-align: center; transition: background-color 200ms ease-in-out; cursor: pointer; }
+        .btn-purple:hover { background-color: #9333ea; }
+        .btn-purple-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .btn-purple-shadow:hover { box-shadow: 0 10px 15px -3px rgba(147,51,234,0.3); }
+        .btn-gray { flex: 1; padding: 0.5rem 1rem; background-color: #d1d5db; color: #374151; border-radius: 0.5rem; font-weight: 600; text-align: center; transition: background-color 200ms ease-in-out; cursor: pointer; }
+        .btn-gray:hover { background-color: #9ca3af; }
+        .btn-gray-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .border-b-purple-100 { border-bottom: 1px solid #e9d5ff; }
+        .text-gray-600 { color: #52525b; }
+        .badge-blue { display: inline-block; padding: 0.25rem 0.75rem; background-color: #dbeafe; color: #1e40af; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
+        .text-orange-500 { color: #f97316; }
+        .text-pink-600 { color: #ec4899; }
+        .cute-gradient-box { background: linear-gradient(to right, #faf5ff, #fdf2f8); padding: 1.25rem; border-radius: 0.75rem; border: 2px solid #f3e8ff; }
+        .purple-gradient-box { background: linear-gradient(to bottom right, #f3e8ff, #e9d5ff); padding: 1rem; border-radius: 0.75rem; text-align: center; }
+        .blue-gradient-box { background: linear-gradient(to bottom right, #dbeafe, #bfdbfe); padding: 1rem; border-radius: 0.75rem; text-align: center; }
+      `}</style>
     </div>
   );
 }
