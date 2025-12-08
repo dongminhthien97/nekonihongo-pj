@@ -170,7 +170,8 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                   alt="Avatar"
                   className="avatar-circle mx-auto"
                   onError={(e) => {
-                    e.currentTarget.src = "https://i.imgur.com/8Q2fX9j.jpeg";
+                    e.currentTarget.src =
+                      "https://wiki.leagueoflegends.com/en-us/images/Chibi_Yuumi_Yuubee_Tier_1.png?9a5ec";
                   }}
                 />
                 {/* <button

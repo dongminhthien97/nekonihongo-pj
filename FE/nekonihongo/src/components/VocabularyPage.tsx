@@ -19,7 +19,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const [lessonPage, setLessonPage] = useState(1);
   const [wordPage, setWordPage] = useState(1);
   const LESSONS_PER_PAGE = 12;
-  const WORDS_PER_PAGE = 10;
+  const WORDS_PER_PAGE = 12;
 
   // Tìm kiếm
   const searchResults = useMemo(() => {
@@ -30,7 +30,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       lesson.words.forEach((word) => {
         if (
           word.japanese.includes(query) ||
-          word.romaji.toLowerCase().includes(query) ||
+          word.kanji.toLowerCase().includes(query) ||
           word.vietnamese.toLowerCase().includes(query)
         ) {
           results.push({ word, lessonId: lesson.id });
@@ -72,48 +72,19 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             {/* KHUNG ĐEN MỜ + VIỀN NEON + TRONG SUỐT CÓ THỂ ĐIỀU CHỈNH */}
             <div className="absolute inset-0 -z-10 rounded-3xl" />
             {/* CHỮ CHÍNH – ĐEN ĐẬM + GLOW TRẮNG */}
-            <span
-              className="relative block 
-      px-10 md:px-14 lg:px-20       
-      py-8 md:py-10 lg:py-12        
-      text-6xl sm:text-6xl md:text-7xl lg:text-10xl 
-      font-black 
-      tracking-wider   
-      hero-text-glow            
-      text-white
-      animate-pulse-soft 
-      drop-shadow-2xl
-      -translate-y-3 md:-translate-y-4 lg:-translate-y-5
-    "
-            >
-              Từ Vựng Tiếng Nhật
-            </span>
+            <span className="hero-section-title">Từ Vựng Tiếng Nhật</span>
           </h1>
           {/* THANH TÌM KIẾM SIÊU ĐỈNH – VIỀN NỔI BẬT + TEXT CĂN GIỮA */}
           <div className="max-w-4xl mx-auto">
             <div className="relative group ">
               {/* VIỀN NEON CHẠY VÒNG QUANH – SIÊU SÁNG, SIÊU ĐẸP */}
-              <div
-                className="absolute -inset-1.5 rounded-full 
-                    bg-linear-to-r from-pink-500 via-purple-600 to-cyan-500 
-                    opacity-90 group-focus-within:opacity-100
-                    animate-border-spin"
-              />
+              <div className="gradient-border-effect" />
 
               {/* VIỀN NEON THỨ 2 – TĂNG ĐỘ DÀY + SÁNG */}
-              <div
-                className="absolute -inset-3 rounded-full 
-                    bg-linear-to-r from-pink-400 via-purple-500 to-cyan-400 
-                    blur-xl opacity-60 group-focus-within:opacity-90 
-                    animate-border-spin delay-75"
-              />
+              <div className="pulsing-gradient-aura" />
 
               {/* Thanh input chính – nền trắng mờ, viền sáng, bóng đẹp */}
-              <div
-                className="relative bg-black/50 backdrop-blur-2xl rounded-full 
-                    border-4 border-white/40 shadow-2xl 
-                    ring-8 ring-white/10 overflow-hidden"
-              >
+              <div className="glass-effect-container">
                 {/* ICON TÌM KIẾM SIÊU NỔI */}
                 <div className="absolute left-8 top-1/2 -translate-y-1/2 pointer-events-none z-20">
                   <Search
@@ -170,7 +141,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                           {word.japanese}
                         </p>
                         <p className="text-xl text-cyan-300 mt-1 text-glow-rainbow ">
-                          {word.romaji}
+                          {word.kanji}
                         </p>
                       </div>
                       <div className="text-right">
@@ -236,7 +207,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 <button
                   onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
                   disabled={lessonPage === 1}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+                  className="circular-shadow-button"
                 >
                   <ChevronLeft className="w-10 h-10 self-center " />
                 </button>
@@ -248,7 +219,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                     setLessonPage((p) => Math.min(totalLessonPages, p + 1))
                   }
                   disabled={lessonPage === totalLessonPages}
-                  className="p-4 rounded-full bg-white/80 disabled:opacity-50 hover:bg-pink-200 transition"
+                  className="circular-shadow-button"
                 >
                   <ChevronRight className="w-10 h-10 self-center" />
                 </button>
@@ -265,7 +236,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 </h2>
                 <button
                   onClick={() => setSelectedLesson(null)}
-                  className="px-8 py-4 bg-white/80  backdrop-blur-xl rounded-full text-black font-bold hover:bg-white/60"
+                  className="button"
                   style={{
                     textShadow: `0 4px 10px rgba(0, 0, 0, 0.8),
         0 0 20px rgba(0, 0, 0, 0.9),
@@ -282,14 +253,14 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
               {currentWords.map((word, idx) => (
                 <div
                   key={idx}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-white/40 hover:border-pink-400 hover:bg-white/25 hover:scale-105 transition-all duration-400 shadow-xl rounded-[32px]"
+                  className="bg-white backdrop-blur-xl rounded-3xl p-8 border-2 border-white/40 hover:border-pink-400 hover:bg-white/25 hover:scale-105 transition-all duration-400 shadow-xl rounded-[32px]"
                 >
                   <div className="text-center space-y-4">
                     <p className="text-5xl font-black text-black">
                       {word.japanese}
                     </p>
-                    <p className="text-xl text-cyan-200">{word.romaji}</p>
-                    <p className="text-2xl text-black font-medium">
+                    <p className="text-4xl text-cyan-200">{word.kanji}</p>
+                    <p className="text-3xl text-black font-medium">
                       {word.vietnamese}
                     </p>
                   </div>
@@ -303,19 +274,25 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 <button
                   onClick={() => setWordPage((p) => Math.max(1, p - 1))}
                   disabled={wordPage === 1}
-                  className="p-5 rounded-full bg-white/30 disabled:opacity-50"
+                  className="custom-button"
+                  aria-label="Previous words page"
                 >
-                  <ChevronLeft className="w-10 h-10 text-white" />
+                  <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
                   {Array.from({ length: totalWordPages }, (_, i) => (
                     <button
                       key={i}
                       onClick={() => setWordPage(i + 1)}
-                      className={`w-4 h-4 rounded-full transition-all ${
-                        wordPage === i + 1 ? "bg-pink-400 w-12" : "bg-white/70"
+                      aria-label={`Go to page ${i + 1}`}
+                      className={`rounded-full transition-all duration-200 flex items-center justify-center ${
+                        wordPage === i + 1
+                          ? "custom-element"
+                          : ".button-icon-effect"
                       }`}
-                    />
+                    >
+                      {wordPage === i + 1 ? i + 1 : ""}
+                    </button>
                   ))}
                 </div>
                 <button
@@ -323,9 +300,10 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                     setWordPage((p) => Math.min(totalWordPages, p + 1))
                   }
                   disabled={wordPage === totalWordPages}
-                  className="p-5 rounded-full bg-white/30 disabled:opacity-50"
+                  className="circular-icon-button"
+                  aria-label="Next words page"
                 >
-                  <ChevronRight className="w-10 h-10 text-white" />
+                  <ChevronRight className="w-6 h-6 text-white" />
                 </button>
               </div>
             )}
@@ -354,6 +332,387 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       <Footer />
 
       <style>{`
+      .glass-effect-container {
+  /* relative */
+  position: relative;
+  
+  /* bg-black/50 */
+  background-color: rgba(0, 0, 0, 0.5); /* Nền đen mờ 50% */
+  
+  /* backdrop-blur-2xl */
+  backdrop-filter: blur(40px); /* Hiệu ứng làm mờ nền phía sau */
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* border-4 */
+  border-width: 4px; 
+  
+  /* border-white/40 */
+  border-color: rgba(255, 255, 255, 0.4); /* Viền trắng mờ 40% */
+  
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* Bóng lớn */
+  
+  /* ring-8 ring-white/10 (Tạo hiệu ứng "ring" bằng box-shadow inset hoặc outline/viền thứ hai) */
+  /* Sử dụng box-shadow để mô phỏng hiệu ứng ring */
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25), /* Shadow-2xl */
+    0 0 0 8px rgba(255, 255, 255, 0.1); /* Ring 8px, màu trắng 10% */
+
+  /* overflow-hidden */
+  overflow: hidden; 
+}
+
+/* LƯU Ý QUAN TRỌNG VỀ backdrop-filter:
+Để đảm bảo backdrop-filter hoạt động, phần tử này phải có độ trong suốt (opacity < 1) hoặc màu nền sử dụng rgba() (như bg-black/50 đã làm).
+*/
+      .pulsing-gradient-aura {
+  /* absolute */
+  position: absolute;
+  
+  /* -inset-3 */
+  top: -0.75rem;    /* -12px */
+  bottom: -0.75rem; /* -12px */
+  left: -0.75rem;   /* -12px */
+  right: -0.75rem;  /* -12px */
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* bg-linear-to-r from-pink-400 via-purple-500 to-cyan-400 */
+  background: linear-gradient(to right, #f472b6, #8b5cf6, #22d3ee);
+  
+  /* blur-xl */
+  filter: blur(24px); 
+  
+  /* opacity-60 */
+  opacity: 0.6;
+  
+  /* z-index */
+  z-index: -1; /* Đảm bảo hiệu ứng nằm dưới nội dung chính */
+  
+  /* transition (để chuyển đổi opacity mượt mà) */
+  transition: opacity 150ms ease-in-out;
+  
+  /* animate-border-spin */
+  animation: border-spin 3s linear infinite; 
+  
+  /* delay-75 */
+  animation-delay: 75ms; 
+}
+
+/* group-focus-within:opacity-90 (Sử dụng selector lồng nhau) */
+/* Áp dụng cho phần tử mẹ có class 'group' và bên trong nó có phần tử đang focus */
+.group:focus-within .pulsing-gradient-aura {
+  opacity: 0.9;
+}
+
+/* Keyframes cho hiệu ứng border-spin (giả định) */
+@keyframes border-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+      .gradient-border-effect {
+  /* absolute */
+  position: absolute;
+  
+  /* -inset-1.5 */
+  top: -0.375rem;    /* -6px */
+  bottom: -0.375rem; /* -6px */
+  left: -0.375rem;   /* -6px */
+  right: -0.375rem;  /* -6px */
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* bg-linear-to-r from-pink-500 via-purple-600 to-cyan-500 */
+  background: linear-gradient(to right, #ec4899, #9333ea, #06b6d4);
+  
+  /* opacity-90 */
+  opacity: 0.9;
+  
+  /* animate-border-spin (CSS Tùy chỉnh: Tạo keyframes và áp dụng) */
+  animation: border-spin 3s linear infinite; 
+  z-index: -1; /* Thường được dùng để đặt lớp này dưới nội dung chính */
+}
+
+/* group-focus-within:opacity-100 (Sử dụng selector lồng nhau) */
+/* Áp dụng cho phần tử mẹ có class 'group' và bên trong nó có phần tử đang focus */
+.group:focus-within .gradient-border-effect,
+.gradient-border-effect:focus { /* Chỉ sử dụng focus trực tiếp nếu không phải group */
+  opacity: 1;
+}
+
+/* Keyframes cho hiệu ứng border-spin (giả định) */
+@keyframes border-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+      .hero-section-title {
+  /* relative */
+  position: relative;
+  
+  /* block */
+  display: block; 
+  
+  /* p-x (padding-left và padding-right) */
+  padding-left: 2.5rem;  /* 40px */
+  padding-right: 2.5rem; /* 40px */
+  
+  /* p-y (padding-top và padding-bottom) */
+  padding-top: 2rem;    /* 32px */
+  padding-bottom: 2rem; /* 32px */
+  
+  /* font-black */
+  font-weight: 900; 
+  
+  /* tracking-wider */
+  letter-spacing: 0.05em; 
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* drop-shadow-2xl (Giá trị gần đúng, có thể phức tạp hơn) */
+  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.04));
+  
+  /* -translate-y-3 */
+  transform: translateY(-0.75rem); /* -12px */
+  
+  /* text-6xl (Giá trị mặc định cho text-6xl) */
+  font-size: 3.75rem; /* 60px */
+  line-height: 1; 
+  
+  /* hero-text-glow (CSS Tùy chỉnh gần đúng cho hiệu ứng glow) */
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #f687b3; /* Ánh sáng trắng và hồng nhạt */
+  
+  /* animate-pulse-soft (CSS Tùy chỉnh: Tạo keyframes và áp dụng) */
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Kích thước text cho màn hình nhỏ (sm:text-6xl) */
+/* Cùng giá trị mặc định, không cần media query */
+
+/* Thiết lập cho màn hình trung bình (md) - min-width: 768px */
+@media (min-width: 768px) {
+  .hero-section-title {
+    /* md:px-14 */
+    padding-left: 3.5rem;  /* 56px */
+    padding-right: 3.5rem; /* 56px */
+    
+    /* md:py-10 */
+    padding-top: 2.5rem;    /* 40px */
+    padding-bottom: 2.5rem; /* 40px */
+    
+    /* md:text-7xl */
+    font-size: 4.5rem; /* 72px */
+    line-height: 1;
+    
+    /* md:-translate-y-4 */
+    transform: translateY(-1rem); /* -16px */
+  }
+}
+
+/* Thiết lập cho màn hình lớn (lg) - min-width: 1024px */
+@media (min-width: 1024px) {
+  .hero-section-title {
+    /* lg:px-20 */
+    padding-left: 5rem;  /* 80px */
+    padding-right: 5rem; /* 80px */
+    
+    /* lg:py-12 */
+    padding-top: 3rem;    /* 48px */
+    padding-bottom: 3rem; /* 48px */
+    
+    /* lg:text-10xl (Không có trong Tailwind mặc định, tôi dùng 9xl + 1/2) */
+    font-size: 8rem; /* 128px */ 
+    line-height: 1;
+    
+    /* lg:-translate-y-5 */
+    transform: translateY(-1.25rem); /* -20px */
+  }
+}
+
+/* Keyframes cho hiệu ứng pulse-soft (giả định) */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+      .circular-shadow-button {
+  /* p-4 */
+  padding: 1rem; /* 16px */
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); 
+  
+  /* transition */
+  transition: all 150ms ease-in-out; 
+}
+
+/* hover:bg-pink-200 */
+.circular-shadow-button:hover {
+  background-color: #fecaca; /* pink-200 */
+}
+
+/* disabled:opacity-50 */
+.circular-shadow-button:disabled {
+  opacity: 0.5;
+}
+
+      .circular-icon-button {
+  /* p-4 */
+  padding: 1rem; /* 16px */
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* bg-white/30 */
+  background-color: rgba(255, 255, 255, 0.3); 
+  
+  /* transition và transform */
+  transition: all 150ms ease-in-out; /* Giá trị mặc định cho transition */
+}
+
+/* md:p-5 */
+@media (min-width: 768px) {
+  .circular-icon-button {
+    padding: 1.25rem; /* 20px */
+  }
+}
+
+/* hover:bg-pink-200, hover:scale-105 */
+.circular-icon-button:hover {
+  background-color: #fecaca; /* pink-200 */
+  transform: scale(1.05);
+}
+
+/* disabled:opacity-50 */
+.circular-icon-button:disabled {
+  opacity: 0.5;
+}
+      .button-icon-effect {
+  /* bg-white/90 */
+  background-color: rgba(255, 255, 255, 0.9);
+  
+  /* w-6 */
+  width: 1.5rem; /* 24px */
+  
+  /* h-6 */
+  height: 1.5rem; /* 24px */
+  
+  /* transition (Thêm vào để hiệu ứng scale mượt mà) */
+  transition: transform 150ms ease-in-out; 
+}
+
+/* md:w-8 và md:h-8 */
+@media (min-width: 768px) {
+  .button-icon-effect {
+    width: 2rem; /* 32px */
+    height: 2rem; /* 32px */
+  }
+}
+
+/* hover:scale-110 */
+.button-icon-effect:hover {
+  transform: scale(1.1);
+}
+      .custom-element {
+  /* bg-pink-400 */
+  background-color: #f472b6; 
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* px-4 */
+  padding-left: 1rem;  /* 16px */
+  padding-right: 1rem; /* 16px */
+  
+  /* h-10 */
+  height: 2.5rem; /* 40px */
+  
+  /* font-bold */
+  font-weight: 700; 
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+}
+
+/* md:h-12 */
+@media (min-width: 768px) {
+  .custom-element {
+    height: 3rem; /* 48px */
+  }
+}
+
+      .custom-button {
+  /* p-4 */
+  padding: 1rem; 
+  
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* bg-white/30 */
+  background-color: rgba(255, 255, 255, 0.3); 
+  
+  /* transition */
+  transition: all 150ms ease-in-out; /* Giá trị mặc định cho transition */
+  
+  /* transform */
+  /* Chỉ là một lớp đánh dấu, không thêm thuộc tính CSS riêng biệt */
+}
+      .button {
+  /* px-8 py-4 -> padding: 1rem top/bottom, 2rem left/right */
+  padding: 1rem 2rem;
+  /* bg-white */
+  background-color: #ffffff;
+  /* backdrop-blur-xl approximation */
+  backdrop-filter: blur(8px);
+  /* rounded-full */
+  border-radius: 9999px;
+  /* text-black font-bold */
+  color: #000000;
+  font-weight: 700;
+  /* smooth hover */
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+.button:hover {
+  /* hover:bg-white/60 */
+  background-color: rgba(255,255,255,0.6);
+}
+
+/* md:p-5 */
+@media (min-width: 768px) {
+  .custom-button {
+    padding: 1.25rem;
+  }
+}
+
+/* hover:bg-pink-200, hover:scale-105 */
+.custom-button:hover {
+  background-color: #fecaca; /* pink-200 */
+  transform: scale(1.05);
+}
+
+/* disabled:opacity-50 */
+.custom-button:disabled {
+  opacity: 0.5;
+  /* Thêm disabled:pointer-events-none nếu bạn muốn chặn click */
+}
       @keyframes pulse-soft {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.8; }
