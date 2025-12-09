@@ -50,7 +50,7 @@ export function Navigation({
 
   if (!user) return null;
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-[#FFC7EA]/20">
+    <nav className="header-sticky-blur">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -71,7 +71,7 @@ export function Navigation({
                 border: "4px solid rgba(255, 255, 255, 0.9)",
                 transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
-              className="group-hover:scale-125 group-hover:-rotate-6 group-hover:shadow-pink-500/60"
+              className="group:hover .group-transform-effect"
             />
 
             <span
@@ -101,28 +101,25 @@ export function Navigation({
                   onClick={() =>
                     isLogout ? handleLogout() : onNavigate(item.id)
                   }
-                  className={`flex items-center gap-2 px-4 py-2 rounded-[16px] transition-all duration-300 ${
+                  className={`flex-button-style ${
                     isLogout
-                      ? "text-black shadow-lg hover:shadow-red-500/60 scale-105"
+                      ? "text-shadow-hover-effect"
                       : isActive
-                      ? "bg-linear-to-r from-[#FFC7EA] to-[#D8C8FF] text-red-600 shadow-lg scale-105"
-                      : "text-red-600 hover:bg-linear-to-r hover:from-[#FFC7EA]/20 hover:to-[#D8C8FF]/20"
+                      ? "gradient-text-shadow"
+                      : "red-text-hover-gradient"
                   }`}
                 >
                   <Icon
                     className={`w-4 h-4 ${
-                      isLogout
-                        ? "group-hover:rotate-180 transition duration-500"
-                        : ""
+                      isLogout ? "group-hover-rotate" : ""
                     }`}
                   />
                   <span
-                    className={`text-sm font-bold transition-all duration-300
-${
-  item.isLogout
-    ? "text-red-600 drop-shadow-md group-hover:text-red-400 group-hover:drop-shadow-xl"
-    : "text-gray-800"
-}`}
+                    className={`small-text-bold-transition${
+                      item.isLogout
+                        ? "text-hover-shadow-effect"
+                        : "text-gray-800"
+                    }`}
                   >
                     {item.label}
                   </span>
@@ -144,20 +141,18 @@ ${
                   onClick={() =>
                     isLogout ? handleLogout() : onNavigate(item.id)
                   }
-                  className={`p-2 rounded-[12px] transition-all duration-300 ${
+                  className={`small-padding-rounded-transition ${
                     isLogout
-                      ? "hover text-red-600 shadow-lg scale-110"
+                      ? "hover-text-scale"
                       : isActive
-                      ? "hover text-black shadow-lg scale-110"
-                      : "text-gray-600 hover:bg-[#FFC7EA]/20"
+                      ? "hover-black-scale"
+                      : "gray-text-hover-pink"
                   }`}
                   title={item.label}
                 >
                   <Icon
                     className={`w-5 h-5 ${
-                      isLogout
-                        ? "group-hover:rotate-180 transition duration-500"
-                        : ""
+                      isLogout ? "group-hover-rotate" : ""
                     }`}
                   />
                 </button>
@@ -167,6 +162,241 @@ ${
         </div>
       </div>
       <style>{`
+      .group-hover-rotate {
+  /* transition duration-500 */
+  /* Áp dụng transition cho thuộc tính transform để việc xoay diễn ra mượt mà */
+  transition: transform 500ms ease-in-out; 
+}
+
+/* group-hover:rotate-180 */
+/* Áp dụng khi di chuột qua phần tử cha có class 'group' */
+.group:hover .group-hover-rotate {
+  transform: rotate(180deg);
+}
+      .gray-text-hover-pink {
+  /* text-gray-600 */
+  color: #4b5563; 
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: background-color 300ms ease-in-out; 
+}
+
+/* Các hiệu ứng hover */
+.gray-text-hover-pink:hover {
+  /* hover:bg-[#FFC7EA]/20 (Màu hồng nhạt #FFC7EA với độ mờ 20%) */
+  background-color: rgba(255, 199, 234, 0.2); 
+}
+      .hover-black-scale {
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* scale-110 (Phần tử này được phóng to 110% mặc định) */
+  transform: scale(1.1);
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: all 300ms ease-in-out; 
+}
+
+/* Các hiệu ứng hover (hover:text-black) */
+.hover-black-scale:hover {
+  /* hover:text-black */
+  color: #000000; /* Màu đen */
+  
+  /* Các thuộc tính khác (shadow, scale) giữ nguyên trừ khi có lớp hover tương ứng */
+}
+      .small-padding-rounded-transition {
+  /* p-2 */
+  padding: 0.5rem; /* 8px */
+  
+  /* rounded-[12px] */
+  border-radius: 0.75rem; /* 12px */
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+}
+      .hover-text-scale {
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* scale-110 (Phần tử này được phóng to 110% mặc định, thường là lỗi nếu muốn scale khi hover) */
+  /* Nếu bạn muốn hiệu ứng chỉ xảy ra khi hover, lớp này phải là hover:scale-110 */
+  /* Ở đây tôi giữ nguyên theo yêu cầu: scale(1.1) là trạng thái mặc định. */
+  transform: scale(1.1);
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: all 300ms ease-in-out; 
+}
+
+/* Các hiệu ứng hover (hover:text-red-600) */
+.hover-text-scale:hover {
+  /* hover:text-red-600 */
+  color: #dc2626; /* Màu đỏ 600 */
+  
+  /* Các thuộc tính khác (shadow, scale) giữ nguyên trừ khi có lớp hover tương ứng */
+}
+      .text-hover-shadow-effect {
+  /* text-red-600 */
+  color: #dc2626; 
+  
+  /* drop-shadow-md */
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.07)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: all 300ms ease-in-out; 
+}
+
+/* group-hover:text-red-400 và group-hover:drop-shadow-xl */
+/* Áp dụng khi di chuột qua phần tử cha có class 'group' */
+.group:hover .text-hover-shadow-effect {
+  /* group-hover:text-red-400 */
+  color: #f87171; 
+  
+  /* group-hover:drop-shadow-xl */
+  filter: drop-shadow(0 20px 13px rgba(0, 0, 0, 0.03)) drop-shadow(0 8px 5px rgba(0, 0, 0, 0.08));
+}
+      .small-text-bold-transition {
+  /* text-sm */
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+  
+  /* font-bold */
+  font-weight: 700; 
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+}
+      .group-hover-rotate {
+  /* transition duration-500 */
+  transition: transform 500ms ease-in-out; 
+}
+
+/* group-hover:rotate-180 */
+/* Áp dụng khi di chuột qua phần tử cha có class 'group' */
+.group:hover .group-hover-rotate {
+  transform: rotate(180deg);
+}
+      .red-text-hover-gradient {
+  /* text-red-600 */
+  color: #dc2626; 
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: background-image 300ms ease-in-out; 
+}
+
+/* Các hiệu ứng hover */
+.red-text-hover-gradient:hover {
+  /* hover:bg-linear-to-r hover:from-[#FFC7EA]/20 hover:to-[#D8C8FF]/20 */
+  background-image: linear-gradient(to right, 
+    rgba(255, 199, 234, 0.2), /* #FFC7EA/20 */
+    rgba(216, 200, 255, 0.2)  /* #D8C8FF/20 */
+  );
+  
+  /* Đảm bảo nền được áp dụng */
+  background-clip: padding-box; 
+}
+      .gradient-text-shadow {
+  /* bg-linear-to-r from-[#FFC7EA] to-[#D8C8FF] */
+  background-image: linear-gradient(to right, #FFC7EA, #D8C8FF);
+  
+  /* text-red-600 */
+  color: #dc2626; 
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* scale-105 */
+  transform: scale(1.05);
+  
+  /* transition (Thêm vào để đảm bảo hiệu ứng scale mượt mà) */
+  transition: all 300ms ease-in-out; 
+}
+      .text-shadow-hover-effect {
+  /* text-black */
+  color: #000000;
+  
+  /* shadow-lg */
+  /* Áp dụng box-shadow (cho phần tử) hoặc filter: drop-shadow (cho văn bản). 
+     Nếu áp dụng cho văn bản, cần dùng filter. Ta dùng box-shadow mặc định. */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* scale-105 (Áp dụng transform cơ bản) */
+  transform: scale(1.05);
+  
+  /* transition (Thêm vào để hiệu ứng hover mượt mà) */
+  transition: all 300ms ease-in-out; 
+}
+
+/* Các hiệu ứng hover */
+.text-shadow-hover-effect:hover {
+  /* hover:shadow-red-500/60 */
+  /* Thay đổi box-shadow sang màu đỏ 500 (#ef4444) với độ mờ 60% */
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.6), 0 4px 6px -4px rgba(239, 68, 68, 0.6);
+  
+  /* Khi dùng hover:shadow mà không có hover:scale, ta giữ nguyên scale. 
+     Tuy nhiên, lớp scale-105 nằm ngoài hover, nên nó đã được áp dụng. 
+     Nếu muốn scale chỉ xảy ra khi hover, cần thêm lớp hover:scale-105. 
+     Ở đây ta giữ nguyên scale 1.05 cho cả hai trạng thái. */
+}
+      .flex-button-style {
+  /* flex */
+  display: flex;
+  
+  /* items-center */
+  align-items: center; /* Căn giữa dọc các item con */
+  
+  /* gap-2 */
+  gap: 0.5rem; /* 8px - Khoảng cách giữa các item con */
+  
+  /* px-4 */
+  padding-left: 1rem;  /* 16px */
+  padding-right: 1rem; /* 16px */
+  
+  /* py-2 */
+  padding-top: 0.5rem;    /* 8px */
+  padding-bottom: 0.5rem; /* 8px */
+  
+  /* rounded-[16px] */
+  border-radius: 1rem; /* 16px */
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+}
+      /* Đảm bảo phần tử này có transition đã được định nghĩa ở lớp CSS cơ bản */
+
+.group:hover .group-transform-effect {
+  /* group-hover:scale-125 và group-hover:-rotate-6 */
+  /* Gộp cả hai biến đổi vào thuộc tính transform */
+  transform: scale(1.25) rotate(-6deg);
+  
+  /* group-hover:shadow-pink-500/60 */
+  /* Sử dụng box-shadow để tạo bóng đổ màu hồng */
+  box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.6), 0 4px 6px -4px rgba(236, 72, 153, 0.6); 
+  /* (Giá trị box-shadow tương đương với một shadow trung bình, màu hồng 500 với độ mờ 60%) */
+}
+      .header-sticky-blur {
+  /* sticky top-0 */
+  position: sticky;
+  top: 0;
+  
+  /* z-50 */
+  z-index: 50;
+  
+  /* bg-white/95 */
+  background-color: rgba(255, 255, 255, 0.95); /* Nền trắng gần như đục */
+  
+  /* backdrop-blur-md */
+  backdrop-filter: blur(12px); /* Làm mờ nền phía sau (hiệu ứng kính mờ) */
+  
+  /* shadow-sm */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Bóng đổ mỏng */
+  
+  /* border-b */
+  border-bottom-width: 1px;
+  border-style: solid; /* Cần thiết để viền hiển thị */
+  
+  /* border-[#FFC7EA]/20 (Màu hồng nhạt #FFC7EA) */
+  border-bottom-color: rgba(255, 199, 234, 0.2); /* Viền dưới hồng nhạt mờ 20% */
+}
         @keyframes wiggle {
           0%, 100% { transform: rotate(-5deg); }
           50% { transform: rotate(5deg); }

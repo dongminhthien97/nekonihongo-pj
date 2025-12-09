@@ -15,7 +15,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30">
+    <div className="subtle-gradient-background">
       {/* Navigation */}
       <Navigation currentPage="landing" onNavigate={onNavigate} />
       <Background />
@@ -26,14 +26,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Vocabulary Card */}
           <button
             onClick={() => onNavigate("vocabulary")}
-            className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 overflow-hidden "
+            className="responsive-hover-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FFC7EA] to-[#D8C8FF] flex items-center justify-center group-hover:animate-bounce-subtle">
+              <div className="pulsing-gradient-circle">
                 <Languages className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl sm:text-2xl text-gray-800">Từ Vựng</h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h3 className="responsive-gray-text">Từ Vựng</h3>
+              <p className="responsive-text-caption">
                 Học từ vựng tiếng Nhật cơ bản
               </p>
               <div className="flex gap-2 pt-2">
@@ -46,14 +46,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Grammar Card */}
           <button
             onClick={() => onNavigate("grammar")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer "
+            className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D8C8FF] to-[#C7FFF1] flex items-center justify-center group-hover:animate-bounce-subtle">
+              <div className="subtle-bouncing-gradient-circle">
                 <BookOpen className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl sm:text-2xl text-gray-800">Ngữ Pháp</h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h3 className="responsive-gray-text">Ngữ Pháp</h3>
+              <p className="responsive-text-caption">
                 Khám phá cấu trúc câu và ngữ pháp tiếng Nhật một cách dễ hiểu
               </p>
               <div className="flex gap-2 pt-2">
@@ -66,14 +66,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Kanji Card */}
           <button
             onClick={() => onNavigate("kanji")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C7FFF1] to-[#FFC7EA] flex items-center justify-center group-hover:animate-bounce-subtle">
+              <div className="bouncing-gradient-circle-alt">
                 <FileText className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl sm:text-2xl text-gray-800">Kanji</h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h3 className="responsive-gray-text">Kanji</h3>
+              <p className="responsive-text-caption">
                 Học chữ Kanji với ý nghĩa và cách đọc On-Kun chi tiết
               </p>
               <div className="flex gap-2 pt-2">
@@ -86,14 +86,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Flashcard Card */}
           <button
             onClick={() => onNavigate("flashcard")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FFC7EA] via-[#D8C8FF] to-[#C7FFF1] flex items-center justify-center group-hover:animate-bounce-subtle">
+              <div className="triple-gradient-bouncing-circle">
                 <CreditCard className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl sm:text-2xl text-gray-800">Flashcard</h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h3 className="responsive-gray-text">Flashcard</h3>
+              <p className="responsive-text-caption">
                 Luyện tập và ghi nhớ từ vựng, Kanji với thẻ flashcard
               </p>
               <div className="flex gap-2 pt-2">
@@ -106,14 +106,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Exercise Card */}
           <button
             onClick={() => onNavigate("exercise")}
-            className="group bg-white/80 rounded-[32px] p-6 sm:p-8 shadow-lg hover:shadow-2xl transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
+            className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D8C8FF] via-[#FFC7EA] to-[#FFF6E9] flex items-center justify-center group-hover:animate-bounce-subtle">
+              <div className="triple-gradient-bouncing-circle-v2">
                 <ClipboardCheck className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl sm:text-2xl text-gray-800">Bài Tập</h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h3 className="responsive-gray-text">Bài Tập</h3>
+              <p className="responsive-text-caption">
                 Làm bài tập trắc nghiệm để kiểm tra kiến thức của bạn
               </p>
               <div className="flex gap-2 pt-2">
@@ -147,6 +147,390 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <Footer />
 
       <style>{`
+      .triple-gradient-bouncing-circle-v2 {
+  /* w-20 h-20 */
+  width: 5rem; /* 80px */
+  height: 5rem; /* 80px */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-gradient-to-br from-[#D8C8FF] via-[#FFC7EA] to-[#FFF6E9] */
+  background-image: linear-gradient(to bottom right, #D8C8FF, #FFC7EA, #FFF6E9);
+  /* Tím nhạt -> Hồng nhạt -> Kem nhạt */
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center; /* Căn giữa dọc */
+  justify-content: center; /* Căn giữa ngang */
+  
+  /* transition (Thêm vào để hiệu ứng tắt/bật animation mượt mà hơn) */
+  transition: transform 0.5s;
+}
+
+/* Keyframes cho hiệu ứng bounce-subtle (nhảy nhẹ và chậm) */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%); /* Nhảy lên 5% */
+  }
+}
+
+/* group-hover:animate-bounce-subtle */
+/* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
+.group:hover .triple-gradient-bouncing-circle-v2 {
+  animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
+}
+      
+      .triple-gradient-bouncing-circle {
+  /* w-20 h-20 */
+  width: 5rem; /* 80px */
+  height: 5rem; /* 80px */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-gradient-to-br from-[#FFC7EA] via-[#D8C8FF] to-[#C7FFF1] */
+  background-image: linear-gradient(to bottom right, #FFC7EA, #D8C8FF, #C7FFF1);
+  /* Hồng nhạt -> Tím nhạt -> Xanh ngọc nhạt */
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center; /* Căn giữa dọc */
+  justify-content: center; /* Căn giữa ngang */
+  
+  /* transition (Thêm vào để hiệu ứng tắt/bật animation mượt mà hơn) */
+  transition: transform 0.5s;
+}
+
+/* Keyframes cho hiệu ứng bounce-subtle (nhảy nhẹ và chậm) */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%); /* Nhảy lên 5% */
+  }
+}
+
+/* group-hover:animate-bounce-subtle */
+/* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
+.group:hover .triple-gradient-bouncing-circle {
+  animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
+}
+      .interactive-elevated-card {
+  /* group */
+  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-6 */
+  padding: 1.5rem; /* 24px */
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* transform (Thiết lập trạng thái mặc định: không có dịch chuyển, scale 1) */
+  transform: translateY(0) scale(1);
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+  
+  /* cursor-pointer */
+  cursor: pointer;
+}
+
+/* Kích thước đệm cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .interactive-elevated-card {
+    /* sm:p-8 */
+    padding: 2rem; /* 32px */
+  }
+}
+
+/* Các hiệu ứng hover */
+.interactive-elevated-card:hover {
+  /* hover:shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* hover:scale-105 và hover:-translate-y-2 */
+  /* Gộp cả hai biến đổi vào thuộc tính transform */
+  transform: translateY(-0.5rem) scale(1.05); /* -translate-y-2 = -0.5rem (8px) */
+}
+      .bouncing-gradient-circle-alt {
+  /* w-20 h-20 */
+  width: 5rem; /* 80px */
+  height: 5rem; /* 80px */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-gradient-to-br from-[#C7FFF1] to-[#FFC7EA] */
+  background-image: linear-gradient(to bottom right, #C7FFF1, #FFC7EA);
+  /* Xanh ngọc nhạt sang Hồng nhạt */
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center; /* Căn giữa dọc */
+  justify-content: center; /* Căn giữa ngang */
+  
+  /* transition (Thêm vào để hiệu ứng tắt/bật animation mượt mà hơn) */
+  transition: transform 0.5s;
+}
+
+/* Keyframes cho hiệu ứng bounce-subtle (nhảy nhẹ và chậm) */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%); /* Nhảy lên 5% */
+  }
+}
+
+/* group-hover:animate-bounce-subtle */
+/* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
+.group:hover .bouncing-gradient-circle-alt {
+  animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
+}
+      .interactive-elevated-card {
+  /* group */
+  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-6 */
+  padding: 1.5rem; /* 24px */
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* transform (Chỉ định transform để transition hoạt động) */
+  /* Thiết lập trạng thái mặc định: không có dịch chuyển, scale 1 */
+  transform: translateY(0) scale(1);
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+  
+  /* cursor-pointer */
+  cursor: pointer;
+}
+
+/* Kích thước đệm cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .interactive-elevated-card {
+    /* sm:p-8 */
+    padding: 2rem; /* 32px */
+  }
+}
+
+/* Các hiệu ứng hover */
+.interactive-elevated-card:hover {
+  /* hover:shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* hover:scale-105 và hover:-translate-y-2 */
+  /* Gộp cả hai biến đổi vào thuộc tính transform */
+  transform: translateY(-0.5rem) scale(1.05); /* -translate-y-2 = -0.5rem (8px) */
+}
+      .interactive-elevated-card {
+  /* group */
+  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-6 */
+  padding: 1.5rem; /* 24px */
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+  
+  /* transform (Chỉ định transform để transition hoạt động) */
+  transform: translate(0, 0) scale(1);
+  
+  /* transition-all duration-300 */
+  transition: all 300ms ease-in-out; 
+  
+  /* cursor-pointer */
+  cursor: pointer;
+}
+
+/* Kích thước đệm cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .interactive-elevated-card {
+    /* sm:p-8 */
+    padding: 2rem; /* 32px */
+  }
+}
+
+/* Các hiệu ứng hover */
+.interactive-elevated-card:hover {
+  /* hover:shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* hover:scale-105 và hover:-translate-y-2 */
+  /* Gộp cả hai biến đổi vào thuộc tính transform */
+  transform: translateY(-0.5rem) scale(1.05); /* -translate-y-2 = -0.5rem (8px) */
+}
+      .subtle-bouncing-gradient-circle {
+  /* w-20 h-20 */
+  width: 5rem; /* 80px */
+  height: 5rem; /* 80px */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-gradient-to-br from-[#D8C8FF] to-[#C7FFF1] */
+  background-image: linear-gradient(to bottom right, #D8C8FF, #C7FFF1);
+  /* Tím nhạt sang Xanh ngọc nhạt */
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center; /* Căn giữa dọc */
+  justify-content: center; /* Căn giữa ngang */
+  
+  /* transition (Thêm vào để hiệu ứng tắt/bật animation mượt mà hơn) */
+  transition: transform 0.5s;
+}
+
+/* Keyframes cho hiệu ứng bounce-subtle (nhảy nhẹ và chậm) */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%); /* Nhảy lên 5% */
+  }
+}
+
+/* group-hover:animate-bounce-subtle */
+/* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
+.group:hover .subtle-bouncing-gradient-circle {
+  animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
+}
+      .responsive-text-caption {
+  /* text-sm */
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+  
+  /* text-gray-600 */
+  color: #4b5563; 
+}
+
+/* Kích thước cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .responsive-text-caption {
+    /* sm:text-base */
+    font-size: 1rem; /* 16px */
+    line-height: 1.5rem; /* 24px */
+  }
+}
+      .responsive-gray-text {
+  /* text-xl */
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.75rem; /* 28px */
+  
+  /* text-gray-800 */
+  color: #1f2937; 
+}
+
+/* Kích thước cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .responsive-gray-text {
+    /* sm:text-2xl */
+    font-size: 1.5rem; /* 24px */
+    line-height: 2rem; /* 32px */
+  }
+}
+      .pulsing-gradient-circle {
+  /* w-20 h-20 */
+  width: 5rem; /* 80px */
+  height: 5rem; /* 80px */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-gradient-to-br from-[#FFC7EA] to-[#D8C8FF] */
+  background-image: linear-gradient(to bottom right, #FFC7EA, #D8C8FF);
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center; /* Căn giữa dọc */
+  justify-content: center; /* Căn giữa ngang */
+  
+  /* transition (Thêm vào để hiệu ứng tắt/bật animation mượt mà hơn) */
+  transition: transform 0.5s;
+}
+
+/* Keyframes cho hiệu ứng bounce-subtle (nhảy nhẹ và chậm) */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%); /* Nhảy lên 5% */
+  }
+}
+
+/* group-hover:animate-bounce-subtle */
+/* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
+.group:hover .pulsing-gradient-circle {
+  animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
+}
+      .responsive-hover-card {
+  /* group */
+  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
+  
+  /* relative */
+  position: relative;
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-8 */
+  padding: 2rem; /* 32px */
+  
+  /* transition-all duration-500 */
+  transition: all 500ms ease-in-out; 
+  
+  /* overflow-hidden */
+  overflow: hidden; 
+}
+
+/* hover:scale-105 */
+.responsive-hover-card:hover {
+  transform: scale(1.05); /* Phóng to 5% khi di chuột */
+}
+      .subtle-gradient-background {
+  /* min-h-screen */
+  min-height: 100vh; /* Chiều cao tối thiểu bằng chiều cao của viewport */
+  
+  /* bg-linear-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30 */
+  background-image: linear-gradient(to bottom right, 
+    #FFF6E9, /* Màu Kem nhạt */
+    rgba(255, 199, 234, 0.2), /* Màu Hồng nhạt với độ mờ 20% */
+    rgba(199, 255, 241, 0.3)  /* Màu Xanh ngọc nhạt với độ mờ 30% */
+  );
+  
+  background-attachment: fixed; /* (Thường được thêm vào để gradient toàn màn hình mượt mà) */
+}
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }

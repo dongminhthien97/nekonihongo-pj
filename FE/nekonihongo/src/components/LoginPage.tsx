@@ -67,18 +67,16 @@ export function LoginPage() {
         {/* Bouncing Neko */}
         <div className="mb-8 animate-bounce-gentle">
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto">
-            <div className="absolute inset-0 rounded-full bg-linear-to-br from-pink-400 via-purple-400 to-indigo-500 blur-3xl opacity-60 animate-pulse-slow"></div>
-            <div className="absolute inset-2 rounded-full bg-linear-to-br from-pink-300 to-purple-400 blur-xl opacity-50 animate-spin-slow"></div>
+            <div className="glowing-gradient-aura"></div>
+            <div className="spinning-gradient-blur"></div>
             <div className="relative z-10 w-full h-full flex items-center justify-center">
               <ImageWithFallback
                 src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
                 alt="Neko Nihongo"
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover shadow-2xl border-6 border-white/95 
-                           ring-4 ring-pink-300/60 hover:ring-pink-400/90 
-                           hover:scale-110 hover:-rotate-6 transition-all duration-500"
+                className="profile-avatar-effect"
               />
             </div>
-            <div className="absolute inset-0 rounded-full ring-8 ring-pink-400/30 animate-ping-slow"></div>
+            <div className="pulsing-pink-ring"></div>
           </div>
         </div>
 
@@ -87,7 +85,7 @@ export function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="relative">
             <div className="halo-glow-neko"></div>
-            <div className="relative bg-white rounded-[32px] backdrop-blur-2xl rounded-3xl p-8 sm:p-10 shadow-2xl border-4 border-white/50">
+            <div className="glass-panel-card">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block mb-2 text-gray-700">
@@ -96,6 +94,7 @@ export function LoginPage() {
                   <input
                     type="email"
                     value={email}
+                    placeholder="admin@neko.jp"
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
@@ -141,7 +140,7 @@ export function LoginPage() {
                       </>
                     )}
                   </span>
-                  <div className="absolute inset-0 bg-linear-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="full-hover-gradient-overlay"></div>
                 </button>
               </form>
             </div>
@@ -151,6 +150,231 @@ export function LoginPage() {
 
       {/* Giữ nguyên toàn bộ style đẹp lung linh của bạn */}
       <style>{`
+      .full-hover-gradient-overlay {
+  /* absolute */
+  position: absolute;
+  
+  /* inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0; /* Bao phủ hoàn toàn phần tử cha */
+  
+  /* bg-linear-to-r from-purple-600 to-pink-600 */
+  background-image: linear-gradient(to right, #9333ea, #db2777);
+  /* Purple-600: #9333ea, Pink-600: #db2777 */
+  
+  /* opacity-0 */
+  opacity: 0;
+  
+  /* transition-opacity duration-300 */
+  transition: opacity 300ms ease-in-out;
+}
+
+/* group-hover:opacity-100 (Áp dụng khi di chuột qua phần tử cha có class 'group') */
+.group:hover .full-hover-gradient-overlay {
+  opacity: 1;
+}
+      .glass-panel-card {
+  /* relative */
+  position: relative;
+  
+  /* bg-white */
+  background-color: #ffffff; /* Nền trắng (Tailwind mặc định sẽ không có opacity) */
+  /* Nếu bạn muốn hiệu ứng mờ (glass effect) rõ ràng, bạn nên dùng bg-white/opacity, 
+     nhưng theo yêu cầu thì giữ nguyên #ffffff cho bg-white. */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px (Ưu tiên giá trị tùy chỉnh này) */
+  
+  /* backdrop-blur-2xl */
+  backdrop-filter: blur(40px); 
+  
+  /* p-8 */
+  padding: 2rem; /* 32px */
+  
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+  
+  /* border-4 */
+  border-width: 4px; 
+  
+  /* border-white/50 */
+  border-color: rgba(255, 255, 255, 0.5); /* Viền trắng mờ 50% */
+}
+
+/* Thiết lập cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .glass-panel-card {
+    /* sm:p-10 */
+    padding: 2.5rem; /* 40px */
+  }
+}
+      .pulsing-pink-ring {
+  /* absolute */
+  position: absolute;
+  
+  /* inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0; /* Bao phủ hoàn toàn phần tử cha */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* ring-8 ring-pink-400/30 (Sử dụng box-shadow để mô phỏng ring) */
+  box-shadow: 0 0 0 8px rgba(244, 114, 182, 0.3);
+  /* Ring 8px, màu hồng 400, độ mờ 30% */
+  
+  /* z-index (Đảm bảo lớp này nằm dưới nội dung chính) */
+  z-index: -1; 
+  
+  /* animate-ping-slow (CSS Tùy chỉnh: Tạo keyframes và áp dụng) */
+  /* Sử dụng keyframes 'ping' để phóng to và làm mờ */
+  animation: ping-slow 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Keyframes cho hiệu ứng ping-slow */
+@keyframes ping-slow {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2); /* Phóng to gấp 2 lần */
+    opacity: 0;        /* Làm mờ hoàn toàn */
+  }
+}
+      .profile-avatar-effect {
+  /* w-28, h-28 */
+  width: 7rem;  /* 112px */
+  height: 7rem; /* 112px */
+  
+  /* rounded-full */
+  border-radius: 9999px;
+  
+  /* object-cover */
+  object-fit: cover; /* Đảm bảo hình ảnh bao phủ hết container */
+  
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* border-6 border-white/95 */
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.95); /* Viền trắng dày */
+  
+  /* ring-4 ring-pink-300/60 (Sử dụng box-shadow để mô phỏng ring) */
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25), /* Shadow-2xl */
+    0 0 0 4px rgba(249, 168, 212, 0.6);   /* Ring 4px, màu hồng nhạt mờ */
+
+  /* transition-all duration-500 */
+  transition: all 500ms ease-in-out; 
+}
+
+/* Kích thước cho màn hình nhỏ (sm) - min-width: 640px */
+@media (min-width: 640px) {
+  .profile-avatar-effect {
+    /* sm:w-36, sm:h-36 */
+    width: 9rem;  /* 144px */
+    height: 9rem; /* 144px */
+  }
+}
+
+/* Các hiệu ứng hover */
+.profile-avatar-effect:hover {
+  /* hover:ring-pink-400/90 (Thay đổi lớp ring hiện tại) */
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25), /* Shadow-2xl giữ nguyên */
+    0 0 0 4px rgba(244, 114, 182, 0.9);   /* Ring 4px, màu hồng đậm hơn và rõ hơn */
+    
+  /* hover:scale-110 */
+  transform: scale(1.1) rotate(-6deg); 
+  
+  /* hover:-rotate-6 */
+  /* transform: rotate(-6deg); đã được gộp vào transform: scale(1.1) ở trên */
+}
+      .spinning-gradient-blur {
+  /* absolute */
+  position: absolute;
+  
+  /* inset-2 */
+  top: 0.5rem;    /* 8px */
+  right: 0.5rem;  /* 8px */
+  bottom: 0.5rem; /* 8px */
+  left: 0.5rem;   /* 8px */
+  /* Tạo viền đệm 8px bên trong phần tử cha */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-linear-to-br from-pink-300 to-purple-400 */
+  background-image: linear-gradient(to bottom right, #f9a8d4, #c084fc);
+  /* Pink-300: #f9a8d4, Purple-400: #c084fc */
+  
+  /* blur-xl */
+  filter: blur(20px); 
+  
+  /* opacity-50 */
+  opacity: 0.5;
+  
+  /* z-index (Thường cần thiết để đặt phía sau) */
+  z-index: -1; 
+  
+  /* animate-spin-slow (CSS Tùy chỉnh: Tạo keyframes và áp dụng) */
+  animation: spin-slow 8s linear infinite; /* Tốc độ xoay chậm hơn */
+}
+
+/* Keyframes cho hiệu ứng spin-slow */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+      .glowing-gradient-aura {
+  /* absolute */
+  position: absolute;
+  
+  /* inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0; /* Bao phủ hoàn toàn phần tử cha */
+  
+  /* rounded-full */
+  border-radius: 9999px; /* Hình tròn */
+  
+  /* bg-linear-to-br from-pink-400 via-purple-400 to-indigo-500 */
+  background-image: linear-gradient(to bottom right, #f472b6, #c084fc, #6366f1);
+  /* Pink-400: #f472b6, Purple-400: #c084fc, Indigo-500: #6366f1 */
+  
+  /* blur-3xl */
+  filter: blur(48px); /* Làm mờ rất mạnh */
+  
+  /* opacity-60 */
+  opacity: 0.6;
+  
+  /* z-index (Thường cần thiết để đặt phía sau) */
+  z-index: -1; 
+  
+  /* animate-pulse-slow (CSS Tùy chỉnh: Tạo keyframes và áp dụng) */
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Keyframes cho hiệu ứng pulse-slow (giảm/tăng độ mờ chậm) */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
                 .hero-text-glow {
           text-shadow: 
             0 0 20px #FF69B4,

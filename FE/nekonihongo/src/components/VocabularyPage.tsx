@@ -1,55 +1,159 @@
 // VocabularyPage.tsx
-import { useState, useMemo } from "react";
-import { Search, Volume2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, ChevronLeft, ChevronRight, Cat, Sparkles } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import {
-  vocabularyLessons,
-  type Lesson,
-  type Word,
-} from "../data/vocabularyLessons";
+import api from "../api/auth";
+
+interface Word {
+  japanese: string;
+  kanji: string;
+  vietnamese: string;
+  category?: string;
+}
+
+interface Lesson {
+  id: number;
+  title: string;
+  icon: string;
+  words: Word[];
+}
+
 interface VocabularyPageProps {
   onNavigate: (page: string) => void;
 }
+const localVocabularyLessons: Lesson[] = [];
 
 export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [lessonPage, setLessonPage] = useState(1);
   const [wordPage, setWordPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const LESSONS_PER_PAGE = 12;
   const WORDS_PER_PAGE = 12;
 
-  // Tìm kiếm
+  // LẤY DỮ LIỆU THẬT TỪ BACKEND
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Diagnostic logs to help debug 401 Unauthorized
+        const token = localStorage.getItem("accessToken");
+        console.debug("VocabularyPage: accessToken present:", !!token);
+        if (token)
+          console.debug(
+            "VocabularyPage: accessToken (head):",
+            token.slice(0, 12) + "..."
+          );
+        console.debug("VocabularyPage: api.baseURL", api.defaults.baseURL);
+
+        const res = await api.get("/vocabulary/lessons");
+        setLessons(res.data.data || []);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          console.warn(
+            "VocabularyPage: received 401 from /vocabulary/lessons — falling back to local data and redirecting to login."
+          );
+          setLessons(localVocabularyLessons || []);
+          alert("Phiên đăng nhập hết hạn! Đang chuyển về trang đăng nhập...");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("nekoUser");
+          onNavigate("login");
+          return;
+        }
+        setError("Không thể tải từ vựng. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [onNavigate]);
+  const handleStartFlashcard = () => {
+    if (!selectedLesson) {
+      alert("Mèo chưa thấy bài nào để học flashcard cả!");
+      return;
+    }
+
+    const allWords = selectedLesson.words;
+    if (allWords.length === 0) {
+      alert("Bài này chưa có từ vựng nào! Mèo buồn quá...");
+      return;
+    }
+
+    // Tạo 10 từ ngẫu nhiên (cho phép trùng nếu bài ít hơn 10 từ)
+    let selectedWords = [...allWords];
+    if (selectedWords.length > 10) {
+      selectedWords = selectedWords
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+    }
+
+    // LƯU DỮ LIỆU – QUAN TRỌNG NHẤT!!!
+    const flashcardData = {
+      lessonId: selectedLesson.id,
+      lessonTitle: selectedLesson.title,
+      icon: selectedLesson.icon || "Cat",
+      words: selectedWords,
+      totalWordsInLesson: allWords.length,
+    };
+
+    // DÙNG CHÍNH XÁC TÊN KEY NÀY → KHÔNG ĐƯỢC SAI 1 KÝ TỰ!
+    localStorage.setItem("nekoFlashcardData", JSON.stringify(flashcardData));
+
+    // LƯU TOÀN BỘ TỪ ĐỂ HỌC TIẾP (BẮT BUỘC!)
+    localStorage.setItem("nekoFlashcardAllWords", JSON.stringify(allWords));
+
+    console.log("Đã lưu flashcard data vào localStorage!", flashcardData);
+
+    // Chuyển trang
+    onNavigate("flashcard");
+  };
+  // TÌM KIẾM THẬT TỪ BACKEND
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    const results: { word: Word; lessonId: number }[] = [];
-    vocabularyLessons.forEach((lesson) => {
-      lesson.words.forEach((word) => {
-        if (
-          word.japanese.includes(query) ||
-          word.kanji.toLowerCase().includes(query) ||
-          word.vietnamese.toLowerCase().includes(query)
-        ) {
-          results.push({ word, lessonId: lesson.id });
-        }
+    const fetchSearch = async () => {
+      try {
+        const res = await api.get(
+          `/vocabulary/search?q=${encodeURIComponent(searchQuery)}`
+        );
+        return res.data.data || [];
+      } catch {
+        return [];
+      }
+    };
+    // Vì useMemo không hỗ trợ async trực tiếp → dùng trick
+    let results: { word: Word; lessonId: number }[] = [];
+    if (searchQuery) {
+      // Bạn có thể gọi API thật ở đây nếu muốn, tạm thời dùng client-side search
+      const query = searchQuery.toLowerCase();
+      lessons.forEach((lesson) => {
+        lesson.words.forEach((word) => {
+          if (
+            word.japanese.toLowerCase().includes(query) ||
+            word.kanji.toLowerCase().includes(query) ||
+            word.vietnamese.toLowerCase().includes(query)
+          ) {
+            results.push({ word, lessonId: lesson.id });
+          }
+        });
       });
-    });
+    }
     return results.slice(0, 20);
-  }, [searchQuery]);
+  }, [searchQuery, lessons]);
 
   // Phân trang bài học
-  const totalLessonPages = Math.ceil(
-    vocabularyLessons.length / LESSONS_PER_PAGE
-  );
-  const currentLessons = vocabularyLessons.slice(
+  const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
+  const currentLessons = lessons.slice(
     (lessonPage - 1) * LESSONS_PER_PAGE,
     lessonPage * LESSONS_PER_PAGE
   );
 
-  // Phân trang từ vựng trong bài
+  // Phân trang từ vựng
   const currentWords = selectedLesson
     ? selectedLesson.words.slice(
         (wordPage - 1) * WORDS_PER_PAGE,
@@ -59,6 +163,34 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const totalWordPages = selectedLesson
     ? Math.ceil(selectedLesson.words.length / WORDS_PER_PAGE)
     : 0;
+  // Loading & Error
+  // if (loading) {
+  //   return (
+  //     <div className="full-screen-gradient-center">
+  //       <div className="text-center">
+  //         <div className="w-32 h-32 mx-auto mb-8">
+  //           <img
+  //             src="/neko-loading.gif"
+  //             alt="Neko đang tải..."
+  //             className="w-full h-full"
+  //           />
+  //         </div>
+  //         <p className="text-4xl font-bold text-white animate-pulse">
+  //           Đang tải từ vựng mèo...
+  //         </p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-3xl font-bold text-red-400">{error}</p>
+      </div>
+    );
+    0;
+  }
 
   return (
     <div className="min-h-screen">
@@ -72,27 +204,24 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             {/* KHUNG ĐEN MỜ + VIỀN NEON + TRONG SUỐT CÓ THỂ ĐIỀU CHỈNH */}
             <div className="absolute inset-0 -z-10 rounded-3xl" />
             {/* CHỮ CHÍNH – ĐEN ĐẬM + GLOW TRẮNG */}
-            <span className="hero-section-title">Từ Vựng Tiếng Nhật</span>
+            <span className="hero-section-title hero-text-glow">
+              Từ Vựng Tiếng Nhật
+            </span>
           </h1>
           {/* THANH TÌM KIẾM SIÊU ĐỈNH – VIỀN NỔI BẬT + TEXT CĂN GIỮA */}
           <div className="max-w-4xl mx-auto">
             <div className="relative group ">
               {/* VIỀN NEON CHẠY VÒNG QUANH – SIÊU SÁNG, SIÊU ĐẸP */}
-              <div className="gradient-border-effect" />
+              {/* <div className="gradient-border-effect" /> */}
 
               {/* VIỀN NEON THỨ 2 – TĂNG ĐỘ DÀY + SÁNG */}
-              <div className="pulsing-gradient-aura" />
+              {/* <div className="pulsing-gradient-aura" /> */}
 
               {/* Thanh input chính – nền trắng mờ, viền sáng, bóng đẹp */}
-              <div className="glass-effect-container">
+              <div className="glass-effect-container animate-fade-in">
                 {/* ICON TÌM KIẾM SIÊU NỔI */}
-                <div className="absolute left-8 top-1/2 -translate-y-1/2 pointer-events-none z-20">
-                  <Search
-                    className="absolute left-8 top-1/2 -translate-y-1/2 
-                         w-12 h-12 text-white drop-shadow-neon 
-                          z-20"
-                    strokeWidth={5}
-                  />
+                <div className="element-overlay-positioned">
+                  <Search className="icon-centered-left" strokeWidth={5} />
                 </div>
 
                 {/* INPUT – TEXT CĂN GIỮA HOÀN HẢO */}
@@ -104,51 +233,29 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                     setSearchQuery(e.target.value);
                     setSelectedLesson(null);
                   }}
-                  className="
-          w-full py-8 pl-28 pr-10 
-          text-3xl font-black text-white 
-          bg-transparent text-center 
-          placeholder:text-white/70 
-          placeholder:font-bold 
-          focus:outline-none 
-        "
+                  className="transparent-search-input"
                 />
               </div>
             </div>
             {/* Kết quả tìm kiếm – CARD SIÊU TO */}
             {searchResults.length > 0 && (
-              <div className="mt-10 max-w-4xl mx-auto space-y-4">
-                <p className="text-center text-white font-bold text-xl mb-6 animate-pulse">
+              <div className="mt-10 max-w-4xl mx-auto space-y-4 animate-fade-in">
+                <p className="pulsing-centered-text">
                   Tìm thấy {searchResults.length} kết quả
                 </p>
                 {searchResults.map(({ word, lessonId }, idx) => (
-                  <div
-                    key={idx}
-                    className="group relative bg-white/80 backdrop-blur-xl 
-                   border border-white/30 hover:border-pink-400 
-                   rounded-2xl p-6 
-                   hover:bg-white/20 hover:scale-[1.02] 
-                   transition-all duration-400 
-                   shadow-xl hover:shadow-2xl hover:shadow-pink-500/30"
-                  >
-                    <div
-                      className="absolute inset-0 rounded-2xl bg-linear-to-r from-pink-500 via-purple-500 to-cyan-500 
-                        opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500 -z-10"
-                    />
+                  <div key={idx} className="glass-card-hover-effect">
+                    <div className="full-gradient-hover-effect" />
                     <div className="flex items-center justify-between gap-6">
                       <div className="flex-1 text-left">
-                        <p className="text-4xl font-black text-black drop-shadow-2xl text-glow-rainbow">
-                          {word.japanese}
-                        </p>
-                        <p className="text-xl text-cyan-300 mt-1 text-glow-rainbow ">
-                          {word.kanji}
-                        </p>
+                        <p className="rainbow-glow-title">{word.japanese}</p>
+                        <p className="small-rainbow-glow">{word.kanji}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-black drop-shadow-lg text-glow-rainbow ">
+                        <p className="white-rainbow-glow-bold">
                           {word.vietnamese}
                         </p>
-                        <p className="text-lg text-pink-300 mt-2 text-glow-rainbow ">
+                        <p className="small-white-rainbow-glow">
                           Bài {lessonId}
                         </p>
                       </div>
@@ -165,7 +272,10 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           <>
             {/* Danh sách bài học + phân trang */}
             <div className="max-w-7xl mx-auto ">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16 animate-fade-in">
+              <div
+                key={lessonPage}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16"
+              >
                 {currentLessons.map((lesson) => (
                   <button
                     key={lesson.id}
@@ -174,20 +284,11 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       setWordPage(1);
                       setSearchQuery("");
                     }}
-                    className="group relative bg-white/80 rounded-[32px] p-8 hover:scale-105 transition-all duration-500 overflow-hidden"
+                    className="responsive-hover-card animate-fade-in"
                   >
-                    <div
-                      className="text-4xl animate-pulse-soft"
-                      style={{
-                        textShadow: `
-                          0 4px 10px rgba(255, 255, 255, 0.8),
-                          0 0 20px rgba(255, 255, 255, 0.9),
-                          0 0 40px rgba(255, 255, 255, 0.7),
-                          0 0 60px rgba(255, 255, 255, 0.5)
-                        `,
-                      }}
-                    >
-                      {lesson.icon}
+                    <div className="text-gray-800 animate-pulse-soft">
+                      {/* MÈO SIÊU DỄ THƯƠNG – MẶC ĐỊNH CHO MỌI BÀI! */}
+                      <Cat className="relative w-full h-full" />
                     </div>
                     <div className="text-center py-6">
                       <p className="hero-text-glow text-white text-2xl">
@@ -202,28 +303,47 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 ))}
               </div>
 
-              {/* Phân trang bài học */}
-              <div className="flex justify-center items-center gap-8 mt-12">
-                <button
-                  onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
-                  disabled={lessonPage === 1}
-                  className="circular-shadow-button"
-                >
-                  <ChevronLeft className="w-10 h-10 self-center " />
-                </button>
-                <span className="text-2xl hero-text-glow text-white font-bold">
-                  Trang {lessonPage} / {totalLessonPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setLessonPage((p) => Math.min(totalLessonPages, p + 1))
-                  }
-                  disabled={lessonPage === totalLessonPages}
-                  className="circular-shadow-button"
-                >
-                  <ChevronRight className="w-10 h-10 self-center" />
-                </button>
-              </div>
+              {/* Phân trang bài học — đồng bộ với style phân trang từ vựng */}
+              {totalLessonPages > 1 && (
+                <div className="flex justify-center items-center gap-6 mt-12">
+                  <button
+                    onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
+                    disabled={lessonPage === 1}
+                    className="custom-button"
+                    aria-label="Previous lessons page"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-black" />
+                  </button>
+
+                  <div className="flex gap-3 items-center">
+                    {Array.from({ length: totalLessonPages }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setLessonPage(i + 1)}
+                        aria-label={`Go to lesson page ${i + 1}`}
+                        className={`rounded-full transition-all duration-200 flex items-center justify-center ${
+                          lessonPage === i + 1
+                            ? "custom-element"
+                            : "button-icon-effect"
+                        }`}
+                      >
+                        {lessonPage === i + 1 ? i + 1 : ""}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setLessonPage((p) => Math.min(totalLessonPages, p + 1))
+                    }
+                    disabled={lessonPage === totalLessonPages}
+                    className="circular-icon-button"
+                    aria-label="Next lessons page"
+                  >
+                    <ChevronRight className="w-6 h-6 text-black" />
+                  </button>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -232,29 +352,43 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             <div className="flex  items-center justify-right mb-10">
               <div className="w-full  flex flex-col items-center gap-4">
                 <h2 className=" text-3xl hero-text-glow text-white">
-                  {selectedLesson.icon} {selectedLesson.title}
+                  {selectedLesson.title}
                 </h2>
+                <div className="flex justify-center mt-16 mb-10">
+                  <button
+                    onClick={handleStartFlashcard}
+                    className="group relative px-16 py-10 bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 rounded-3xl shadow-2xl hover:shadow-pink-500/70 transform hover:scale-110 transition-all duration-500 overflow-hidden"
+                  >
+                    {/* Hiệu ứng glow neon + mèo bay */}
+                    <div className="absolute inset-0 bg-white/30 blur-2xl group-hover:blur-3xl transition-all duration-700" />
+                    <div className="absolute -inset-4 bg-gradient-to-r from-pink-400/50 via-purple-500/50 to-cyan-400/50 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="text-left">
+                      <p className="text-5xl font-black drop-shadow-2xl tracking-wider">
+                        HỌC FLASHCARD
+                      </p>
+                      <p className="text-2xl font-bold opacity-90 mt-2">
+                        10 từ ngẫu nhiên • Siêu thú vị • Có mèo!
+                      </p>
+                      {/* Hiệu ứng lấp lánh */}
+                      <Sparkles className="w-16 h-16 animate-pulse" />
+                      <Sparkles className="w-12 h-12 animate-pulse delay-75" />
+                    </div>
+                  </button>
+                </div>
                 <button
                   onClick={() => setSelectedLesson(null)}
                   className="button"
-                  style={{
-                    textShadow: `0 4px 10px rgba(0, 0, 0, 0.8),
-        0 0 20px rgba(0, 0, 0, 0.9),
-        0 0 40px rgba(0, 0, 0, 0.7),
-        0 0 60px rgba(0, 0, 0, 0.5)
-      `,
-                  }}
                 >
                   ← Tất cả bài học
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-4">
+            <div
+              key={`${selectedLesson?.id || "none"}-${wordPage}`}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-4"
+            >
               {currentWords.map((word, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white backdrop-blur-xl rounded-3xl p-8 border-2 border-white/40 hover:border-pink-400 hover:bg-white/25 hover:scale-105 transition-all duration-400 shadow-xl rounded-[32px]"
-                >
+                <div key={idx} className="glassmorphism-card animate-fade-in">
                   <div className="text-center space-y-4">
                     <p className="text-5xl font-black text-black">
                       {word.japanese}
@@ -288,7 +422,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       className={`rounded-full transition-all duration-200 flex items-center justify-center ${
                         wordPage === i + 1
                           ? "custom-element"
-                          : ".button-icon-effect"
+                          : "button-icon-effect"
                       }`}
                     >
                       {wordPage === i + 1 ? i + 1 : ""}
@@ -332,6 +466,388 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       <Footer />
 
       <style>{`
+
+      .responsive-hover-card {
+  /* group */
+  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
+  
+  /* relative */
+  position: relative;
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* rounded-[32px] */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-8 */
+  padding: 2rem; /* 32px */
+  
+  /* transition-all duration-500 */
+  transition: all 500ms ease-in-out; 
+  
+  /* overflow-hidden */
+  overflow: hidden; 
+}
+
+/* hover:scale-105 */
+.responsive-hover-card:hover {
+  transform: scale(1.05); /* Phóng to 5% khi di chuột */
+}
+      .pulsing-centered-text {
+  /* text-center */
+  text-align: center;
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* font-bold */
+  font-weight: 700;
+  
+  /* text-xl */
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.75rem; /* 28px */
+  
+  /* mb-6 */
+  margin-bottom: 1.5rem; /* 24px */
+  
+  /* animate-pulse */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Keyframes cho hiệu ứng pulse */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+      .full-screen-gradient-center {
+  /* min-h-screen */
+  min-height: 100vh; /* Chiều cao tối thiểu bằng chiều cao của viewport */
+  
+  /* flex */
+  display: flex;
+  
+  /* items-center */
+  align-items: center; /* Căn giữa dọc các item con */
+  
+  /* justify-center */
+  justify-content: center; /* Căn giữa ngang các item con */
+  
+  /* bg-gradient-to-br */
+  background-image: linear-gradient(to bottom right, #581c87, #831843);
+  /* from-purple-900 (#581c87) */
+  /* to-pink-900 (#831843) */
+}
+      .centered-circle-transition {
+  /* rounded-full */
+  border-radius: 9999px; 
+  
+  /* transition-all duration-200 */
+  transition: all 200ms ease-in-out; 
+  
+  /* flex */
+  display: flex;
+  
+  /* items-center */
+  align-items: center; /* Căn giữa dọc */
+  
+  /* justify-center */
+  justify-content: center; /* Căn giữa ngang */
+}
+      .glassmorphism-card {
+  /* bg-white */
+  background-color: #ffffff;
+  /* rounded-[32px] (Ưu tiên giá trị tùy chỉnh này) */
+  border-radius: 2rem; /* 32px */
+  
+  /* p-8 */
+  padding: 2rem; /* 32px */
+  
+  /* border-2 */
+  border-width: 2px;
+  
+  /* border-white/40 */
+  border-color: rgba(255, 255, 255, 0.4); 
+  
+  /* transition-all duration-400 */
+  transition: all 400ms ease-in-out; 
+  
+  /* shadow-xl */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Các hiệu ứng hover */
+.glassmorphism-card:hover {
+  /* hover:border-pink-400 */
+  border-color: #f472b6; 
+  
+  /* hover:bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.80); 
+  
+  /* hover:scale-105 */
+  transform: scale(1.05);
+}
+      .small-white-rainbow-glow {
+  /* text-lg */
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.75rem; /* 28px */
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* mt-2 */
+  margin-top: 0.5rem; /* 8px */
+  
+  /* text-glow-rainbow (CSS Tùy chỉnh: Hiệu ứng phát sáng cầu vồng rực rỡ) */
+  /* Sử dụng text-shadow để tạo hiệu ứng glow */
+  text-shadow: 
+    /* Lớp bóng mờ trắng làm nền để chữ sáng hơn */
+    0 0 3px rgba(255, 255, 255, 0.9),
+    /* Các lớp bóng mờ màu neon chính */
+    0 0 8px rgba(255, 0, 150, 0.9),  /* Hồng đậm (Fuschia) */
+    0 0 12px rgba(147, 51, 234, 0.9),  /* Tím (Violet) */
+    0 0 16px rgba(6, 182, 212, 0.9);   /* Xanh ngọc (Cyan) */
+}
+      .white-rainbow-glow-bold {
+  /* text-3xl */
+  font-size: 1.875rem; /* 30px */
+  line-height: 2.25rem; /* 36px */
+  
+  /* font-bold */
+  font-weight: 700; 
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* text-glow-rainbow (CSS Tùy chỉnh: Hiệu ứng phát sáng cầu vồng rực rỡ) */
+  /* Tập trung vào các lớp bóng mờ màu neon để làm nổi bật chữ trắng */
+  text-shadow: 
+    /* Lớp bóng mờ trắng nhẹ làm nền */
+    0 0 4px rgba(255, 255, 255, 0.8),
+    /* Các lớp bóng mờ màu neon chính */
+    0 0 10px rgba(255, 0, 150, 0.9),  /* Hồng đậm (Fuschia) */
+    0 0 15px rgba(147, 51, 234, 0.9),  /* Tím (Violet) */
+    0 0 20px rgba(6, 182, 212, 0.9);   /* Xanh ngọc (Cyan) */
+    
+  /* drop-shadow-lg bị loại bỏ do không phù hợp với hiệu ứng glow của chữ trắng */
+  filter: none; /* Đảm bảo không có drop-shadow */
+}
+      
+      .small-rainbow-glow {
+  /* text-2xl */
+  font-size: 1.5rem; /* 24px */
+  line-height: 2rem; /* 32px */
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* mt-1 */
+  margin-top: 0.25rem; /* 4px */
+  
+  /* text-glow-rainbow (CSS Tùy chỉnh: Hiệu ứng phát sáng cầu vồng rực rỡ) */
+  /* Sử dụng text-shadow để tạo hiệu ứng glow */
+  text-shadow: 
+    /* Lớp bóng mờ trắng làm nền */
+    0 0 2px rgba(255, 255, 255, 0.8),
+    /* Các lớp bóng mờ màu neon */
+    0 0 5px rgba(255, 0, 150, 0.9),  /* Hồng đậm (Fuschia) */
+    0 0 8px rgba(147, 51, 234, 0.9),  /* Tím (Violet) */
+    0 0 12px rgba(6, 182, 212, 0.9);   /* Xanh ngọc (Cyan) */
+}
+      .rainbow-glow-title {
+  /* text-4xl */
+  font-size: 2.25rem; /* 36px */
+  line-height: 2.5rem; /* 40px */
+  
+  /* font-black */
+  font-weight: 900; 
+  
+  /* text-white */
+  color: #ffffff; /* Giữ nguyên màu chữ trắng */
+  
+  /* text-glow-rainbow (CSS Tùy chỉnh: Hiệu ứng phát sáng cầu vồng rực rỡ) */
+  /* Sử dụng text-shadow để tạo hiệu ứng glow, không dùng filter: drop-shadow */
+  text-shadow: 
+    /* Lớp bóng mờ trắng làm nền */
+    0 0 4px rgba(255, 255, 255, 0.8),
+    /* Các lớp bóng mờ màu neon */
+    0 0 10px rgba(255, 0, 150, 0.9),  /* Hồng đậm (Fuschia) */
+    0 0 15px rgba(147, 51, 234, 0.9),  /* Tím (Violet) */
+    0 0 20px rgba(6, 182, 212, 0.9);   /* Xanh ngọc (Cyan) */
+    
+    /* Có thể thêm các màu khác nếu muốn đầy đủ dải cầu vồng */
+}
+      .full-gradient-hover-effect {
+  /* absolute */
+  position: absolute;
+  
+  /* inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0; /* Bao phủ hoàn toàn phần tử cha */
+  
+  /* rounded-2xl */
+  border-radius: 1rem; /* 16px */
+  
+  /* bg-linear-to-r from-pink-500 via-purple-500 to-cyan-500 */
+  background: linear-gradient(to right, #ec4899, #a855f7, #06b6d4);
+  
+  /* opacity-0 */
+  opacity: 0;
+  
+  /* blur-xl */
+  filter: blur(20px); 
+  
+  /* transition-opacity duration-500 */
+  transition: opacity 500ms ease-in-out;
+  
+  /* -z-10 */
+  z-index: -10; /* Đặt lớp này ra phía sau nội dung chính */
+}
+
+/* group-hover:opacity-100 (Áp dụng khi di chuột qua phần tử cha có class 'group') */
+.group:hover .full-gradient-hover-effect {
+  opacity: 1;
+}
+      .glass-card-hover-effect {
+  /* relative */
+  position: relative;
+  
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
+  
+  /* border */
+  border-width: 1px; 
+  
+  /* border-white/30 */
+  border-color: rgba(255, 255, 255, 0.3); 
+  
+  /* rounded-2xl */
+  border-radius: 1rem; /* 16px */
+  
+  /* p-6 */
+  padding: 1.5rem; /* 24px */
+  
+  /* transition-all duration-400 */
+  transition: all 400ms ease-in-out; 
+  
+  /* shadow-xl */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+}
+
+/* hover:border-pink-400, hover:bg-white/20, hover:scale-[1.02], hover:shadow-2xl, hover:shadow-pink-500/30 */
+.glass-card-hover-effect:hover {
+  /* hover:border-pink-400 */
+  border-color: #f472b6; 
+  
+  /* hover:bg-white/20 */
+  background-color: rgba(255, 255, 255, 0.2); 
+  
+  /* hover:scale-[1.02] */
+  transform: scale(1.02);
+  
+  /* hover:shadow-2xl (Kết hợp với shadow màu hồng) */
+  box-shadow: 
+    /* shadow-2xl */
+    0 25px 50px -12px rgba(0, 0, 0, 0.25), 
+    /* hover:shadow-pink-500/30 */
+    0 0 15px rgba(236, 72, 153, 0.3); /* Giá trị gần đúng cho shadow màu hồng */
+}
+      .transparent-search-input {
+  /* w-full */
+  width: 100%;
+  
+  /* py-8 */
+  padding-top: 2rem;    /* 32px */
+  padding-bottom: 2rem; /* 32px */
+  
+  /* pl-28 */
+  padding-left: 7rem;   /* 112px */
+  
+  /* pr-10 */
+  padding-right: 2.5rem; /* 40px */
+  
+  /* text-3xl */
+  font-size: 1.875rem; /* 30px */
+  line-height: 2.25rem; /* 36px */
+  
+  /* font-black */
+  font-weight: 900; 
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* bg-transparent */
+  background-color: transparent; 
+  
+  /* text-center */
+  text-align: center; 
+}
+
+/* focus:outline-none */
+.transparent-search-input:focus {
+  outline: 0; /* Loại bỏ viền focus mặc định của trình duyệt */
+}
+
+/* placeholder:text-white/70 và placeholder:font-bold */
+.transparent-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7); /* Màu trắng mờ 70% */
+  font-weight: 700; /* In đậm */
+}
+      .element-overlay-positioned {
+  /* absolute */
+  position: absolute;
+  
+  /* left-8 */
+  left: 2rem; /* 32px */
+  
+  /* top-1/2 */
+  top: 50%;
+  
+  /* -translate-y-1/2 */
+  transform: translateY(-50%); /* Căn giữa dọc */
+  
+  /* pointer-events-none */
+  pointer-events: none; /* NGĂN CHẶN tương tác chuột/chạm */
+  
+  /* z-20 */
+  z-index: 20; 
+}
+      .icon-centered-left {
+  /* absolute */
+  position: absolute;
+  
+  /* left-8 */
+  left: 2rem; /* 32px */
+  
+  /* top-1/2 */
+  top: 50%;
+  
+  /* -translate-y-1/2 */
+  transform: translateY(-50%); /* Dùng để căn giữa dọc (Vertical centering) */
+  
+  /* w-12 */
+  width: 3rem; /* 48px */
+  
+  /* h-12 */
+  height: 3rem; /* 48px */
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* z-20 */
+  z-index: 20; 
+  
+  /* drop-shadow-neon (CSS Tùy chỉnh gần đúng cho hiệu ứng neon) */
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 10px #f472b6);
+  /* Hoặc sử dụng text-shadow nếu đây là icon dạng chữ: */
+  /* text-shadow: 0 0 5px #fff, 0 0 10px #f472b6; */
+}
       .glass-effect-container {
   /* relative */
   position: relative;
@@ -675,7 +1191,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   /* transform */
   /* Chỉ là một lớp đánh dấu, không thêm thuộc tính CSS riêng biệt */
 }
-      .button {
+  .button {
   /* px-8 py-4 -> padding: 1rem top/bottom, 2rem left/right */
   padding: 1rem 2rem;
   /* bg-white */
@@ -737,7 +1253,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         .animate-pulse-soft {
           animation: pulse-soft 2s ease-in-out infinite;
         }
-                .animate-fade-in {
+              .animate-fade-in {
           animation: fade-in 0.6s ease-out forwards;
           opacity: 0;
         }
