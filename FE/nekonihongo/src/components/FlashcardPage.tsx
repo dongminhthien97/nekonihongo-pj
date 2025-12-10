@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, Cat, Sparkles } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import api from "../api/auth";
+import { NekoLoading } from "../components/NekoLoading";
+import { NekoAlertModal } from "../components/NekoAlertModal";
 
 interface Word {
   japanese: string;
@@ -28,29 +29,113 @@ export function FlashcardPage({
   const [isFlipped, setIsFlipped] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("Flashcard Mèo");
+  const [isLoading, setIsLoading] = useState(true);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorTitle, setErrorTitle] = useState("Meow meow...");
+  const [showLostWordsModal, setShowLostWordsModal] = useState(false);
+  const [showAllDoneModal, setShowAllDoneModal] = useState(false);
+  const [showContinueMessage, setShowContinueMessage] = useState(false);
+  const [continueMessage, setContinueMessage] = useState("");
 
-  // Lấy dữ liệu từ localStorage khi vào trang
+  // HIỆN LOADING 1 GIÂY + ĐỌC DỮ LIỆU TỪ localStorage
   useEffect(() => {
-    const data = localStorage.getItem("nekoFlashcardData");
-    if (data) {
-      const parsed: FlashcardData = JSON.parse(data);
-      setWords(parsed.words);
-      setLessonTitle(parsed.lessonTitle);
-      localStorage.removeItem("nekoFlashcardData"); // xóa sau khi dùng
-    }
-  }, []);
+    const loadingTimer = setTimeout(() => setIsLoading(false), 1000);
+
+    let dataProcessed = false;
+
+    const loadFlashcardData = () => {
+      const data = localStorage.getItem("nekoFlashcardData");
+
+      if (!data) {
+        console.warn("Không có dữ liệu flashcard trong localStorage");
+        setErrorMessage(
+          "Không có dữ liệu flashcard! Mèo đưa bạn về trang từ vựng nhé..."
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      try {
+        const parsed: FlashcardData = JSON.parse(data);
+
+        // ĐẢM BẢO ĐÃ CÓ DỮ LIỆU TRƯỚC KHI XÓA
+        setWords(parsed.words || []);
+        setLessonTitle(parsed.lessonTitle || "Flashcard Mèo");
+
+        dataProcessed = true;
+      } catch (err) {
+        setErrorTitle("Meow meow...");
+        setErrorMessage(
+          "Dữ liệu flashcard bị lỗi rồi! Mèo đưa bạn về trang từ vựng nhé..."
+        );
+        setShowErrorModal(true);
+      }
+    };
+
+    loadFlashcardData();
+
+    // CHỈ XÓA SAU KHI ĐÃ LOAD XONG VÀ ĐÃ QUA 1 GIÂY LOADING
+    const cleanupTimer = setTimeout(() => {
+      if (dataProcessed) {
+        localStorage.removeItem("nekoFlashcardData");
+        console.log("Đã dọn dẹp nekoFlashcardData khỏi localStorage");
+      }
+    }, 1500); // đợi thêm 0.5s để chắc chắn state đã cập nhật
+
+    return () => {
+      clearTimeout(loadingTimer);
+      clearTimeout(cleanupTimer);
+    };
+  }, [onNavigate]);
+
+  // HIỆN LOADING 1 GIÂY ĐẦU TIÊN
+  if (isLoading) {
+    return (
+      <NekoLoading
+        message="Mèo đang chuẩn bị flashcard siêu dễ thương cho bạn..."
+        duration={0}
+      />
+    );
+  }
+  if (showErrorModal) {
+    return (
+      <NekoAlertModal
+        isOpen={showErrorModal}
+        onClose={() => {
+          setShowErrorModal(false);
+          onNavigate("vocabulary");
+        }}
+        title={errorTitle}
+        message={errorMessage}
+      />
+    );
+  }
+
+  // NẾU KHÔNG CÓ TỪ → HIỆN MÀN HÌNH LỖI DỄ THƯƠNG (tùy chọn)
+  if (words.length === 0) {
+    return (
+      <NekoAlertModal
+        isOpen={true}
+        onClose={() => onNavigate("vocabulary")}
+        title="Meow meow..."
+        message="Không có từ vựng để học rồi! Mèo đưa bạn về trang từ vựng nhé"
+      />
+    );
+  }
 
   const currentWord = words[currentIndex];
-  const progress =
-    words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0;
+  const progress = ((currentIndex + 1) / words.length) * 100;
 
-  const handleFlip = () => setIsFlipped(!isFlipped);
+  const handleFlip = () => setIsFlipped((prev) => !prev);
+
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
       setIsFlipped(false);
     }
   };
+
   const handleNext = () => {
     if (currentIndex === words.length - 1) {
       setShowEndModal(true);
@@ -61,47 +146,96 @@ export function FlashcardPage({
   };
 
   const handleContinue = () => {
-    console.log("Mèo vui quá! Bạn bấm Học tiếp rồi!");
-
     const allWordsJson = localStorage.getItem("nekoFlashcardAllWords");
     if (!allWordsJson) {
-      alert("Mèo lạc mất danh sách từ rồi! Về trang từ vựng nhé...");
-      onNavigate("vocabulary");
+      setShowLostWordsModal(true);
       return;
     }
 
     const allWords: Word[] = JSON.parse(allWordsJson);
-
-    // Tạo 10 từ mới – CHO PHÉP TRÙNG (siêu tự nhiên!)
-    const newWords = Array.from(
-      { length: 10 },
-      () => allWords[Math.floor(Math.random() * allWords.length)]
+    const learnedWords = new Set(words.map((w) => w.japanese));
+    const remainingWords = allWords.filter(
+      (word) => !learnedWords.has(word.japanese)
     );
+
+    let newWords: Word[] = [];
+
+    if (remainingWords.length >= 10) {
+      const shuffled = [...remainingWords].sort(() => Math.random() - 0.5);
+      newWords = shuffled.slice(0, 10);
+
+      // HIỆN MODAL SIÊU DỄ THƯƠNG
+      setContinueMessage(
+        "Mèo đã chọn 10 từ mới hoàn toàn khác lần trước cho bạn rồi đấy!"
+      );
+      setShowContinueMessage(true);
+    } else if (remainingWords.length > 0) {
+      newWords = [...remainingWords];
+      const needed = 10 - remainingWords.length;
+      const oldWords = allWords
+        .filter((word) => learnedWords.has(word.japanese))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, needed);
+      newWords.push(...oldWords);
+
+      setContinueMessage(
+        "Chỉ còn ít từ mới thôi, mèo bù thêm vài từ cũ để bạn ôn lại nhé!"
+      );
+      setShowContinueMessage(true);
+    } else {
+      newWords = [...allWords].sort(() => Math.random() - 0.5).slice(0, 10);
+      setShowAllDoneModal(true); // đã có modal riêng
+    }
 
     setWords((prev) => [...prev, ...newWords]);
     setCurrentIndex((prev) => prev + 1);
     setIsFlipped(false);
     setShowEndModal(false);
-
-    // MÈO VUI MỪNG KHI BẠN HỌC TIẾP!
-    alert("Mèo đã chuẩn bị thêm 10 từ mới cho bạn rồi! Meow meow!!!");
   };
-
-  if (words.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-900">
-        <div className="text-center">
-          <Cat className="w-32 h-32 mx-auto mb-8 animate-bounce text-pink-400" />
-          <p className="text-4xl font-bold text-white">
-            Đang chuẩn bị flashcard mèo...
-          </p>
-        </div>
-      </div>
+  {
+    /* MODAL KHI MÈO LẠC MẤT DANH SÁCH TỪ */
+  }
+  {
+    showLostWordsModal && (
+      <NekoAlertModal
+        isOpen={showLostWordsModal}
+        onClose={() => {
+          setShowLostWordsModal(false);
+          onNavigate("vocabulary");
+        }}
+        title="Meow meow..."
+        message="Mèo lạc mất danh sách từ rồi! Mèo đưa bạn về trang từ vựng nhé..."
+      />
     );
   }
-
+  {
+    /* MODAL KHI ĐÃ HỌC HẾT BÀI – SIÊU DỄ THƯƠNG, SIÊU TỰ HÀO */
+  }
+  {
+    showAllDoneModal && (
+      <NekoAlertModal
+        isOpen={showAllDoneModal}
+        onClose={() => setShowAllDoneModal(false)}
+        title="Tuyệt vời quá đi!!!"
+        message="Bạn đã học hết bài này rồi! Mèo tự hào về bạn lắm luôn á! Giờ mèo cho ôn lại 10 từ ngẫu nhiên nhé!"
+      />
+    );
+  }
+  {
+    /* MODAL THÔNG BÁO HỌC TIẾP – SIÊU VUI, SIÊU MÈO, SIÊU TÌNH CẢM */
+  }
+  {
+    showContinueMessage && (
+      <NekoAlertModal
+        isOpen={showContinueMessage}
+        onClose={() => setShowContinueMessage(false)}
+        title="Meow meow!!!"
+        message={continueMessage}
+      />
+    );
+  }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#D8C8FF]/30">
+    <div className="soft-gradient-background">
       <Navigation currentPage="flashcard" onNavigate={onNavigate} />
       <Background />
 
@@ -112,18 +246,18 @@ export function FlashcardPage({
 
         {/* Progress Bar */}
         <div className="w-full max-w-2xl mb-8">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <div className="metadata-row">
             <span>Tiến độ</span>
             <span>
               {currentIndex + 1} / {words.length}
             </span>
           </div>
-          <div className="h-4 bg-white rounded-full overflow-hidden shadow-inner">
+          <div className="progress-bar-shell">
             <div
-              className="h-full bg-gradient-to-r from-pink-400 to-purple-600 transition-all duration-500"
+              className="progress-bar-fill-animated"
               style={{ width: `${progress}%` }}
             >
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 text-xl animate-paw-walk"></div>
+              <div className="bouncing-absolute-badge">🐾🐾🐾</div>
             </div>
           </div>
         </div>
@@ -136,116 +270,94 @@ export function FlashcardPage({
               isFlipped ? "flipped" : ""
             } w-full h-full cursor-pointer`}
           >
-            <div className="flashcard-face flashcard-front absolute inset-0 bg-white rounded-[32px] shadow-2xl flex flex-col items-center justify-center p-8 backface-hidden">
-              <p className="text-8xl font-black text-gray-800">
-                {currentWord.japanese}
-              </p>
+            {/* Mặt trước */}
+            <div className="flashcard-front-face">
+              <p className="huge-dark-title">{currentWord.japanese}</p>
               {currentWord.kanji &&
                 currentWord.kanji !== currentWord.japanese && (
-                  <p className="text-5xl text-purple-500 mt-4 opacity-80">
-                    {currentWord.kanji}
-                  </p>
+                  <p className="sub-text-muted">{currentWord.kanji}</p>
                 )}
-              <p className="text-lg text-gray-500 mt-8">Nhấn để xem nghĩa</p>
-              <Cat className="absolute top-6 right-6 w-12 h-12 text-pink-400 animate-wiggle" />
+              <p className="caption-text-muted">Nhấn để xem nghĩa</p>
+              <Cat className="absolute-wiggle-icon" />
             </div>
 
-            <div className="flashcard-face flashcard-back absolute inset-0 bg-gradient-to-br from-pink-500 to-purple-600 rounded-[32px] shadow-2xl flex flex-col items-center justify-center p-8 backface-hidden">
-              <p className="text-6xl font-black text-white text-center">
-                {currentWord.vietnamese}
-              </p>
-              <p className="text-xl text-white/90 mt-6">Nhấn để quay lại</p>
-              <Sparkles className="absolute top-6 right-6 w-12 h-12 text-yellow-300 animate-pulse" />
+            {/* Mặt sau */}
+            <div className="flashcard-back-face">
+              <p className="centered-hero-text">{currentWord.vietnamese}</p>
+              <p className="caption-text-white-subtle">Nhấn để quay lại</p>
+              <Sparkles className="absolute-pulsing-icon" />
             </div>
           </div>
         </div>
 
-        {/* NÚT ĐIỀU HƯỚNG – SIÊU ĐẸP, SIÊU RÕ, SIÊU MÈO, KHÔNG THỂ KHÔNG THẤY! */}
+        {/* NÚT ĐIỀU HƯỚNG SIÊU ĐẸP */}
         <div className="flex items-center justify-center gap-12 mt-16">
-          {/* NÚT TRƯỚC – TO, ĐẸP, CÓ MÈO */}
           <button
             onClick={handlePrevious}
             disabled={currentIndex === 0}
-            className="group relative p-8 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl hover:shadow-pink-500/50 transform hover:scale-110 disabled:opacity-40 disabled:hover:scale-100 transition-all duration-300"
+            className="interactive-glass-card"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-purple-600/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500" />
-            <ChevronLeft
-              className="w-16 h-16 text-purple-600 group-hover:text-purple-800 transition-colors"
-              strokeWidth={4}
-            />
-            <Cat className="absolute -top-4 -left-4 w-12 h-12 text-pink-500 animate-bounce" />
+            <div className="gradient-blur-effect" />
+            <ChevronLeft className="interactive-icon" strokeWidth={4} />
+            <Cat className="bouncing-top-left-icon" />
           </button>
 
-          {/* MÈO Ở GIỮA – SIÊU DỄ THƯƠNG */}
           <div className="relative">
-            <Cat
-              className="w-24 h-24 text-pink-500 animate-bounce drop-shadow-2xl"
-              strokeWidth={3}
-            />
-            <Sparkles className="absolute -top-4 -right-4 w-10 h-10 text-yellow-400 animate-pulse" />
-            <Sparkles className="absolute -bottom-4 -left-4 w-8 h-8 text-purple-400 animate-pulse delay-300" />
+            <Cat className="bouncing-pink-icon-shadow" strokeWidth={3} />
+            <Sparkles className="absolute-pulsing-corner-icon" />
+            <Sparkles className="absolute-pulsing-bottom-icon" />
           </div>
 
-          {/* NÚT TIẾP THEO / HOÀN THÀNH – TO NHẤT, ĐẸP NHẤT */}
           <button
             onClick={handleNext}
-            className="group relative px-16 py-10 bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 rounded-3xl shadow-2xl hover:shadow-cyan-500/70 transform hover:scale-110 transition-all duration-500 overflow-hidden"
+            className="interactive-gradient-cta-card interactive-gradient-cta-card:hover"
           >
-            {/* Hiệu ứng glow */}
-            <div className="absolute inset-0 bg-white/30 blur-2xl group-hover:blur-3xl transition-all duration-700" />
-            <div className="absolute -inset-2 bg-gradient-to-r from-pink-400/50 to-cyan-400/50 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="glass-blur-effect group:hover glass-blur-effect" />
+            <div className="hover-gradient-glow-effect group:hover hover-gradient-glow-effect " />
 
-            <div className="relative flex items-center gap-6 text-white">
-              <span className="text-4xl font-black drop-shadow-2xl">
+            <div className="flex-centered-text-row">
+              <span className="heavy-shadowed-title">
                 {currentIndex === words.length - 1
                   ? "HOÀN THÀNH!"
                   : "TIẾP THEO"}
               </span>
               {currentIndex !== words.length - 1 && (
                 <ChevronRight
-                  className="w-14 h-14 animate-pulse"
+                  className="pulsing-element-medium"
                   strokeWidth={5}
                 />
               )}
               {currentIndex === words.length - 1 && (
                 <div className="flex gap-2">
-                  <span className="text-6xl animate-bounce">PARTY</span>
-                  <span className="text-6xl animate-bounce delay-100">
-                    PARTY
-                  </span>
-                  <span className="text-6xl animate-bounce delay-200">
-                    PARTY
-                  </span>
+                  <span className="text-6xl bouncing-animation">🥂</span>
+                  <span className="text-6xl bouncing-animation">🎉</span>
+                  <span className="text-6xl bouncing-animation">🍻</span>
                 </div>
               )}
             </div>
-
-            {/* Mèo nhỏ ở góc */}
-            <Cat className="absolute -bottom-6 -right-6 w-16 h-16 text-white/80 animate-wiggle" />
+            <Cat className="absolute-wiggle-corner-icon" />
           </button>
         </div>
 
         {/* Modal học tiếp */}
         {showEndModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="bg-white rounded-3xl p-12 max-w-lg text-center shadow-2xl">
-              <Cat className="w-32 h-32 mx-auto mb-6 text-pink-500 animate-bounce" />
-              <h2 className="text-5xl font-black text-purple-600 mb-4">
-                Siêu giỏi!
-              </h2>
-              <p className="text-2xl text-gray-700 mb-10">
+          <div className="modal-backdrop-dark">
+            <div className="modal-card-large">
+              <Cat className="bouncing-pink-icon-large" />
+              <h2 className="section-title-xl-bold">Siêu giỏi!</h2>
+              <p className="paragraph-large-spaced">
                 Bạn đã học xong 10 từ! Mèo tự hào về bạn lắm!
               </p>
               <div className="flex gap-8 justify-center">
                 <button
                   onClick={handleContinue}
-                  className="px-12 py-6 bg-gradient-to-r from-pink-500 to-purple-600 text-black rounded-2xl text-2xl font-bold hover:scale-110 transition-all"
+                  className="gradient-cta-button-large gradient-cta-button-large:hover"
                 >
                   Học tiếp 10 từ nữa!
                 </button>
                 <button
                   onClick={() => onNavigate("vocabulary")}
-                  className="px-12 py-6 bg-gray-400 text-black rounded-2xl text-2xl font-bold hover:scale-105 transition-all"
+                  className="gray-cta-button-large gray-cta-button-large:hover"
                 >
                   Về trang từ vựng
                 </button>
@@ -258,15 +370,597 @@ export function FlashcardPage({
       <Footer />
 
       <style>{`
-      @keyframes wiggle {
-    0%, 100% { transform: rotate(-10deg); }
-    50% { transform: rotate(10deg); }
+      .gray-cta-button-large {
+  /* px-12 py-6 */
+  padding-left: 3rem; 
+  padding-right: 3rem; 
+  padding-top: 1.5rem; 
+  padding-bottom: 1.5rem; 
+  
+  /* bg-gray-400 */
+  background-color: #9ca3af;
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* rounded-2xl */
+  border-radius: 1rem;
+  
+  /* text-2xl */
+  font-size: 1.5rem;
+  
+  /* font-bold */
+  font-weight: 700;
+  
+  /* transition-all */
+  transition: all 150ms ease-in-out;
+}
+
+/* Các hiệu ứng hover */
+.gray-cta-button-large:hover {
+  /* hover:scale-105 */
+  transform: scale(1.05);
+}
+      .gradient-cta-button-large {
+  /* px-12 py-6 */
+  padding-left: 3rem; 
+  padding-right: 3rem; 
+  padding-top: 1.5rem; 
+  padding-bottom: 1.5rem; 
+  
+  /* bg-gradient-to-r from-pink-500 to-purple-600 */
+  background-image: linear-gradient(to right, #ec4899, #7c3aed);
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* rounded-2xl */
+  border-radius: 1rem;
+  
+  /* text-2xl */
+  font-size: 1.5rem;
+  
+  /* font-bold */
+  font-weight: 700;
+  
+  /* transition-all */
+  transition: all 150ms ease-in-out;
+}
+
+/* Các hiệu ứng hover */
+.gradient-cta-button-large:hover {
+  /* hover:scale-110 */
+  transform: scale(1.1);
+}
+      .paragraph-large-spaced {
+  font-size: 1.5rem;
+  color: #374151;
+  margin-bottom: 2.5rem;
+}
+      .section-title-xl-bold {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #7c3aed;
+  margin-bottom: 1rem;
+}
+      
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
   }
-  .animate-wiggle { animation: wiggle 2s ease-in-out infinite; }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-pink-icon-large {
+  width: 8rem;
+  height: 8rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.5rem;
+  color: #ec4899;
+  animation: bounce 1s infinite;
+}
+      .modal-card-large {
+  background-color: #ffffff;
+  border-radius: 1.5rem; /* rounded-3xl */
+  padding: 3rem; /* p-12 */
+  max-width: 32rem; /* max-w-lg */
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+}
+      .modal-backdrop-dark {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  
+  /* bg-black/70 */
+  background-color: rgba(0, 0, 0, 0.7);
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* z-50 */
+  z-index: 50;
+}
+      @keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.absolute-wiggle-corner-icon {
+  position: absolute;
+  bottom: -1.5rem;
+  right: -1.5rem;
+  width: 4rem;
+  height: 4rem;
+  color: rgba(255, 255, 255, 0.8);
+  animation: wiggle 1s ease-in-out infinite;
+}
+      @keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulsing-element-medium {
+  width: 3.5rem;
+  height: 3.5rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+      .heavy-shadowed-title {
+  font-size: 2.25rem;
+  font-weight: 900;
+  
+  /* drop-shadow-2xl (Tailwind dùng filter: drop-shadow, thường áp dụng cho hình dạng không phải hình chữ nhật) */
+  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+}
+      .flex-centered-text-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* gap-6 */
+  color: #ffffff;
+}
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-animation {
+  animation: bounce 1s infinite;
+}
+      .glass-blur-effect {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  
+  /* bg-white/30 */
+  background-color: rgba(255, 255, 255, 0.3);
+  
+  /* blur-2xl (40px) */
+  filter: blur(40px); 
+  
+  /* transition-all duration-700 */
+  transition: all 700ms ease-in-out;
+}
+
+/* Tương tác Hover (Giả định phần tử cha có lớp '.group') */
+.group:hover .glass-blur-effect {
+  /* group-hover:blur-3xl (64px) */
+  filter: blur(64px); 
+}
+      .interactive-gradient-cta-card {
+  /* relative */
+  position: relative;
+  
+  /* px-16 py-10 */
+  padding-left: 4rem; 
+  padding-right: 4rem; 
+  padding-top: 2.5rem; 
+  padding-bottom: 2.5rem; 
+  
+  /* bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 */
+  background-image: linear-gradient(to bottom right, #ec4899, #7c3aed, #06b6d4);
+  
+  /* rounded-3xl */
+  border-radius: 1.5rem;
+  
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* transform (Trạng thái ban đầu) */
+  transform: scale(1);
+  
+  /* transition-all duration-500 */
+  transition: all 500ms ease-in-out;
+  
+  /* overflow-hidden */
+  overflow: hidden;
+}
+
+/* Tương tác Hover */
+.interactive-gradient-cta-card:hover {
+  /* hover:shadow-cyan-500/70 */
+  box-shadow: 0 25px 50px -12px rgba(6, 182, 212, 0.7); /* Tùy chỉnh bóng đổ màu xanh ngọc */
+  
+  /* hover:scale-110 */
+  transform: scale(1.1);
+}
+      @keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.absolute-pulsing-bottom-icon {
+  position: absolute;
+  bottom: -1rem;
+  left: -1rem;
+  width: 2rem;
+  height: 2rem;
+  color: #c084fc;
+  
+  /* animate-pulse */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  /* delay-300 (Độ trễ trước khi animation bắt đầu) */
+  animation-delay: 300ms;
+}
+      @keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.absolute-pulsing-corner-icon {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #facc15;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-pink-icon-shadow {
+  width: 6rem;
+  height: 6rem;
+  color: #ec4899;
+  animation: bounce 1s infinite;
+  
+  /* drop-shadow-2xl (Tailwind dùng filter: drop-shadow, thường áp dụng cho hình dạng không phải hình chữ nhật) */
+  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+}
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-top-left-icon {
+  position: absolute;
+  top: -1rem;
+  left: -1rem;
+  width: 3rem;
+  height: 3rem;
+  color: #ec4899;
+  animation: bounce 1s infinite;
+}
+      .interactive-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #7c3aed;
+  transition: color 150ms ease-in-out;
+}
+
+.group:hover .interactive-icon {
+  color: #4c1d95;
+}
+      .gradient-blur-effect {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: linear-gradient(to right, 
+    rgba(244, 114, 182, 0.2), 
+    rgba(126, 34, 206, 0.2)
+  );
+  border-radius: 1.5rem;
+  filter: blur(24px); 
+  transition: all 150ms ease-in-out;
+}
+
+.group:hover .gradient-blur-effect {
+  filter: blur(40px);
+}
+      .interactive-glass-card {
+  position: relative;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: scale(1);
+  transition: all 300ms ease-in-out;
+}
+
+.interactive-glass-card:hover {
+  box-shadow: 0 25px 50px -12px rgba(236, 72, 153, 0.5);
+  transform: scale(1.1);
+}
+
+.interactive-glass-card[disabled] {
+  opacity: 0.4;
+  transform: scale(1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+  cursor: not-allowed;
+}
+      @keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.absolute-pulsing-icon {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  color: #fcd34d;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+      .caption-text-white-subtle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 1.5rem;
+}
+      .centered-hero-text {
+  font-size: 3.75rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+}
+.flashcard-back-face {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: linear-gradient(to bottom right, #ec4899, #7c3aed);
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  
+  /* Cần thiết cho hiệu ứng lật 3D */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  
+  /* *************************************** */
+  /* BỔ SUNG: Xoay mặt sau 180 độ theo trục Y */
+  /* *************************************** */
+  transform: rotateY(180deg); 
+}
+
+/* @keyframes wiggle (Giữ nguyên) */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.absolute-wiggle-icon {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  color: #f472b6;
+  animation: wiggle 1s ease-in-out infinite;
+}
+      .caption-text-muted {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin-top: 2rem;
+}
+      .sub-text-muted {
+  font-size: 3rem;
+  color: #a855f7;
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+      .huge-dark-title {
+  font-size: 6rem;
+  font-weight: 900;
+  color: #1f2937;
+}
+      .flashcard-front-face {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #ffffff;
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  
+  /* Cần thiết cho hiệu ứng lật 3D */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-absolute-badge {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  
+  /* -translate-y-1/2 translate-x-1/2 */
+  transform: translateY(-50%) translateX(50%);
+  
+  font-size: 1.5rem;
+  animation: bounce 1s infinite;
+}
+      .progress-bar-fill-animated {
+  height: 100%;
+  background-image: linear-gradient(to right, #f472b6, #7c3aed);
+  transition: all 500ms ease-in-out;
+  position: relative;
+}
+      .progress-bar-shell {
+  height: 1rem;
+  background-color: #ffffff;
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+      .metadata-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+      .glass-button {
+  /* px-10 py-5 */
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  
+  /* bg-white/20 */
+  background-color: rgba(255, 255, 255, 0.2);
+  
+  /* backdrop-blur-xl */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  
+  /* rounded-2xl */
+  border-radius: 1rem;
+  
+  /* text-white text-2xl font-bold */
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  
+  /* transition-all */
+  transition: all 150ms ease-in-out;
+}
+
+/* Các hiệu ứng hover */
+.glass-button:hover {
+  /* hover:bg-white/30 */
+  background-color: rgba(255, 255, 255, 0.3);
+}
+      @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.bouncing-pink-icon {
+  width: 10rem;
+  height: 10rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2rem;
+  animation: bounce 1s infinite;
+  color: #f472b6;
+}
+      .dark-full-screen-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: linear-gradient(to bottom right, #581c87, #831843);
+}
+      .soft-gradient-background {
+  min-height: 100vh;
+  background-image: linear-gradient(to bottom right, #FFF6E9, rgba(255, 199, 234, 0.2), rgba(216, 200, 255, 0.3));
+}
         .perspective-1000 {
           perspective: 1000px;
         }
         .flashcard-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
           transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           transform-style: preserve-3d;
         }
@@ -274,11 +968,16 @@ export function FlashcardPage({
           transform: rotateY(180deg);
         }
         .flashcard-face {
+          position: absolute;
+          width: 100%;
+          height: 100%;
           backface-visibility: hidden;
+          border-radius: 32px;
         }
         .flashcard-back {
           transform: rotateY(180deg);
         }
+
         @keyframes wiggle {
           0%,
           100% {
@@ -288,24 +987,14 @@ export function FlashcardPage({
             transform: rotate(8deg);
           }
         }
-        @keyframes bounce-cat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-20px);
-          }
-        }
         .animate-wiggle {
-          animation: wiggle 2s infinite;
+          animation: wiggle 2s ease-in-out infinite;
         }
-        .animate-bounce-cat {
-          animation: bounce-cat 2s infinite;
-        }
+
         .hero-text-glow {
-          text-shadow: 0 0 30px rgba(255, 105, 180, 0.8),
-            0 0 60px rgba(160, 32, 240, 0.6);
+          text-shadow: 0 0 20px #ff69b4, 0 0 40px #a020f0, 0 0 60px #00ffff,
+            0 0 80px #ff69b4, 0 0 100px #a020f0, 0 4px 20px rgba(0, 0, 0, 0.9);
+          filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.8));
         }
       `}</style>
     </div>

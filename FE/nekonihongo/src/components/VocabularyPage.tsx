@@ -5,6 +5,8 @@ import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
 import api from "../api/auth";
+import { NekoLoading } from "../components/NekoLoading";
+import { NekoAlertModal } from "../components/NekoAlertModal";
 
 interface Word {
   japanese: string;
@@ -31,8 +33,9 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [lessonPage, setLessonPage] = useState(1);
   const [wordPage, setWordPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showNoLessonModal, setShowNoLessonModal] = useState(false);
 
   const LESSONS_PER_PAGE = 12;
   const WORDS_PER_PAGE = 12;
@@ -41,77 +44,82 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Diagnostic logs to help debug 401 Unauthorized
-        const token = localStorage.getItem("accessToken");
-        console.debug("VocabularyPage: accessToken present:", !!token);
-        if (token)
-          console.debug(
-            "VocabularyPage: accessToken (head):",
-            token.slice(0, 12) + "..."
-          );
-        console.debug("VocabularyPage: api.baseURL", api.defaults.baseURL);
+        console.log("Bắt đầu tải từ vựng mèo... Meow!");
 
         const res = await api.get("/vocabulary/lessons");
-        setLessons(res.data.data || []);
+        const serverLessons = res.data.data || [];
+
+        console.log(
+          "Tải thành công từ server thành công!",
+          serverLessons.length,
+          "bài học"
+        );
+
+        // Đảm bảo loading hiện ít nhất 1.5 giây – trải nghiệm mượt mà, sang trọng
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        setLessons(serverLessons);
       } catch (err: any) {
+        console.error("Lỗi khi tải từ vựng:", err);
+
         if (err.response?.status === 401) {
-          console.warn(
-            "VocabularyPage: received 401 from /vocabulary/lessons — falling back to local data and redirecting to login."
-          );
-          setLessons(localVocabularyLessons || []);
-          alert("Phiên đăng nhập hết hạn! Đang chuyển về trang đăng nhập...");
+          console.warn("Token hết hạn – mèo đưa bạn về login...");
+          alert("Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé");
+
+          // Xóa hết dữ liệu đăng nhập
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("nekoUser");
+
+          // Chuyển về login
           onNavigate("login");
           return;
         }
-        setError("Không thể tải từ vựng. Vui lòng thử lại sau.");
+
+        // Các lỗi khác (500, mạng, v.v.) → fallback local data + thông báo
+        setLessons(localVocabularyLessons || []);
+        setError(
+          "Không thể kết nối đến server! Mèo đã tải dữ liệu mẫu cho bạn rồi"
+        );
       } finally {
-        setLoading(false);
+        // Đảm bảo loading tắt sau đúng 1.5s dù có lỗi hay không
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 600);
       }
     };
+
     fetchData();
   }, [onNavigate]);
+  // Bắt đầu học flashcard từ bài đã chọn
   const handleStartFlashcard = () => {
-    if (!selectedLesson) {
-      alert("Mèo chưa thấy bài nào để học flashcard cả!");
+    if (!selectedLesson || selectedLesson.words.length === 0) {
+      setShowNoLessonModal(true);
       return;
     }
 
-    const allWords = selectedLesson.words;
-    if (allWords.length === 0) {
-      alert("Bài này chưa có từ vựng nào! Mèo buồn quá...");
-      return;
-    }
-
-    // Tạo 10 từ ngẫu nhiên (cho phép trùng nếu bài ít hơn 10 từ)
-    let selectedWords = [...allWords];
+    // === CÓ BÀI HỌC + CÓ TỪ → VÀO FLASHCARD NGAY! ===
+    let selectedWords = [...selectedLesson.words];
     if (selectedWords.length > 10) {
       selectedWords = selectedWords
         .sort(() => Math.random() - 0.5)
         .slice(0, 10);
     }
 
-    // LƯU DỮ LIỆU – QUAN TRỌNG NHẤT!!!
-    const flashcardData = {
-      lessonId: selectedLesson.id,
-      lessonTitle: selectedLesson.title,
-      icon: selectedLesson.icon || "Cat",
-      words: selectedWords,
-      totalWordsInLesson: allWords.length,
-    };
+    localStorage.setItem(
+      "nekoFlashcardData",
+      JSON.stringify({
+        lessonId: selectedLesson.id,
+        lessonTitle: selectedLesson.title,
+        words: selectedWords,
+      })
+    );
+    localStorage.setItem(
+      "nekoFlashcardAllWords",
+      JSON.stringify(selectedLesson.words)
+    );
 
-    // DÙNG CHÍNH XÁC TÊN KEY NÀY → KHÔNG ĐƯỢC SAI 1 KÝ TỰ!
-    localStorage.setItem("nekoFlashcardData", JSON.stringify(flashcardData));
-
-    // LƯU TOÀN BỘ TỪ ĐỂ HỌC TIẾP (BẮT BUỘC!)
-    localStorage.setItem("nekoFlashcardAllWords", JSON.stringify(allWords));
-
-    console.log("Đã lưu flashcard data vào localStorage!", flashcardData);
-
-    // Chuyển trang
-    onNavigate("flashcard");
+    requestAnimationFrame(() => onNavigate("flashcard"));
   };
   // TÌM KIẾM THẬT TỪ BACKEND
   const searchResults = useMemo(() => {
@@ -129,7 +137,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
     // Vì useMemo không hỗ trợ async trực tiếp → dùng trick
     let results: { word: Word; lessonId: number }[] = [];
     if (searchQuery) {
-      // Bạn có thể gọi API thật ở đây nếu muốn, tạm thời dùng client-side search
       const query = searchQuery.toLowerCase();
       lessons.forEach((lesson) => {
         lesson.words.forEach((word) => {
@@ -163,25 +170,10 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const totalWordPages = selectedLesson
     ? Math.ceil(selectedLesson.words.length / WORDS_PER_PAGE)
     : 0;
-  // Loading & Error
-  // if (loading) {
-  //   return (
-  //     <div className="full-screen-gradient-center">
-  //       <div className="text-center">
-  //         <div className="w-32 h-32 mx-auto mb-8">
-  //           <img
-  //             src="/neko-loading.gif"
-  //             alt="Neko đang tải..."
-  //             className="w-full h-full"
-  //           />
-  //         </div>
-  //         <p className="text-4xl font-bold text-white animate-pulse">
-  //           Đang tải từ vựng mèo...
-  //         </p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  // Render
+  if (isLoading) {
+    return <NekoLoading message="Đang tải từ vựng mèo..." />;
+  }
 
   if (error) {
     return (
@@ -189,7 +181,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         <p className="text-3xl font-bold text-red-400">{error}</p>
       </div>
     );
-    0;
   }
 
   return (
@@ -211,12 +202,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           {/* THANH TÌM KIẾM SIÊU ĐỈNH – VIỀN NỔI BẬT + TEXT CĂN GIỮA */}
           <div className="max-w-4xl mx-auto">
             <div className="relative group ">
-              {/* VIỀN NEON CHẠY VÒNG QUANH – SIÊU SÁNG, SIÊU ĐẸP */}
-              {/* <div className="gradient-border-effect" /> */}
-
-              {/* VIỀN NEON THỨ 2 – TĂNG ĐỘ DÀY + SÁNG */}
-              {/* <div className="pulsing-gradient-aura" /> */}
-
               {/* Thanh input chính – nền trắng mờ, viền sáng, bóng đẹp */}
               <div className="glass-effect-container animate-fade-in">
                 {/* ICON TÌM KIẾM SIÊU NỔI */}
@@ -291,10 +276,10 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                       <Cat className="relative w-full h-full" />
                     </div>
                     <div className="text-center py-6">
-                      <p className="hero-text-glow text-white text-2xl">
+                      <p className="hero-text-glow text-white text-4xl">
                         Bài {lesson.id}
                       </p>
-                      <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
+                      <p className="hero-text-glow text-2xl text-white  mt-2 px-4 line-clamp-2">
                         {lesson.title}
                       </p>
                     </div>
@@ -354,27 +339,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
                 <h2 className=" text-3xl hero-text-glow text-white">
                   {selectedLesson.title}
                 </h2>
-                <div className="flex justify-center mt-16 mb-10">
-                  <button
-                    onClick={handleStartFlashcard}
-                    className="group relative px-16 py-10 bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 rounded-3xl shadow-2xl hover:shadow-pink-500/70 transform hover:scale-110 transition-all duration-500 overflow-hidden"
-                  >
-                    {/* Hiệu ứng glow neon + mèo bay */}
-                    <div className="absolute inset-0 bg-white/30 blur-2xl group-hover:blur-3xl transition-all duration-700" />
-                    <div className="absolute -inset-4 bg-gradient-to-r from-pink-400/50 via-purple-500/50 to-cyan-400/50 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    <div className="text-left">
-                      <p className="text-5xl font-black drop-shadow-2xl tracking-wider">
-                        HỌC FLASHCARD
-                      </p>
-                      <p className="text-2xl font-bold opacity-90 mt-2">
-                        10 từ ngẫu nhiên • Siêu thú vị • Có mèo!
-                      </p>
-                      {/* Hiệu ứng lấp lánh */}
-                      <Sparkles className="w-16 h-16 animate-pulse" />
-                      <Sparkles className="w-12 h-12 animate-pulse delay-75" />
-                    </div>
-                  </button>
-                </div>
                 <button
                   onClick={() => setSelectedLesson(null)}
                   className="button"
@@ -444,30 +408,196 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           </div>
         )}
       </main>
-      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
-        <img
-          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
-          alt="Flying Neko"
-          className="w-40 h-40 
-               sm:w-24 sm:h-24 
-               md:w-28 md:h-28 
-               lg:w-32 lg:h-32 
-               xl:w-36 xl:h-36 
-               rounded-full object-cover 
-               shadow-2xl 
-               animate-fly 
-               drop-shadow-2xl"
-          style={{
-            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
-          }}
-        />
+      {/* MÈO BAY SIÊU DỄ THƯƠNG – HOVER HIỆN BONG BÓNG CHAT + CLICK VÀO HỌC FLASHCARD */}
+      <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
+        <div
+          className="relative group cursor-pointer"
+          onClick={handleStartFlashcard}
+        >
+          {/* Bong bóng chat – chỉ hiện khi hover */}
+          <div className="tooltip-slide-out">
+            <div className="colored-border-label">
+              <p className="text-xl font-bold drop-shadow-md">
+                Đi học flashcard nào!
+              </p>
+              <div className="absolute bottom-0 right-8 translate-y-full">
+                <div className="triangle-down-pink"></div>
+              </div>
+            </div>
+            <div className="absolute bottom-full mb-2 right-12 text-4xl animate-bounce">
+              ✨
+            </div>
+          </div>
+
+          {/* Mèo bay – có hiệu ứng hover nhẹ */}
+          <img
+            src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+            alt="Flying Neko"
+            className="responsive-circular-image-hover"
+            style={{
+              filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.6))",
+            }}
+          />
+
+          {/* Hiệu ứng lấp lánh khi hover */}
+          <div className="circular-gradient-hover-glow"></div>
+        </div>
       </div>
 
       <Footer />
 
       <style>{`
 
-      .responsive-hover-card {
+      .circular-gradient-hover-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 9999px;
+  background-image: linear-gradient(to right, 
+    rgba(244, 114, 182, 0.3), /* Pink-400/30 */
+    rgba(168, 85, 247, 0.3)  /* Purple-400/30 */
+  );
+  opacity: 0;
+  transition: opacity 500ms ease-in-out;
+  filter: blur(24px); 
+}
+
+.group:hover .circular-gradient-hover-glow {
+  opacity: 1;
+}
+
+      @keyframes fly {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+}
+
+.responsive-circular-image-hover {
+  width: 10rem;
+  height: 10rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: fly 6s ease-in-out infinite; 
+  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+  transform: scale(1) rotate(0deg);
+  transition: all 300ms ease-in-out;
+  border-width: 4px;
+  border-style: solid;
+  border-color: #f9a8d4;
+}
+
+@media (min-width: 640px) {
+  .responsive-circular-image-hover {
+    width: 6rem;
+    height: 6rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-circular-image-hover {
+    width: 7rem;
+    height: 7rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-circular-image-hover {
+    width: 8rem;
+    height: 8rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-circular-image-hover {
+    width: 9rem;
+    height: 9rem;
+  }
+}
+
+.group:hover .responsive-circular-image-hover {
+  transform: scale(1.1) rotate(12deg);
+}
+      .triangle-down-pink {
+  width: 0;
+  height: 0;
+  border-left-width: 8px;
+  border-left-style: solid;
+  border-left-color: transparent;
+  border-right-width: 8px;
+  border-right-style: solid;
+  border-right-color: transparent;
+  border-top-width: 8px;
+  border-top-style: solid;
+  border-top-color: #f9a8d4;
+}
+
+      .colored-border-label {
+  background-color: #ffffff;
+  color: #6d28d9;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  border-width: 4px;
+  border-style: solid;
+  border-color: #f9a8d4;
+}
+      .tooltip-slide-out {
+  position: absolute;
+  bottom: 100%; 
+  margin-bottom: 1rem; 
+  right: 0; 
+  transform: translateX(2rem); 
+  opacity: 0; 
+  transition: all 500ms ease-in-out; 
+  pointer-events: none;
+}
+
+.group:hover .tooltip-slide-out {
+  opacity: 1; 
+  transform: translateX(0); 
+}
+      .pulsing-animation {
+  /* Khai báo animation: pulse, chu kỳ 2s, lặp vô hạn, timing function default */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Định nghĩa keyframes cho hiệu ứng pulse */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1; /* Bắt đầu và kết thúc với độ mờ đầy đủ */
+  }
+  50% {
+    opacity: 0.4; /* Giảm độ mờ xuống 40% ở giữa chu kỳ */
+  }
+}
+      .bold-subheading-style {
+  /* text-2xl */
+  font-size: 1.5rem; /* 24px */
+  line-height: 2rem; /* 32px */
+  
+  /* font-bold */
+  font-weight: 700; 
+  
+  /* opacity-90 */
+  opacity: 0.9; 
+  
+  /* mt-2 */
+  margin-top: 0.5rem; /* 8px */
+}
+  .responsive-hover-card {
   /* group */
   /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
   
@@ -1269,6 +1399,16 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         }
         
   `}</style>
+      <NekoAlertModal
+        isOpen={showNoLessonModal}
+        onClose={() => setShowNoLessonModal(false)}
+        title="Meow meow..."
+        message={
+          !selectedLesson
+            ? "Hãy chọn 1 bài học trước nhé"
+            : "Bài này chưa có từ vựng nào cả... Mèo buồn quá!"
+        }
+      />
     </div>
   );
 }
