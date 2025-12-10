@@ -125,7 +125,8 @@ export function FlashcardPage({
   }
 
   const currentWord = words[currentIndex];
-  const progress = ((currentIndex + 1) / words.length) * 100;
+  const progress =
+    words.length > 0 ? (((currentIndex % 10) + 1) / 10) * 100 : 0;
 
   const handleFlip = () => setIsFlipped((prev) => !prev);
 
