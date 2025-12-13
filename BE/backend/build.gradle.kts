@@ -6,7 +6,7 @@ plugins {
 
 group = "com.nekonihongo"
 version = "1.0.0"
-java.sourceCompatibility = JavaVersion.VERSION_21
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()

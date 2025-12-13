@@ -12,10 +12,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -140,5 +142,32 @@ public class UserController {
                 user.getGrammarProgress(),
                 user.getExerciseProgress(),
                 user.getJoinDate());
+    }
+
+    @PostMapping("/api/user/progress/vocabulary")
+    @Transactional // QUAN TRỌNG NHẤT – BẮT BUỘC PHẢI CÓ!
+    public ResponseEntity<ApiResponse<String>> recordFlashcardProgress(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody Map<String, Integer> body) {
+
+        // BẢO VỆ NULL – SIÊU AN TOÀN
+        if (currentUser == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.error("Chưa đăng nhập! Mèo không biết bạn là ai!"));
+        }
+
+        int learnedCount = body.getOrDefault("learnedCount", 0);
+        if (learnedCount <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Số từ không hợp lệ"));
+        }
+
+        // GHI VÀO DB – CỘNG DỒN CHÍNH XÁC
+        Integer current = Optional.ofNullable(currentUser.getVocabularyProgress()).orElse(0);
+        currentUser.setVocabularyProgress(current + learnedCount);
+        userRepository.save(currentUser);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Học thêm " + learnedCount + " từ! Tổng: " + currentUser.getVocabularyProgress() + " từ"));
     }
 }

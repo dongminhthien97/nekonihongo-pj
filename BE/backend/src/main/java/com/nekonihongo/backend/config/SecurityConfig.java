@@ -25,68 +25,71 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+        private final JwtAuthenticationFilter jwtAuthFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 401 khi chưa login
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, authException) -> {
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            res.getWriter().write(
-                                    "{\"error\": \"Unauthorized\", \"message\": \"Token không hợp lệ hoặc hết hạn\"}");
-                        })
-                        // 403 khi đã login nhưng không đủ quyền
-                        .accessDeniedHandler((req, res, accessDeniedException) -> {
-                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            res.setContentType("application/json");
-                            res.getWriter()
-                                    .write("{\"error\": \"Forbidden\", \"message\": \"Bạn không có quyền truy cập\"}");
-                        }))
+                                // 401 khi chưa login
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((req, res, authException) -> {
+                                                        res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        res.setContentType("application/json");
+                                                        res.getWriter().write(
+                                                                        "{\"error\": \"Unauthorized\", \"message\": \"Token không hợp lệ hoặc hết hạn\"}");
+                                                })
+                                                // 403 khi đã login nhưng không đủ quyền
+                                                .accessDeniedHandler((req, res, accessDeniedException) -> {
+                                                        res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                                        res.setContentType("application/json");
+                                                        res.getWriter()
+                                                                        .write("{\"error\": \"Forbidden\", \"message\": \"Bạn không có quyền truy cập\"}");
+                                                }))
 
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
-                                "/swagger-resources/**", "/webjars/**")
-                        .permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-resources/**", "/webjars/**")
+                                                .permitAll()
+                                                .requestMatchers("/api/user/progress/vocabulary").authenticated()
+                                                .requestMatchers("/api/auth/**").permitAll()
 
-                        .requestMatchers("/api/user/me/**").authenticated()
+                                                .requestMatchers("/api/user/me/**").authenticated()
 
-                        // Admin
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                                // Admin
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        .anyRequest().authenticated())
+                                                .anyRequest().authenticated())
 
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        // CHO PHÉP CẢ VITE (5173) VÀ REACT (3000)
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:5173"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowCredentials(true);
+                // CHO PHÉP CẢ VITE (5173) VÀ REACT (3000)
+                config.setAllowedOrigins(List.of(
+                                "http://localhost:5173",
+                                "http://localhost:3000",
+                                "http://127.0.0.1:5173"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", config);
+                return source;
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return NoOpPasswordEncoder.getInstance();
+        }
 }
