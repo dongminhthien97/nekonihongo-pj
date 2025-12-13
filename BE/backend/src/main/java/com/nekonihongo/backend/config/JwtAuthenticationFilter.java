@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -23,7 +22,6 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
-@Order(1) // ensure this filter runs early
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -31,10 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    // paths that should be excluded from JWT checks
-    private static final String[] WHITELIST = new String[] {
-            "/api/auth",
-            "/swagger-ui",
+    // Danh sách các path KHÔNG CẦN kiểm tra JWT (permitAll)
+    private static final String[] WHITELIST = {
+            "/api/auth/",
+            "/api/grammar/",
+            "/api/vocabulary/",
+            "/swagger-ui/",
             "/v3/api-docs",
             "/swagger-resources",
             "/webjars",
@@ -45,47 +45,71 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
-        return java.util.Arrays.stream(WHITELIST).anyMatch(path::startsWith);
+        if (log.isDebugEnabled()) {
+            log.debug("JwtAuthFilter - Checking shouldNotFilter for path: {}", path);
+        }
+
+        boolean shouldSkip = path.startsWith("/api/auth/") ||
+                path.startsWith("/api/grammar/") ||
+                path.startsWith("/api/vocabulary/") ||
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-resources") ||
+                path.startsWith("/webjars/") ||
+                path.equals("/error") ||
+                path.equals("/favicon.ico");
+
+        if (log.isDebugEnabled()) {
+            log.debug("JwtAuthFilter - shouldNotFilter = {}", shouldSkip);
+        }
+
+        return shouldSkip;
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        String authHeader = request.getHeader("Authorization");
+        final String path = request.getRequestURI();
+        final String authHeader = request.getHeader("Authorization");
 
         if (log.isDebugEnabled()) {
-            log.debug("JwtAuthFilter - requestURI={}", path);
+            log.debug("JwtAuthFilter - Processing request: {}", path);
             log.debug("JwtAuthFilter - Authorization header present: {}", authHeader != null);
         }
 
-        // No header or not a Bearer token -> skip (security will handle access)
+        // Nếu không có header Bearer → bỏ qua validate (SecurityConfig sẽ quyết định
+        // permit hay không)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            if (log.isDebugEnabled())
-                log.debug("JwtAuthFilter - no Bearer token, skipping filter");
+            if (log.isDebugEnabled()) {
+                log.debug("JwtAuthFilter - No Bearer token found, skipping authentication");
+            }
             filterChain.doFilter(request, response);
             return;
         }
 
-        String jwt = authHeader.substring(7);
+        final String jwt = authHeader.substring(7);
         String email = null;
+
         try {
             email = jwtService.extractEmail(jwt);
         } catch (Exception e) {
-            if (log.isDebugEnabled())
-                log.debug("JwtAuthFilter - failed to extract email from token: {}", e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("JwtAuthFilter - Invalid token format: {}", e.getMessage());
+            }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("JwtAuthFilter - extracted email={}", email);
-            log.debug("JwtAuthFilter - token valid={}", jwtService.isTokenValid(jwt));
+            log.debug("JwtAuthFilter - Extracted email: {}", email);
         }
 
+        // Chỉ authenticate nếu chưa có authentication và token hợp lệ
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
                 if (jwtService.isTokenValid(jwt)) {
                     var authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -93,14 +117,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    if (log.isDebugEnabled())
-                        log.debug("JwtAuthFilter - authentication set for user={}", userDetails.getUsername());
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("JwtAuthFilter - Authentication set for user: {}", email);
+                    }
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("JwtAuthFilter - Token expired or invalid for user: {}", email);
+                    }
                 }
             } catch (Exception e) {
-                // token invalid or user load failed -> clear context
+                if (log.isDebugEnabled()) {
+                    log.debug("JwtAuthFilter - Failed to load user or validate token: {}", e.getMessage());
+                }
                 SecurityContextHolder.clearContext();
-                if (log.isDebugEnabled())
-                    log.debug("JwtAuthFilter - authentication failed: {}", e.getMessage());
             }
         }
 

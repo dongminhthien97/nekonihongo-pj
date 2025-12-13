@@ -51,19 +51,24 @@ public class SecurityConfig {
 
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
-                                                                "/v3/api-docs/**",
-                                                                "/swagger-resources/**", "/webjars/**")
+                                                                "/v3/api-docs/**", "/swagger-resources/**",
+                                                                "/webjars/**")
                                                 .permitAll()
-                                                .requestMatchers("/api/user/progress/vocabulary").authenticated()
-                                                .requestMatchers("/api/auth/**").permitAll()
 
+                                                // CÁC API CÔNG KHAI PHẢI ĐẶT TRƯỚC .anyRequest()
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/grammar/**").permitAll() // <-- ĐẶT TRƯỚC
+                                                .requestMatchers("/api/vocabulary/**").permitAll() // nếu có
+
+                                                // CÁC API CẦN AUTH
+                                                .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()
 
                                                 // Admin
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                                                // Tất cả còn lại cần đăng nhập
                                                 .anyRequest().authenticated())
-
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
