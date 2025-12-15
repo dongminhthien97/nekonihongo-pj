@@ -1,11 +1,17 @@
 // src/pages/GrammarPage.tsx
 import { useState, useEffect } from "react";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Cat,
+  ChevronDown,
+  Sparkles,
+} from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
-import api from "../api/auth"; // axios instance có token
+import api from "../api/auth";
 
 const LESSONS_PER_PAGE = 5;
 const GRAMMAR_PER_PAGE = 10;
@@ -40,19 +46,14 @@ export function GrammarPage({
   const [grammarPage, setGrammarPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedExamples, setExpandedExamples] = useState<number[]>([]); // index của point đang mở ví dụ
 
   useEffect(() => {
     const fetchGrammarLessons = async () => {
       console.log("🐱 Bắt đầu tải danh sách bài học ngữ pháp... Meow!");
 
       try {
-        console.log("📡 Đang gọi API: GET /grammar/lessons"); // log URL frontend gọi
-
-        const res = await api.get("/grammar/lessons"); // <-- ĐÃ FIX: XÓA "/api" ĐẦU
-
-        console.log("✅ Nhận phản hồi từ server:", res.status, res.statusText);
-        console.log("📦 Response data:", res.data);
-
+        const res = await api.get("/grammar/lessons");
         const serverLessons = res.data.data || [];
 
         console.log(
@@ -65,49 +66,21 @@ export function GrammarPage({
 
         setLessons(serverLessons);
         setError("");
-
-        console.log("✔️ Đã cập nhật state lessons với dữ liệu từ server");
       } catch (err: any) {
         console.error("❌ Lỗi khi tải ngữ pháp:", err);
 
-        if (err.response) {
-          console.error("Status:", err.response.status);
-          console.error("Response data:", err.response.data);
-          console.error("Headers:", err.response.headers);
-
-          if (err.response.status === 401) {
-            console.warn(
-              "🔒 401 – Token hết hạn hoặc không hợp lệ – chuyển về login"
-            );
-            alert(
-              "Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé"
-            );
-
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            localStorage.removeItem("nekoUser");
-
-            onNavigate("login");
-            return;
-          }
-
-          if (err.response.status === 404) {
-            console.warn("🔍 404 – Endpoint không tồn tại");
-            setError("Không tìm thấy API ngữ pháp. Kiểm tra backend!");
-          }
-        } else if (err.request) {
-          console.error("🌐 Không nhận được phản hồi từ server", err.request);
-          setError("Không thể kết nối đến server! Mèo đang cố gắng...");
-        } else {
-          console.error("🚨 Lỗi setup request:", err.message);
-          setError("Lỗi không xác định khi tải dữ liệu");
+        if (err.response?.status === 401) {
+          alert("Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("nekoUser");
+          onNavigate("login");
+          return;
         }
+
+        setError("Không thể kết nối đến server! Mèo đang cố gắng...");
       } finally {
-        console.log("⏳ Đang tắt loading sau 1.5 giây...");
-        setTimeout(() => {
-          setIsLoading(false);
-          console.log("✅ Loading đã tắt");
-        }, 1500);
+        setTimeout(() => setIsLoading(false), 1500);
       }
     };
 
@@ -130,19 +103,25 @@ export function GrammarPage({
       grammarPage * GRAMMAR_PER_PAGE
     ) || [];
 
-  // HIỆN LOADING SIÊU ĐẸP
+  const toggleExample = (pointIndex: number) => {
+    setExpandedExamples((prev) =>
+      prev.includes(pointIndex)
+        ? prev.filter((i) => i !== pointIndex)
+        : [...prev, pointIndex]
+    );
+  };
+
   if (isLoading) {
     return (
       <NekoLoading message="Mèo đang chuẩn bị bài học ngữ pháp cho bạn..." />
     );
   }
 
-  // LỖI KẾT NỐI
   if (error && lessons.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-900">
+      <div className="full-page-dark-gradient-center">
         <div className="text-center text-white">
-          <div className="text-9xl animate-bounce">Meow</div>
+          <Cat className="text-9xl animate-bounce" />
           <p className="text-4xl font-bold mb-8">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -161,12 +140,10 @@ export function GrammarPage({
       <Navigation currentPage="grammar" onNavigate={onNavigate} />
 
       <main className="container mx-auto px-4 py-12 relative z-10">
-        {/* Tiêu đề */}
         <div className="text-center mb-12">
           <h1 className="hero-title-style hero-text-glow">
             Ngữ Pháp Tiếng Nhật
           </h1>
-          <p className="pulsing-hero-caption">Học cùng mèo siêu dễ thương!</p>
         </div>
 
         {/* Danh sách bài học */}
@@ -182,14 +159,12 @@ export function GrammarPage({
                   }}
                   className="interactive-blur-card"
                 >
-                  <div className="text-4xl animate-pulse-soft">
-                    {lesson.icon}
-                  </div>
+                  <Cat className="full-bounce-pink-element" strokeWidth={2} />
                   <div className="text-center">
-                    <p className="hero-text-glow text-white text-2xl">
+                    <p className="hero-text-glow text-white text-4xl">
                       Bài {lesson.id}
                     </p>
-                    <p className="hero-text-glow text-white mt-2 px-4 line-clamp-2">
+                    <p className="hero-text-glow text-2xl text-white mt-2 px-4 line-clamp-2">
                       {lesson.title}
                     </p>
                   </div>
@@ -197,14 +172,12 @@ export function GrammarPage({
               ))}
             </div>
 
-            {/* Phân trang bài học */}
             {totalLessonPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-12">
                 <button
                   onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
                   disabled={lessonPage === 1}
                   className="custom-button"
-                  aria-label="Previous lessons page"
                 >
                   <ChevronLeft className="w-6 h-6 text-black" />
                 </button>
@@ -231,7 +204,6 @@ export function GrammarPage({
                   }
                   disabled={lessonPage === totalLessonPages}
                   className="circular-icon-button"
-                  aria-label="Next lessons page"
                 >
                   <ChevronRight className="w-6 h-6 text-black" />
                 </button>
@@ -240,160 +212,146 @@ export function GrammarPage({
           </>
         )}
 
-        {/* Nội dung bài học đã chọn */}
+        {/* Chi tiết bài học */}
         {selectedLesson && currentLessonData && (
           <div className="max-w-7xl mx-auto">
-            <div className="w-full flex flex-col items-center gap-4">
+            <div className="w-full flex flex-col items-center gap-4 mb-12">
               <button
                 onClick={() => setSelectedLesson(null)}
                 className="glass-pill-button"
-                style={{
-                  textShadow: `
-                    0 4px 10px rgba(0, 0, 0, 0.8),
-                    0 0 20px rgba(0, 0, 0, 0.9),
-                    0 0 40px rgba(0, 0, 0, 0.7),
-                    0 0 60px rgba(0, 0, 0, 0.5)
-                  `,
-                }}
               >
                 ← Tất cả bài học
               </button>
             </div>
 
-            <h1
-              className="text-5xl font-black text-center mb-12 text-white"
-              style={{
-                textShadow: `
-                  0 4px 10px rgba(0, 0, 0, 0.8),
-                  0 0 20px rgba(0, 0, 0, 0.9),
-                  0 0 40px rgba(0, 0, 0, 0.7),
-                  0 0 60px rgba(0, 0, 0, 0.5)
-                `,
-              }}
-            >
+            <h1 className="text-5xl hero-text-glow text-white text-center animate-fade-in mb-12">
               Bài {selectedLesson}: {currentLessonData.title}
             </h1>
 
-            {/* Ngữ pháp */}
-            <div className="mb-16">
-              <h3
-                className="text-4xl font-bold text-white mb-8 text-center"
-                style={{
-                  textShadow: `
-                    0 4px 10px rgba(0, 0, 0, 0.8),
-                    0 0 20px rgba(0, 0, 0, 0.9),
-                    0 0 40px rgba(0, 0, 0, 0.7),
-                    0 0 60px rgba(0, 0, 0, 0.5)
-                  `,
-                }}
-              >
-                Ngữ pháp
-              </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-10">
+              {paginatedGrammar.map((g, i) => {
+                const pointIndex = (grammarPage - 1) * GRAMMAR_PER_PAGE + i;
+                const isExpanded = expandedExamples.includes(pointIndex);
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {paginatedGrammar.map((g, i) => (
+                return (
                   <div key={i} className="glassmorphism-hover-card">
-                    <div className="flex items-center gap-4 mb-6">
-                      <h4 className="large-purple-heading">{g.title}</h4>
-                    </div>
+                    <h4 className="large-purple-heading text-center mb-6">
+                      {g.title}
+                    </h4>
 
-                    <div className="subtle-gradient-panel">
+                    <div className="subtle-gradient-panel mb-6">
                       <p className="pink-bold-label">Ý NGHĨA</p>
                       <p className="large-bold-text">{g.meaning}</p>
                     </div>
 
-                    <div className="bg-purple-100/50 rounded-2xl p-8 mb-8">
-                      <p className="text-xl text-gray-800 leading-relaxed whitespace-pre-line">
-                        {g.explanation}
-                      </p>
+                    <div className="subtle-purple-card">
+                      <p className="preformatted-text-large">{g.explanation}</p>
                     </div>
 
-                    <div className="space-y-5">
-                      <p className="flex-heading-style">
-                        <span>Ví dụ</span>
-                        <span className="text-2xl">Meow</span>
-                      </p>
-                      {g.examples.map((ex, j) => (
-                        <div key={j} className="interactive-white-card">
-                          <p className="section-title-style">{ex.japanese}</p>
-                          <p className="flex-text-style">
-                            <span className="text-2xl">Meow</span>
-                            <span className="font-medium">{ex.vietnamese}</span>
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    {/* Nút toggle ví dụ */}
+                    <button
+                      onClick={() => toggleExample(pointIndex)}
+                      className="gradient-interactive-row"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="w-6 h-6 text-yellow-500" />
+                        <span className="text-2xl font-bold text-purple-700">
+                          Ví dụ
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-8 h-8 text-purple-600 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Ví dụ – chỉ hiện khi expanded */}
+                    {isExpanded && (
+                      <div className="space-y-6 animate-fade-in">
+                        {g.examples.map((ex, j) => (
+                          <div key={j} className="interactive-white-card">
+                            <p className="section-title-style">{ex.japanese}</p>
+                            <p className="flex-text-style">
+                              <Cat />
+                              <span className="font-medium">
+                                {ex.vietnamese}
+                              </span>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="footer-flex-bar">
-                      <span className="text-3xl animate-wiggle">Meow</span>
-                      <span className="text-3xl">Meow</span>
-                      <span className="text-3xl animate-wiggle">Meow</span>
+                      <span className="wiggle-title">🐾</span>
+                      <span className="wiggle-title">🐾</span>
+                      <span className="wiggle-title">🐾</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
-              {/* Phân trang ngữ pháp */}
-              {currentLessonData.grammar.length > GRAMMAR_PER_PAGE && (
-                <div className="flex justify-center items-center gap-6 mt-16">
-                  <button
-                    onClick={() => setGrammarPage((p) => Math.max(1, p - 1))}
-                    disabled={grammarPage === 1}
-                    className="custom-button"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-black" />
-                  </button>
+            {/* Phân trang ngữ pháp – ĐỒNG BỘ STYLE HOÀN TOÀN với phân trang bài học */}
+            {currentLessonData.grammar.length > GRAMMAR_PER_PAGE && (
+              <div className="flex justify-center items-center gap-6 mt-16">
+                <button
+                  onClick={() => setGrammarPage((p) => Math.max(1, p - 1))}
+                  disabled={grammarPage === 1}
+                  className="custom-button"
+                >
+                  <ChevronLeft className="w-6 h-6 text-black" />
+                </button>
 
-                  <div className="flex gap-3 items-center">
-                    {Array.from(
-                      {
-                        length: Math.ceil(
+                <div className="flex gap-3 items-center">
+                  {Array.from(
+                    {
+                      length: Math.ceil(
+                        currentLessonData.grammar.length / GRAMMAR_PER_PAGE
+                      ),
+                    },
+                    (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setGrammarPage(i + 1)}
+                        className={`rounded-full transition-all duration-200 flex items-center justify-center ${
+                          grammarPage === i + 1
+                            ? "custom-element"
+                            : "button-icon-effect"
+                        }`}
+                      >
+                        {grammarPage === i + 1 ? i + 1 : ""}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  onClick={() =>
+                    setGrammarPage((p) =>
+                      Math.min(
+                        p + 1,
+                        Math.ceil(
                           currentLessonData.grammar.length / GRAMMAR_PER_PAGE
-                        ),
-                      },
-                      (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setGrammarPage(i + 1)}
-                          className={`rounded-full transition-all duration-200 flex items-center justify-center ${
-                            grammarPage === i + 1
-                              ? "custom-element"
-                              : "button-icon-effect"
-                          }`}
-                        >
-                          {grammarPage === i + 1 ? i + 1 : ""}
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setGrammarPage((p) =>
-                        Math.min(
-                          p + 1,
-                          Math.ceil(
-                            currentLessonData.grammar.length / GRAMMAR_PER_PAGE
-                          )
                         )
                       )
-                    }
-                    disabled={
-                      grammarPage * GRAMMAR_PER_PAGE >=
-                      currentLessonData.grammar.length
-                    }
-                    className="circular-icon-button"
-                  >
-                    <ChevronRight className="w-6 h-6 text-black" />
-                  </button>
-                </div>
-              )}
-            </div>
+                    )
+                  }
+                  disabled={
+                    grammarPage * GRAMMAR_PER_PAGE >=
+                    currentLessonData.grammar.length
+                  }
+                  className="circular-icon-button"
+                >
+                  <ChevronRight className="w-6 h-6 text-black" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
 
-      {/* Mèo bay */}
       <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
         <img
           src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
@@ -407,8 +365,159 @@ export function GrammarPage({
 
       <Footer />
 
-      {/* TOÀN BỘ STYLE GIỮ NGUYÊN – SIÊU ĐẸP, SIÊU MÈO */}
       <style>{`
+      @keyframes wiggle {
+  /* Bắt đầu và kết thúc hơi nghiêng về bên trái */
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  /* Điểm giữa nghiêng về bên phải */
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.wiggle-title {
+  font-size: 2.25rem;
+  
+  /* animate-wiggle: Lặp lại vô hạn trong 1s */
+  animation: wiggle 1s ease-in-out infinite;
+}
+      .full-page-dark-gradient-center {
+  /* min-h-screen */
+  min-height: 100vh;
+  
+  /* flex items-center justify-center */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* bg-gradient-to-br from-purple-900 to-pink-900 */
+  background-image: linear-gradient(to bottom right, #581c87, #831843);
+}
+      .subtle-purple-card {
+  /* bg-purple-100/50 */
+  background-color: rgba(243, 232, 255, 0.5); 
+  
+  /* rounded-2xl */
+  border-radius: 1rem; 
+  
+  /* p-8 */
+  padding: 2rem; 
+  
+  /* mb-8 */
+  margin-bottom: 2rem;
+}
+            .button-icon-effect {
+  /* bg-white/90 */
+  background-color: rgba(255, 255, 255, 0.9);
+  
+  /* w-6 */
+  width: 1.5rem; /* 24px */
+  
+  /* h-6 */
+  height: 1.5rem; /* 24px */
+  
+  /* transition (Thêm vào để hiệu ứng scale mượt mà) */
+  transition: transform 150ms ease-in-out; 
+}
+            .custom-element {
+  /* bg-pink-400 */
+  background-color: #f472b6; 
+  
+  /* text-white */
+  color: #ffffff; 
+  
+  /* px-4 */
+  padding-left: 1rem;  /* 16px */
+  padding-right: 1rem; /* 16px */
+  
+  /* h-10 */
+  height: 2.5rem; /* 40px */
+  
+  /* font-bold */
+  font-weight: 700; 
+  
+  /* shadow-lg */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
+}
+      .gradient-interactive-row {
+  /* w-full */
+  width: 100%;
+  
+  /* flex items-center justify-between */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  /* py-4 px-6 */
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  
+  /* bg-gradient-to-r from-pink-100 to-purple-100 */
+  background-image: linear-gradient(to right, #fce7f6, #ede9fe);
+  
+  /* rounded-2xl */
+  border-radius: 1rem;
+  
+  /* transition-all */
+  transition: all 150ms ease-in-out;
+  
+  /* mb-6 */
+  margin-bottom: 1.5rem;
+}
+
+/* Hiệu ứng tương tác */
+.gradient-interactive-row:hover {
+  /* hover:from-pink-200 hover:to-purple-200 */
+  background-image: linear-gradient(to right, #fbcfe8, #ddd6fe);
+}
+      .preformatted-text-large {
+  font-size: 1.875rem;
+  color: #1f2937;
+  line-height: 1.625; /* leading-relaxed (Thường là 1.625 hoặc 1.5) */
+  white-space: pre-line; /* Giữ nguyên ngắt dòng, bỏ qua khoảng trắng thừa */
+}
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+             @keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.full-bounce-pink-element {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  
+  /* text-pink-500 */
+  color: #ec4899; 
+  
+  /* animate-bounce */
+  animation: bounce 1s infinite;
+  
+  /* drop-shadow-2xl */
+  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15)); 
+}
         /* TẤT CẢ STYLE CỦA BẠN ĐƯỢC GIỮ NGUYÊN 100% */
         .footer-flex-bar {
           display: flex;
@@ -458,7 +567,7 @@ export function GrammarPage({
           gap: 0.5rem;
         }
         .large-bold-text {
-          font-size: 1.5rem;
+          font-size: 2rem;
           line-height: 2rem;
           font-weight: 700;
           color: #1f2937;
@@ -472,7 +581,7 @@ export function GrammarPage({
             0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
         .pink-bold-label {
-          font-size: 0.875rem;
+          font-size: 1.45rem;
           line-height: 1.25rem;
           font-weight: 700;
           color: #be185d;
@@ -487,7 +596,7 @@ export function GrammarPage({
             0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
         .large-purple-heading {
-          font-size: 1.875rem;
+          font-size: 2.875rem;
           line-height: 2.25rem;
           font-weight: 900;
           color: #6d28d9;
