@@ -4,6 +4,7 @@ package com.nekonihongo.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -34,5 +35,5 @@ public class GrammarPoint {
 
     @OneToMany(mappedBy = "point", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
-    private List<GrammarExample> examples;
+    private List<GrammarExample> examples = new ArrayList<>();
 }
