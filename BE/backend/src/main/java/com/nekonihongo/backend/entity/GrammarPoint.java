@@ -33,6 +33,9 @@ public class GrammarPoint {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String explanation;
 
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder = 0; // mặc định 0
+
     @OneToMany(mappedBy = "point", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
     private List<GrammarExample> examples = new ArrayList<>();
