@@ -6,6 +6,7 @@ import {
   Cat,
   ChevronDown,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
@@ -13,8 +14,8 @@ import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 
-const LESSONS_PER_PAGE = 5;
-const GRAMMAR_PER_PAGE = 10;
+const LESSONS_PER_PAGE = 12;
+const GRAMMAR_PER_PAGE = 3;
 
 interface GrammarExample {
   japanese: string;
@@ -110,6 +111,24 @@ export function GrammarPage({
         : [...prev, pointIndex]
     );
   };
+  const [expandedSections, setExpandedSections] = useState<{
+    [pointIndex: number]: {
+      explanation?: boolean;
+      examples?: boolean;
+    };
+  }>({});
+  const toggleSection = (
+    pointIndex: number,
+    section: "explanation" | "examples"
+  ) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [pointIndex]: {
+        ...prev[pointIndex],
+        [section]: !prev[pointIndex]?.[section],
+      },
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -159,7 +178,7 @@ export function GrammarPage({
                   }}
                   className="interactive-blur-card"
                 >
-                  <Cat className="full-bounce-pink-element" strokeWidth={2} />
+                  <Cat className="text-gray-800 animate-pulse-soft w-full h-full" />
                   <div className="text-center">
                     <p className="hero-text-glow text-white text-4xl">
                       Bài {lesson.id}
@@ -244,9 +263,33 @@ export function GrammarPage({
                       <p className="large-bold-text">{g.meaning}</p>
                     </div>
 
-                    <div className="subtle-purple-card">
-                      <p className="preformatted-text-large">{g.explanation}</p>
-                    </div>
+                    {/* Giải thích – có toggle ẩn/hiện */}
+                    <button
+                      onClick={() => toggleSection(pointIndex, "explanation")}
+                      className="interactive-gradient-row-spaced"
+                    >
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="icon-indigo-standard" />
+                        <span className="purple-heading-bold">
+                          Giải thích chi tiết
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`icon-purple-transition ${
+                          expandedSections[pointIndex]?.explanation
+                            ? "rotate-180"
+                            : ""
+                        }`}
+                      />
+                    </button>
+
+                    {expandedSections[pointIndex]?.explanation && (
+                      <div className="subtle-purple-card animate-fade-in mb-8">
+                        <p className="preformatted-text-large whitespace-pre-line">
+                          {g.explanation}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Nút toggle ví dụ */}
                     <button
@@ -254,13 +297,11 @@ export function GrammarPage({
                       className="gradient-interactive-row"
                     >
                       <div className="flex items-center gap-3">
-                        <Sparkles className="w-6 h-6 text-yellow-500" />
-                        <span className="text-2xl font-bold text-purple-700">
-                          Ví dụ
-                        </span>
+                        <Sparkles className="icon-yellow-highlight" />
+                        <span className="purple-heading-bold">Ví dụ</span>
                       </div>
                       <ChevronDown
-                        className={`w-8 h-8 text-purple-600 transition-transform ${
+                        className={`icon-purple-transition ${
                           isExpanded ? "rotate-180" : ""
                         }`}
                       />
@@ -271,13 +312,16 @@ export function GrammarPage({
                       <div className="space-y-6 animate-fade-in">
                         {g.examples.map((ex, j) => (
                           <div key={j} className="interactive-white-card">
-                            <p className="section-title-style">{ex.japanese}</p>
-                            <p className="flex-text-style">
-                              <Cat />
-                              <span className="font-medium">
-                                {ex.vietnamese}
-                              </span>
-                            </p>
+                            <div
+                              className="section-title-style"
+                              dangerouslySetInnerHTML={{ __html: ex.japanese }}
+                            />
+                            <div
+                              className="flex-text-style font-medium"
+                              dangerouslySetInnerHTML={{
+                                __html: ex.vietnamese,
+                              }}
+                            />
                           </div>
                         ))}
                       </div>
@@ -366,6 +410,88 @@ export function GrammarPage({
       <Footer />
 
       <style>{`
+
+      .icon-yellow-highlight {
+  /* w-6 h-6 */
+  width: 1.5rem;
+  height: 1.5rem;
+
+  /* text-yellow-500 */
+  color: #eab308;
+}
+      .icon-indigo-standard {
+  /* w-6 h-6 */
+  width: 1.5rem;
+  height: 1.5rem;
+
+  /* text-indigo-500 */
+  color: #6366f1;
+}
+      .icon-purple-transition {
+  /* w-8 h-8 */
+  width: 2rem;
+  height: 2rem;
+
+  /* text-purple-600 */
+  color: #9333ea;
+
+  /* transition-transform */
+  /* Tailwind mặc định dùng duration 150ms và ease-in-out cho transition */
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Thường đi kèm với hover để thấy được hiệu ứng transition */
+.icon-purple-transition:hover {
+  transform: scale(1.1); /* Ví dụ: phóng lớn nhẹ khi di chuột */
+}
+      .interactive-gradient-row-spaced {
+  /* w-full */
+  width: 100%;
+  
+  /* flex items-center justify-between */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  /* py-4 px-6 */
+  padding: 1rem 1.5rem;
+  
+  /* bg-gradient-to-r from-pink-100 to-purple-100 */
+  background-image: linear-gradient(to right, #fce7f6, #ede9fe);
+  
+  /* rounded-2xl */
+  border-radius: 1rem;
+  
+  /* transition-all */
+  transition: all 150ms ease-in-out;
+  
+  /* mb-6 (Phần bổ sung mới) */
+  margin-bottom: 1.5rem;
+  
+  /* Đảm bảo con trỏ thay đổi khi di chuột vào */
+  cursor: pointer;
+  border: none;
+}
+
+/* Hiệu ứng tương tác khi hover */
+.interactive-gradient-row-spaced:hover {
+  /* hover:from-pink-200 hover:to-purple-200 */
+  background-image: linear-gradient(to right, #fbcfe8, #ddd6fe);
+  transform: translateY(-2px); /* Thêm hiệu ứng nổi nhẹ */
+}
+      .purple-heading-bold {
+  /* text-2xl */
+  font-size: 1.5rem;
+  line-height: 2rem;
+  
+  /* font-bold */
+  font-weight: 700;
+  
+  /* text-purple-700 */
+  color: #7e22ce;
+}
       @keyframes wiggle {
   /* Bắt đầu và kết thúc hơi nghiêng về bên trái */
   0%, 100% {
@@ -799,6 +925,7 @@ export function GrammarPage({
         .circular-icon-button:disabled {
           opacity: 0.5;
         }
+          
       `}</style>
     </div>
   );

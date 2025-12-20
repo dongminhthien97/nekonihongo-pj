@@ -44,6 +44,7 @@ function AppContent() {
           <p className="text-gray-700 text-xl">にゃん…</p>
         </div>
         <style>{`
+        
           @keyframes bounce-in {
             0% {
               opacity: 0;
