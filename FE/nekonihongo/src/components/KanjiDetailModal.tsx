@@ -67,10 +67,10 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
             </div>
 
             {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full justify-center">
               <div
                 onClick={handleReplay}
-                className="interactive-empty-state-box flex-1 flex flex-col justify-center items-center"
+                className="interactive-empty-state-box flex-center-both-col"
                 role="button"
                 tabIndex={0}
               >
@@ -80,7 +80,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
                   strokes={kanji.strokes}
                   svgPaths={kanji.svgPaths}
                 />
-                <p className="description-text-spaced mt-8">
+                <p className="description-text-spaced mt-8 text-center">
                   Bấm vào để xem lại animation viết nét
                 </p>
               </div>
@@ -117,25 +117,55 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
           </div>
 
           {/* TỪ GHÉP PHỔ BIẾN – ĐƯA XUỐNG DƯỚI RIÊNG, RỘNG RÃI */}
+          {/* TỪ GHÉP PHỔ BIẾN – CHIA 2 CỘT ĐỀU NHAU */}
           <div className="mt-12">
             <p className="label-medium-gray mb-6">Từ ghép phổ biến</p>
             <div className="bg-gray-50 rounded-2xl p-8">
               {kanji.compounds.length > 0 ? (
-                <div className="space-y-6">
-                  {kanji.compounds.map((c, i) => (
-                    <div
-                      key={i}
-                      className="border-b border-gray-200 pb-6 last:border-0 last:pb-0"
-                    >
-                      <p className="text-2xl font-bold text-gray-900">
-                        {c.word}
-                      </p>
-                      <p className="text-lg text-gray-600 mt-2">{c.reading}</p>
-                      <p className="text-lg text-gray-700 mt-3 leading-relaxed">
-                        {c.meaning}
-                      </p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Cột trái */}
+                  <div className="space-y-6">
+                    {kanji.compounds
+                      .slice(0, Math.ceil(kanji.compounds.length / 2))
+                      .map((c, i) => (
+                        <div
+                          key={i}
+                          className="border-b border-gray-200 pb-6 last:border-0 last:pb-0"
+                        >
+                          <p className="text-2xl font-bold text-gray-900">
+                            {c.word}
+                          </p>
+                          <p className="text-lg text-gray-600 mt-2">
+                            {c.reading}
+                          </p>
+                          <p className="text-lg text-gray-700 mt-3 leading-relaxed">
+                            {c.meaning}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Cột phải */}
+                  <div className="space-y-6">
+                    {kanji.compounds
+                      .slice(Math.ceil(kanji.compounds.length / 2))
+                      .map((c, i) => (
+                        <div
+                          key={i}
+                          className="border-b border-gray-200 pb-6 last:border-0 last:pb-0"
+                        >
+                          <p className="text-2xl font-bold text-gray-900">
+                            {c.word}
+                          </p>
+                          <p className="text-lg text-gray-600 mt-2">
+                            {c.reading}
+                          </p>
+                          <p className="text-lg text-gray-700 mt-3 leading-relaxed">
+                            {c.meaning}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               ) : (
                 <p className="text-center text-gray-500 italic py-8">
@@ -149,6 +179,22 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
 
       {/* Style giữ nguyên từ file của bạn */}
       <style>{`
+      .flex-center-both-col {
+  /* flex */
+  display: flex;
+
+  /* flex-col */
+  flex-direction: column;
+
+  /* justify-center */
+  justify-content: center;
+
+  /* items-center */
+  align-items: center;
+
+  /* Thường đi kèm với h-full hoặc min-h-screen để thấy rõ hiệu ứng căn giữa */
+  min-height: 100%;
+}
         .description-text-spaced {
           margin-top: 1.5rem;
           font-size: 1.125rem;

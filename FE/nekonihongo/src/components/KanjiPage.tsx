@@ -1,6 +1,6 @@
 // src/pages/KanjiPage.tsx
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Cat, Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Cat } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
@@ -91,28 +91,35 @@ export function KanjiPage({
 
   // Phân trang bài học
   const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
-  const currentLessons = lessons.slice(
-    (lessonPage - 1) * LESSONS_PER_PAGE,
-    lessonPage * LESSONS_PER_PAGE
-  );
+  const currentLessons = useMemo(() => {
+    return lessons.slice(
+      (lessonPage - 1) * LESSONS_PER_PAGE,
+      lessonPage * LESSONS_PER_PAGE
+    );
+  }, [lessons, lessonPage]);
 
   // Tìm kiếm toàn bộ Kanji
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
 
     const query = searchQuery.trim().toLowerCase();
-    const results: { kanji: Kanji; lessonId: number }[] = [];
+    const results: { kanji: Kanji; lessonId: number; lessonTitle: string }[] =
+      [];
 
     lessons.forEach((lesson) => {
       lesson.kanjiList.forEach((k) => {
         if (
-          k.kanji.includes(query) ||
+          k.kanji.toLowerCase().includes(query) ||
           k.on.toLowerCase().includes(query) ||
           k.kun.toLowerCase().includes(query) ||
           k.hanViet.toLowerCase().includes(query) ||
           k.meaning.toLowerCase().includes(query)
         ) {
-          results.push({ kanji: k, lessonId: lesson.id });
+          results.push({
+            kanji: k,
+            lessonId: lesson.id,
+            lessonTitle: lesson.title,
+          });
         }
       });
     });
@@ -155,20 +162,22 @@ export function KanjiPage({
   }
 
   return (
-    <div className="subtle-gradient-background-relative">
-      <Background />
+    <div className="min-h-screen">
       <Navigation currentPage="kanji" onNavigate={onNavigate} />
+      <Background />
 
-      <main className="container mx-auto px-4 py-12 relative z-10">
+      <main className="relative z-10 container mx-auto px-4 py-12">
         {/* Header + Search */}
         <div className="text-center mb-12">
-          <h1 className="hero-title-style hero-text-glow">Học Chữ Kanji</h1>
-          <p className="pulsing-hero-caption">
-            Cùng mèo học từng nét một nào! 😺
-          </p>
+          <h1 className="relative z-10 mb-12 md:mb-16">
+            <div className="absolute inset-0 -z-10 rounded-3xl" />
+            <span className="hero-section-title hero-text-glow">
+              Học Chữ Kanji
+            </span>
+          </h1>
 
-          {/* Thanh tìm kiếm */}
-          <div className="max-w-4xl mx-auto mt-12">
+          {/* THANH TÌM KIẾM */}
+          <div className="max-w-4xl mx-auto">
             <div className="relative group">
               <div className="glass-effect-container animate-fade-in">
                 <div className="element-overlay-positioned">
@@ -176,7 +185,7 @@ export function KanjiPage({
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm Kanji... (猫, 人, 日...)"
+                  placeholder="Tìm Kanji... (猫, 。。。)"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -200,17 +209,15 @@ export function KanjiPage({
                     onClick={() => setSelectedKanji(kanji)}
                   >
                     <div className="full-gradient-hover-effect" />
-                    <div className="flex items-center justify-between gap-6 p-6">
+                    <div className="flex items-center justify-between gap-6">
                       <div className="flex-1 text-left">
-                        <p className="rainbow-glow-title text-5xl">
-                          {kanji.kanji}
-                        </p>
+                        <p className="rainbow-glow-title">{kanji.kanji}</p>
                         <p className="small-rainbow-glow">
-                          {kanji.on} {kanji.kun && `/ ${kanji.kun}`}
+                          {kanji.on} / {kanji.kun}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="white-rainbow-glow-bold text-3xl">
+                        <p className="white-rainbow-glow-bold">
                           {kanji.meaning}
                         </p>
                         <p className="small-white-rainbow-glow">
@@ -225,121 +232,135 @@ export function KanjiPage({
           </div>
         </div>
 
-        {/* Danh sách bài học */}
-        {!selectedLesson && !searchQuery && (
+        {/* Danh sách bài học hoặc kanji */}
+        {!selectedLesson ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-12">
-              {currentLessons.map((lesson) => (
-                <button
-                  key={lesson.id}
-                  onClick={() => {
-                    setSelectedLesson(lesson);
-                    setKanjiPage(1);
-                    setSearchQuery("");
-                  }}
-                  className="interactive-blur-card"
-                >
-                  <Cat
-                    className="w-24 h-24 text-pink-500 animate-bounce drop-shadow-2xl"
-                    strokeWidth={2}
-                  />
-                  <div className="text-center">
-                    <p className="hero-text-glow text-white text-4xl">
-                      Bài {lesson.id}
-                    </p>
-                    <p className="hero-text-glow text-2xl text-white mt-2 px-4 line-clamp-2">
-                      {lesson.title}
-                    </p>
+            {/* DANH SÁCH BÀI HỌC */}
+            <div className="max-w-7xl mx-auto">
+              <div
+                key={lessonPage}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16"
+              >
+                {currentLessons.map((lesson) => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => {
+                      setSelectedLesson(lesson);
+                      setKanjiPage(1);
+                      setSearchQuery("");
+                    }}
+                    className="responsive-hover-card animate-fade-in"
+                  >
+                    <div className="text-gray-800 animate-pulse-soft">
+                      <Cat className="relative w-full h-full" />
+                    </div>
+                    <div className="text-center py-6">
+                      <p className="hero-text-glow text-white text-4xl">
+                        Bài {lesson.id}
+                      </p>
+                      <p className="hero-text-glow text-2xl text-white mt-2 px-4 line-clamp-2">
+                        {lesson.title}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Phân trang bài học */}
+              {totalLessonPages > 1 && (
+                <div className="flex justify-center items-center gap-6 mt-12">
+                  <button
+                    onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
+                    disabled={lessonPage === 1}
+                    className="custom-button"
+                    aria-label="Previous lessons page"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-black" />
+                  </button>
+
+                  <div className="flex gap-3 items-center">
+                    {Array.from({ length: totalLessonPages }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setLessonPage(i + 1)}
+                        aria-label={`Go to lesson page ${i + 1}`}
+                        className={`rounded-full transition-all duration-200 flex items-center justify-center ${
+                          lessonPage === i + 1
+                            ? "custom-element"
+                            : "button-icon-effect"
+                        }`}
+                      >
+                        {lessonPage === i + 1 ? i + 1 : ""}
+                      </button>
+                    ))}
                   </div>
-                </button>
-              ))}
-            </div>
 
-            {totalLessonPages > 1 && (
-              <div className="flex justify-center items-center gap-6 mt-12">
-                <button
-                  onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
-                  disabled={lessonPage === 1}
-                  className="custom-button"
-                >
-                  <ChevronLeft className="w-6 h-6 text-black" />
-                </button>
-
-                <div className="flex gap-3 items-center">
-                  {Array.from({ length: totalLessonPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setLessonPage(i + 1)}
-                      className={`rounded-full transition-all duration-200 flex items-center justify-center ${
-                        lessonPage === i + 1
-                          ? "custom-element"
-                          : "button-icon-effect"
-                      }`}
-                    >
-                      {lessonPage === i + 1 ? i + 1 : ""}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() =>
+                      setLessonPage((p) => Math.min(totalLessonPages, p + 1))
+                    }
+                    disabled={lessonPage === totalLessonPages}
+                    className="circular-icon-button"
+                    aria-label="Next lessons page"
+                  >
+                    <ChevronRight className="w-6 h-6 text-black" />
+                  </button>
                 </div>
-
+              )}
+            </div>
+          </>
+        ) : (
+          /* CHI TIẾT BÀI HỌC - DANH SÁCH KANJI */
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center mb-10">
+              <div className="w-full flex flex-col items-center gap-4">
+                <h2 className="text-3xl hero-text-glow text-white">
+                  {selectedLesson.title}
+                </h2>
                 <button
-                  onClick={() =>
-                    setLessonPage((p) => Math.min(totalLessonPages, p + 1))
-                  }
-                  disabled={lessonPage === totalLessonPages}
-                  className="circular-icon-button"
+                  onClick={() => setSelectedLesson(null)}
+                  className="button"
                 >
-                  <ChevronRight className="w-6 h-6 text-black" />
+                  ← Tất cả bài học
                 </button>
               </div>
-            )}
-          </>
-        )}
-
-        {/* Chi tiết bài học */}
-        {selectedLesson && !searchQuery && (
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <button
-                onClick={() => setSelectedLesson(null)}
-                className="glass-pill-button mb-8"
-              >
-                ← Tất cả bài học
-              </button>
-
-              <h1 className="text-6xl md:text-8xl font-black text-white hero-text-glow">
-                Bài {selectedLesson.id}: {selectedLesson.title}
-              </h1>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mb-20">
-              {currentKanjis.map((k, i) => (
+            {/* GRID KANJI - 4 CỘT */}
+            <div
+              key={`${selectedLesson?.id || "none"}-${kanjiPage}`}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-8 mt-4"
+            >
+              {currentKanjis.map((kanji, idx) => (
                 <button
-                  key={i}
-                  onClick={() => setSelectedKanji(k)}
-                  className="aspect-square bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center border border-gray-200"
+                  key={idx}
+                  onClick={() => setSelectedKanji(kanji)}
+                  className="kanji-simple-card animate-fade-in"
                 >
-                  <span className="text-6xl md:text-8xl font-bold text-black">
-                    {k.kanji}
-                  </span>
+                  <p className="text-8xl text-black font-black">
+                    {kanji.kanji}
+                  </p>
                 </button>
               ))}
             </div>
 
+            {/* Phân trang kanji */}
             {totalKanjiPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-16">
                 <button
                   onClick={() => setKanjiPage((p) => Math.max(1, p - 1))}
                   disabled={kanjiPage === 1}
                   className="custom-button"
+                  aria-label="Previous kanji page"
                 >
-                  <ChevronLeft className="w-6 h-6 text-black" />
+                  <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
-
                 <div className="flex gap-3 items-center">
                   {Array.from({ length: totalKanjiPages }, (_, i) => (
                     <button
                       key={i}
                       onClick={() => setKanjiPage(i + 1)}
+                      aria-label={`Go to page ${i + 1}`}
                       className={`rounded-full transition-all duration-200 flex items-center justify-center ${
                         kanjiPage === i + 1
                           ? "custom-element"
@@ -350,157 +371,83 @@ export function KanjiPage({
                     </button>
                   ))}
                 </div>
-
                 <button
                   onClick={() =>
                     setKanjiPage((p) => Math.min(totalKanjiPages, p + 1))
                   }
                   disabled={kanjiPage === totalKanjiPages}
                   className="circular-icon-button"
+                  aria-label="Next kanji page"
                 >
-                  <ChevronRight className="w-6 h-6 text-black" />
+                  <ChevronRight className="w-6 h-6 text-white" />
                 </button>
               </div>
             )}
           </div>
         )}
-
-        {/* Modal chi tiết */}
-        {selectedKanji && (
-          <KanjiDetailModal
-            kanji={selectedKanji}
-            onClose={() => setSelectedKanji(null)}
-          />
-        )}
       </main>
-
-      {/* Mèo bay */}
-      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
-        <img
-          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
-          alt="Flying Neko"
-          className="w-40 h-40 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-full object-cover shadow-2xl animate-fly drop-shadow-2xl"
-          style={{
-            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
-          }}
-        />
-      </div>
 
       <Footer />
 
-      {/* Toàn bộ style giữ nguyên */}
+      {/* MODAL CHI TIẾT KANJI */}
+      {selectedKanji && (
+        <KanjiDetailModal
+          kanji={selectedKanji}
+          onClose={() => setSelectedKanji(null)}
+        />
+      )}
+
       <style>{`
-        .pulsing-hero-caption {
-          position: relative;
-          display: inline-block;
-          color: #ffffff;
-          margin-top: 1.5rem;
-          padding-left: 2rem;
-          padding-right: 2rem;
-          padding-top: 0.75rem;
-          padding-bottom: 0.75rem;
-          font-size: 1.5rem;
-          line-height: 2rem;
-          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
-          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6),
-            0 0 15px rgba(255, 255, 255, 0.4);
-          animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @media (min-width: 768px) {
-          .pulsing-hero-caption {
-            font-size: 2.25rem;
-            line-height: 2.5rem;
-          }
-        }
+.kanji-simple-card {
+  /* Nền trắng có độ trong suốt để tạo hiệu ứng kính */
+  background-color: rgba(255, 255, 255, 0.9); 
+  
+  /* Bo góc cực lớn 32px */
+  border-radius: 2rem; 
+  
+  /* Khoảng cách bên trong rộng rãi */
+  padding: 3rem 2rem;
+  min-height: 200px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Viền trắng mờ tạo độ dày cho mặt kính */
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  
+  /* Hiệu ứng bóng đổ đa tầng (shadow-xl) */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  
+  /* Chuyển động mượt 400ms */
+  transition: all 400ms ease-in-out;
+  cursor: pointer;
+  
+  /* Quan trọng: Hiệu ứng làm mờ lớp nền phía sau (nếu có màu nền) */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 
-        .hero-title-style {
-          position: relative;
-          display: block;
-          padding-left: 2.5rem;
-          padding-right: 2.5rem;
-          padding-top: 2rem;
-          padding-bottom: 2rem;
-          font-size: 3.75rem;
-          line-height: 1;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          color: #ffffff;
-          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
-          text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
-            0 0 20px rgba(255, 255, 255, 0.3);
-          transform: translateY(-0.75rem);
-          animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @media (min-width: 768px) {
-          .hero-title-style {
-            padding-left: 3.5rem;
-            padding-right: 3.5rem;
-            padding-top: 2.5rem;
-            padding-bottom: 2.5rem;
-            font-size: 4.5rem;
-            transform: translateY(-1rem);
-          }
-        }
-        @media (min-width: 1024px) {
-          .hero-title-style {
-            padding-left: 5rem;
-            padding-right: 5rem;
-            padding-top: 3rem;
-            padding-bottom: 3rem;
-            font-size: 8rem;
-            transform: translateY(-1.25rem);
-          }
-        }
-        .kanji-simple-card {
-          /* Nền trắng có độ trong suốt để tạo hiệu ứng kính */
-          background-color: rgba(255, 255, 255, 0.9);
+/* Hiệu ứng Hover giống style Glassmorphism */
+.kanji-simple-card:hover {
+  /* Phóng lớn nhẹ 105% */
+  transform: scale(1.05);
+  
+  /* Viền chuyển sang màu hồng đặc trưng của bạn */
+  border-color: #f472b6; 
+  
+  /* Nền trong suốt hơn một chút khi hover */
+  background-color: rgba(255, 255, 255, 0.8);
+  
+  /* Đổ bóng sâu hơn khi thẻ nổi lên */
+  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15);
+}
 
-          /* Bo góc cực lớn 32px */
-          border-radius: 2rem;
-
-          /* Khoảng cách bên trong rộng rãi */
-          padding: 3rem 2rem;
-          min-height: 200px;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          /* Viền trắng mờ tạo độ dày cho mặt kính */
-          border: 2px solid rgba(255, 255, 255, 0.4);
-
-          /* Hiệu ứng bóng đổ đa tầng (shadow-xl) */
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 8px 10px -6px rgba(0, 0, 0, 0.1);
-
-          /* Chuyển động mượt 400ms */
-          transition: all 400ms ease-in-out;
-          cursor: pointer;
-
-          /* Quan trọng: Hiệu ứng làm mờ lớp nền phía sau (nếu có màu nền) */
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-        }
-
-        /* Hiệu ứng Hover giống style Glassmorphism */
-        .kanji-simple-card:hover {
-          /* Phóng lớn nhẹ 105% */
-          transform: scale(1.05);
-
-          /* Viền chuyển sang màu hồng đặc trưng của bạn */
-          border-color: #f472b6;
-
-          /* Nền trong suốt hơn một chút khi hover */
-          background-color: rgba(255, 255, 255, 0.8);
-
-          /* Đổ bóng sâu hơn khi thẻ nổi lên */
-          box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Hiệu ứng khi nhấn */
-        .kanji-simple-card:active {
-          transform: scale(0.98);
-        }
+/* Hiệu ứng khi nhấn */
+.kanji-simple-card:active {
+  transform: scale(0.98);
+}
 
         .circular-gradient-hover-glow {
           position: absolute;
@@ -509,8 +456,7 @@ export function KanjiPage({
           bottom: 0;
           left: 0;
           border-radius: 9999px;
-          background-image: linear-gradient(
-            to right,
+          background-image: linear-gradient(to right, 
             rgba(244, 114, 182, 0.3),
             rgba(168, 85, 247, 0.3)
           );
@@ -632,8 +578,7 @@ export function KanjiPage({
         }
 
         @keyframes pulse {
-          0%,
-          100% {
+          0%, 100% {
             opacity: 1;
           }
           50% {
@@ -671,13 +616,12 @@ export function KanjiPage({
           border-width: 2px;
           border-color: rgba(255, 255, 255, 0.4);
           transition: all 400ms ease-in-out;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         .glassmorphism-card:hover {
           border-color: #f472b6;
-          background-color: rgba(255, 255, 255, 0.8);
+          background-color: rgba(255, 255, 255, 0.80);
           transform: scale(1.05);
         }
 
@@ -686,8 +630,10 @@ export function KanjiPage({
           line-height: 1.75rem;
           color: #ffffff;
           margin-top: 0.5rem;
-          text-shadow: 0 0 3px rgba(255, 255, 255, 0.9),
-            0 0 8px rgba(255, 0, 150, 0.9), 0 0 12px rgba(147, 51, 234, 0.9),
+          text-shadow: 
+            0 0 3px rgba(255, 255, 255, 0.9),
+            0 0 8px rgba(255, 0, 150, 0.9),
+            0 0 12px rgba(147, 51, 234, 0.9),
             0 0 16px rgba(6, 182, 212, 0.9);
         }
 
@@ -696,8 +642,10 @@ export function KanjiPage({
           line-height: 2.25rem;
           font-weight: 700;
           color: #ffffff;
-          text-shadow: 0 0 4px rgba(255, 255, 255, 0.8),
-            0 0 10px rgba(255, 0, 150, 0.9), 0 0 15px rgba(147, 51, 234, 0.9),
+          text-shadow: 
+            0 0 4px rgba(255, 255, 255, 0.8),
+            0 0 10px rgba(255, 0, 150, 0.9),
+            0 0 15px rgba(147, 51, 234, 0.9),
             0 0 20px rgba(6, 182, 212, 0.9);
           filter: none;
         }
@@ -707,8 +655,10 @@ export function KanjiPage({
           line-height: 2rem;
           color: #ffffff;
           margin-top: 0.25rem;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.8),
-            0 0 5px rgba(255, 0, 150, 0.9), 0 0 8px rgba(147, 51, 234, 0.9),
+          text-shadow: 
+            0 0 2px rgba(255, 255, 255, 0.8),
+            0 0 5px rgba(255, 0, 150, 0.9),
+            0 0 8px rgba(147, 51, 234, 0.9),
             0 0 12px rgba(6, 182, 212, 0.9);
         }
 
@@ -717,8 +667,10 @@ export function KanjiPage({
           line-height: 2.5rem;
           font-weight: 900;
           color: #ffffff;
-          text-shadow: 0 0 4px rgba(255, 255, 255, 0.8),
-            0 0 10px rgba(255, 0, 150, 0.9), 0 0 15px rgba(147, 51, 234, 0.9),
+          text-shadow: 
+            0 0 4px rgba(255, 255, 255, 0.8),
+            0 0 10px rgba(255, 0, 150, 0.9),
+            0 0 15px rgba(147, 51, 234, 0.9),
             0 0 20px rgba(6, 182, 212, 0.9);
         }
 
@@ -748,15 +700,15 @@ export function KanjiPage({
           border-radius: 1rem;
           padding: 1.5rem;
           transition: all 400ms ease-in-out;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         .glass-card-hover-effect:hover {
           border-color: #f472b6;
           background-color: rgba(255, 255, 255, 0.2);
           transform: scale(1.02);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+          box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.25),
             0 0 15px rgba(236, 72, 153, 0.3);
         }
 
@@ -801,8 +753,7 @@ export function KanjiPage({
           height: 3rem;
           color: #ffffff;
           z-index: 20;
-          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))
-            drop-shadow(0 0 10px #f472b6);
+          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 10px #f472b6);
         }
 
         .glass-effect-container {
@@ -812,7 +763,8 @@ export function KanjiPage({
           border-radius: 9999px;
           border-width: 4px;
           border-color: rgba(255, 255, 255, 0.4);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+          box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.25),
             0 0 0 8px rgba(255, 255, 255, 0.1);
           overflow: hidden;
         }
@@ -827,8 +779,7 @@ export function KanjiPage({
           font-weight: 900;
           letter-spacing: 0.05em;
           color: #ffffff;
-          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15))
-            drop-shadow(0 10px 10px rgba(0, 0, 0, 0.04));
+          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.04));
           transform: translateY(-0.75rem);
           font-size: 3.75rem;
           line-height: 1;
@@ -861,8 +812,7 @@ export function KanjiPage({
         }
 
         @keyframes pulse-soft {
-          0%,
-          100% {
+          0%, 100% {
             opacity: 1;
           }
           50% {
@@ -917,8 +867,7 @@ export function KanjiPage({
           padding-right: 1rem;
           height: 2.5rem;
           font-weight: 700;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-            0 4px 6px -4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
 
         @media (min-width: 768px) {
@@ -945,7 +894,7 @@ export function KanjiPage({
         }
 
         .button:hover {
-          background-color: rgba(255, 255, 255, 0.6);
+          background-color: rgba(255,255,255,0.6);
         }
 
         @media (min-width: 768px) {
@@ -964,13 +913,8 @@ export function KanjiPage({
         }
 
         @keyframes pulse-soft {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.8;
-          }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
 
         .animate-pulse-soft {
@@ -978,9 +922,14 @@ export function KanjiPage({
         }
 
         .hero-text-glow {
-          text-shadow: 0 0 20px #ff69b4, 0 0 40px #a020f0, 0 0 60px #00ffff,
-            0 0 80px #ff69b4, 0 0 100px #a020f0, 0 4px 20px rgba(0, 0, 0, 0.9);
-          filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.8));
+          text-shadow: 
+            0 0 20px #FF69B4,
+            0 0 40px #A020F0,
+            0 0 60px #00FFFF,
+            0 0 80px #FF69B4,
+            0 0 100px #A020F0,
+            0 4px 20px rgba(0,0,0,0.9);
+          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
         }
 
         .animate-fade-in {
