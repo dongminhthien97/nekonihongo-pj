@@ -2,13 +2,19 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
+interface KanjiCompound {
+  word: string;
+  reading: string;
+  meaning: string;
+}
+
 interface Kanji {
   kanji: string;
   on: string;
   kun: string;
   hanViet: string;
   meaning: string;
-  example: string;
+  compounds: KanjiCompound[];
   strokes: number;
   svgPaths?: string[];
 }
@@ -51,27 +57,20 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
 
         {/* Body */}
         <div className="p-8 md:p-12 space-y-12">
-          {/* PHẦN TRÊN: 2 CỘT – KANJI TRÁI + SVG PHẢI */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* CỘT TRÁI: CHỮ KANJI LỚN */}
-            <div className="centered-content-box">
-              <div className="hero-display-massive">{kanji.kanji}</div>
+          {/* PHẦN TRÊN: 2 CỘT CÂN ĐỐI – KANJI TRÁI + THỨ TỰ NÉT PHẢI */}
+          <div className="responsive-hero-grid">
+            {/* CỘT TRÁI: CHỮ KANJI */}
+            <div className="flex items-center justify-center h-full">
+              <div className="centered-content-box flex items-center justify-center">
+                <div className="hero-display-massive">{kanji.kanji}</div>
+              </div>
             </div>
 
             {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  Thứ tự viết nét
-                </h3>
-                <button onClick={handleReplay} className="btn-secondary-gray">
-                  ↻ Xem lại
-                </button>
-              </div>
-
+            <div className="flex flex-col h-full">
               <div
                 onClick={handleReplay}
-                className="interactive-empty-state-box"
+                className="interactive-empty-state-box flex-1 flex flex-col justify-center items-center"
                 role="button"
                 tabIndex={0}
               >
@@ -81,14 +80,14 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
                   strokes={kanji.strokes}
                   svgPaths={kanji.svgPaths}
                 />
-                <p className="description-text-spaced">
+                <p className="description-text-spaced mt-8">
                   Bấm vào để xem lại animation viết nét
                 </p>
               </div>
             </div>
           </div>
 
-          {/* THÔNG TIN CHI TIẾT – 2 CỘT (KHÔNG CÓ VÍ DỤ Ở ĐÂY) */}
+          {/* THÔNG TIN CHI TIẾT – 2 CỘT */}
           <div className="responsive-grid-layout">
             <div className="space-y-6">
               <div>
@@ -117,19 +116,38 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
             </div>
           </div>
 
-          {/* VÍ DỤ – ĐƯA XUỐNG DƯỚI RIÊNG, RỘNG RÃI CHO NHIỀU DÒNG SAU NÀY */}
+          {/* TỪ GHÉP PHỔ BIẾN – ĐƯA XUỐNG DƯỚI RIÊNG, RỘNG RÃI */}
           <div className="mt-12">
-            <p className="label-medium-gray mb-4">Ví dụ</p>
+            <p className="label-medium-gray mb-6">Từ ghép phổ biến</p>
             <div className="bg-gray-50 rounded-2xl p-8">
-              <p className="paragraph-reading-large whitespace-pre-line">
-                {kanji.example}
-              </p>
+              {kanji.compounds.length > 0 ? (
+                <div className="space-y-6">
+                  {kanji.compounds.map((c, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-gray-200 pb-6 last:border-0 last:pb-0"
+                    >
+                      <p className="text-2xl font-bold text-gray-900">
+                        {c.word}
+                      </p>
+                      <p className="text-lg text-gray-600 mt-2">{c.reading}</p>
+                      <p className="text-lg text-gray-700 mt-3 leading-relaxed">
+                        {c.meaning}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 italic py-8">
+                  Chưa có từ ghép nào
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Style giữ nguyên */}
+      {/* Style giữ nguyên từ file của bạn */}
       <style>{`
         .description-text-spaced {
           margin-top: 1.5rem;
@@ -140,31 +158,21 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         }
         .interactive-empty-state-box {
           text-align: center;
-          padding: 2.5rem;
+          padding: 2rem;
           background-color: #f9fafb;
           border-radius: 1rem;
           cursor: pointer;
           transition: all 150ms ease;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
         .interactive-empty-state-box:hover {
           background-color: #f3f4f6;
         }
-        .btn-secondary-gray {
-          padding: 0.75rem 1.5rem;
-          background-color: #f3f4f6;
-          color: #1f2937;
-          font-weight: 500;
-          border-radius: 0.75rem;
-          border: none;
-          cursor: pointer;
-          transition: all 150ms ease;
-        }
-        .btn-secondary-gray:hover {
-          background-color: #e5e7eb;
-        }
         .paragraph-reading-large {
           font-size: 1.5rem;
-          line-height: 1.75;
+          line-height: 1.8;
           color: #1f2937;
         }
         .heading-display-lg {
@@ -191,6 +199,22 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
             grid-template-columns: repeat(2, 1fr);
           }
         }
+        .responsive-hero-grid {
+          display: grid;
+          grid-template-columns: repeat(1, minmax(0, 1fr));
+          align-items: center;
+          gap: 2rem;
+        }
+        @media (min-width: 768px) {
+          .responsive-hero-grid {
+            gap: 3rem;
+          }
+        }
+        @media (min-width: 1024px) {
+          .responsive-hero-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
         .hero-display-massive {
           font-size: 8rem;
           font-weight: 900;
@@ -205,11 +229,11 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         }
         .centered-content-box {
           text-align: center;
-          padding-top: 2.5rem;
-          padding-bottom: 2.5rem;
+          padding: 3rem 2rem;
           background-color: #f9fafb;
           border-radius: 1rem;
           width: 100%;
+          height: 100%;
         }
         .icon-gray-medium {
           width: 1.75rem;
@@ -275,7 +299,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
   );
 }
 
-// KanjiStrokeSVG giữ nguyên như trước
+// KanjiStrokeSVG – giữ nguyên
 function KanjiStrokeSVG({
   kanji,
   isAnimating,

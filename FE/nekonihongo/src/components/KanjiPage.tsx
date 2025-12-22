@@ -1,9 +1,21 @@
-import { useState, useMemo } from "react";
-import { Search, ChevronLeft, ChevronRight, Cat } from "lucide-react";
+// src/pages/KanjiPage.tsx
+import { useState, useEffect, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Cat, Search } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import { KanjiDetailModal } from "./KanjiDetailModal";
+import { KanjiDetailModal } from "../components/KanjiDetailModal";
+import { NekoLoading } from "../components/NekoLoading";
+import api from "../api/auth";
+
+const LESSONS_PER_PAGE = 5;
+const KANJI_PER_PAGE = 20;
+
+interface KanjiCompound {
+  word: string;
+  reading: string;
+  meaning: string;
+}
 
 interface Kanji {
   kanji: string;
@@ -11,374 +23,71 @@ interface Kanji {
   kun: string;
   hanViet: string;
   meaning: string;
-  example: string;
   strokes: number;
-  svgPaths?: string[]; // SVG paths cho từng nét
+  svgPaths: string[];
+  compounds: KanjiCompound[];
 }
 
-interface Lesson {
+interface KanjiLesson {
   id: number;
   title: string;
   icon: string;
-  kanjis: Kanji[];
+  kanjiList: Kanji[];
 }
 
-interface KanjiPageProps {
+export function KanjiPage({
+  onNavigate,
+}: {
   onNavigate: (page: string) => void;
-}
-
-// DATA MẪU CÁC BÀI HỌC KANJI
-const kanjiLessons: Lesson[] = [
-  {
-    id: 1,
-    title: "Kanji cơ bản N5",
-    icon: "🎌",
-    kanjis: [
-      {
-        kanji: "日",
-        on: "ニチ、ジツ",
-        kun: "ひ、か",
-        hanViet: "Nhật",
-        meaning: "Mặt trời, ngày",
-        example: "日本 (にほん) - Nhật Bản",
-        strokes: 4,
-      },
-      {
-        kanji: "本",
-        on: "ホン",
-        kun: "もと",
-        hanViet: "Bản",
-        meaning: "Sách, gốc, thật",
-        example: "本当 (ほんとう) - Thật sự",
-        strokes: 5,
-      },
-      {
-        kanji: "人",
-        on: "ジン、ニン",
-        kun: "ひと",
-        hanViet: "Nhân",
-        meaning: "Người",
-        example: "人間 (にんげん) - Con người",
-        strokes: 2,
-      },
-      {
-        kanji: "月",
-        on: "ゲツ、ガツ",
-        kun: "つき",
-        hanViet: "Nguyệt",
-        meaning: "Mặt trăng, tháng",
-        example: "月曜日 (げつようび) - Thứ hai",
-        strokes: 4,
-      },
-      {
-        kanji: "火",
-        on: "カ",
-        kun: "ひ",
-        hanViet: "Hỏa",
-        meaning: "Lửa",
-        example: "火曜日 (かようび) - Thứ ba",
-        strokes: 4,
-      },
-      {
-        kanji: "水",
-        on: "スイ",
-        kun: "みず",
-        hanViet: "Thủy",
-        meaning: "Nước",
-        example: "水曜日 (すいようび) - Thứ tư",
-        strokes: 4,
-      },
-      {
-        kanji: "木",
-        on: "モク、ボク",
-        kun: "き",
-        hanViet: "Mộc",
-        meaning: "Cây",
-        example: "木曜日 (もくようび) - Thứ năm",
-        strokes: 4,
-      },
-      {
-        kanji: "金",
-        on: "キン、コン",
-        kun: "かね",
-        hanViet: "Kim",
-        meaning: "Vàng, tiền",
-        example: "金曜日 (きんようび) - Thứ sáu",
-        strokes: 8,
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "Kanji về học tập",
-    icon: "📚",
-    kanjis: [
-      {
-        kanji: "学",
-        on: "ガク",
-        kun: "まな-ぶ",
-        hanViet: "Học",
-        meaning: "Học",
-        example: "学校 (がっこう) - Trường học",
-        strokes: 8,
-      },
-      {
-        kanji: "校",
-        on: "コウ",
-        kun: "",
-        hanViet: "Hiệu",
-        meaning: "Trường học",
-        example: "学校 (がっこう) - Trường học",
-        strokes: 10,
-      },
-      {
-        kanji: "先",
-        on: "セン",
-        kun: "さき",
-        hanViet: "Tiên",
-        meaning: "Trước, trước đây",
-        example: "先生 (せんせい) - Giáo viên",
-        strokes: 6,
-      },
-      {
-        kanji: "生",
-        on: "セイ、ショウ",
-        kun: "い-きる、う-まれる",
-        hanViet: "Sinh",
-        meaning: "Sinh, sống",
-        example: "学生 (がくせい) - Học sinh",
-        strokes: 5,
-      },
-      {
-        kanji: "語",
-        on: "ゴ",
-        kun: "かた-る",
-        hanViet: "Ngữ",
-        meaning: "Ngôn ngữ",
-        example: "日本語 (にほんご) - Tiếng Nhật",
-        strokes: 14,
-      },
-      {
-        kanji: "文",
-        on: "ブン、モン",
-        kun: "ふみ",
-        hanViet: "Văn",
-        meaning: "Văn, chữ",
-        example: "文化 (ぶんか) - Văn hóa",
-        strokes: 4,
-      },
-      {
-        kanji: "字",
-        on: "ジ",
-        kun: "あざ",
-        hanViet: "Tự",
-        meaning: "Chữ",
-        example: "文字 (もじ) - Chữ viết",
-        strokes: 6,
-      },
-      {
-        kanji: "書",
-        on: "ショ",
-        kun: "か-く",
-        hanViet: "Thư",
-        meaning: "Viết",
-        example: "図書館 (としょかん) - Thư viện",
-        strokes: 10,
-      },
-    ],
-  },
-  {
-    id: 3,
-    title: "Kanji về động vật",
-    icon: "🐱",
-    kanjis: [
-      {
-        kanji: "猫",
-        on: "ビョウ",
-        kun: "ねこ",
-        hanViet: "Miêu",
-        meaning: "Mèo",
-        example: "猫 (ねこ) - Con mèo",
-        strokes: 11,
-      },
-      {
-        kanji: "犬",
-        on: "ケン",
-        kun: "いぬ",
-        hanViet: "Khuyển",
-        meaning: "Chó",
-        example: "犬 (いぬ) - Con chó",
-        strokes: 4,
-      },
-      {
-        kanji: "馬",
-        on: "バ",
-        kun: "うま",
-        hanViet: "Mã",
-        meaning: "Ngựa",
-        example: "馬 (うま) - Con ngựa",
-        strokes: 10,
-      },
-      {
-        kanji: "鳥",
-        on: "チョウ",
-        kun: "とり",
-        hanViet: "Điểu",
-        meaning: "Chim",
-        example: "鳥 (とり) - Con chim",
-        strokes: 11,
-      },
-      {
-        kanji: "魚",
-        on: "ギョ",
-        kun: "さかな",
-        hanViet: "Ngư",
-        meaning: "Cá",
-        example: "魚 (さかな) - Con cá",
-        strokes: 11,
-      },
-      {
-        kanji: "虫",
-        on: "チュウ",
-        kun: "むし",
-        hanViet: "Trùng",
-        meaning: "Côn trùng",
-        example: "虫 (むし) - Sâu bọ",
-        strokes: 6,
-      },
-      {
-        kanji: "牛",
-        on: "ギュウ",
-        kun: "うし",
-        hanViet: "Ngưu",
-        meaning: "Bò",
-        example: "牛乳 (ぎゅうにゅう) - Sữa bò",
-        strokes: 4,
-      },
-      {
-        kanji: "豚",
-        on: "トン",
-        kun: "ぶた",
-        hanViet: "Đồn",
-        meaning: "Lợn",
-        example: "豚肉 (ぶたにく) - Thịt lợn",
-        strokes: 11,
-      },
-    ],
-  },
-  {
-    id: 4,
-    title: "Kanji về ẩm thực",
-    icon: "🍜",
-    kanjis: [
-      {
-        kanji: "食",
-        on: "ショク",
-        kun: "た-べる",
-        hanViet: "Thực",
-        meaning: "Ăn, thức ăn",
-        example: "食事 (しょくじ) - Bữa ăn",
-        strokes: 9,
-      },
-      {
-        kanji: "飲",
-        on: "イン",
-        kun: "の-む",
-        hanViet: "Ẩm",
-        meaning: "Uống",
-        example: "飲み物 (のみもの) - Đồ uống",
-        strokes: 12,
-      },
-      {
-        kanji: "茶",
-        on: "チャ、サ",
-        kun: "",
-        hanViet: "Trà",
-        meaning: "Trà",
-        example: "お茶 (おちゃ) - Trà",
-        strokes: 9,
-      },
-      {
-        kanji: "米",
-        on: "ベイ、マイ",
-        kun: "こめ",
-        hanViet: "Mễ",
-        meaning: "Gạo",
-        example: "米 (こめ) - Gạo",
-        strokes: 6,
-      },
-      {
-        kanji: "肉",
-        on: "ニク",
-        kun: "",
-        hanViet: "Nhục",
-        meaning: "Thịt",
-        example: "肉 (にく) - Thịt",
-        strokes: 6,
-      },
-      {
-        kanji: "野",
-        on: "ヤ",
-        kun: "の",
-        hanViet: "Dã",
-        meaning: "Đồng hoang, rau",
-        example: "野菜 (やさい) - Rau",
-        strokes: 11,
-      },
-      {
-        kanji: "菜",
-        on: "サイ",
-        kun: "な",
-        hanViet: "Thái",
-        meaning: "Rau",
-        example: "野菜 (やさい) - Rau",
-        strokes: 11,
-      },
-      {
-        kanji: "味",
-        on: "ミ",
-        kun: "あじ",
-        hanViet: "Vị",
-        meaning: "Vị, mùi vị",
-        example: "味 (あじ) - Vị",
-        strokes: 8,
-      },
-    ],
-  },
-];
-
-export function KanjiPage({ onNavigate }: KanjiPageProps) {
-  const [lessons] = useState<Lesson[]>(kanjiLessons);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [selectedKanji, setSelectedKanji] = useState<Kanji | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+}) {
+  const [lessons, setLessons] = useState<KanjiLesson[]>([]);
+  const [selectedLesson, setSelectedLesson] = useState<KanjiLesson | null>(
+    null
+  );
   const [lessonPage, setLessonPage] = useState(1);
   const [kanjiPage, setKanjiPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedKanji, setSelectedKanji] = useState<Kanji | null>(null);
 
-  const LESSONS_PER_PAGE = 12;
-  const KANJIS_PER_PAGE = 12;
+  useEffect(() => {
+    const fetchKanjiLessons = async () => {
+      try {
+        setIsLoading(true);
+        console.log("🐱 Bắt đầu tải bài học Kanji từ backend...");
 
-  // TÌM KIẾM KANJI
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    const results: { kanji: Kanji; lessonId: number }[] = [];
+        const res = await api.get("/kanji/lessons");
+        const serverLessons: KanjiLesson[] = res.data.data || [];
 
-    lessons.forEach((lesson) => {
-      lesson.kanjis.forEach((kanji) => {
-        if (
-          kanji.kanji.includes(query) ||
-          kanji.on.toLowerCase().includes(query) ||
-          kanji.kun.toLowerCase().includes(query) ||
-          kanji.hanViet.toLowerCase().includes(query) ||
-          kanji.meaning.toLowerCase().includes(query)
-        ) {
-          results.push({ kanji, lessonId: lesson.id });
+        console.log(
+          "🎉 Tải Kanji thành công!",
+          serverLessons.length,
+          "bài học"
+        );
+
+        setLessons(serverLessons);
+        setError("");
+      } catch (err: any) {
+        console.error("❌ Lỗi khi tải Kanji:", err);
+
+        if (err.response?.status === 401) {
+          alert("Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("nekoUser");
+          onNavigate("login");
+          return;
         }
-      });
-    });
-    return results.slice(0, 20);
-  }, [searchQuery, lessons]);
+
+        setError("Không thể tải dữ liệu Kanji. Mèo đang cố gắng...");
+      } finally {
+        setTimeout(() => setIsLoading(false), 1500);
+      }
+    };
+
+    fetchKanjiLessons();
+  }, [onNavigate]);
 
   // Phân trang bài học
   const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
@@ -387,34 +96,79 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
     lessonPage * LESSONS_PER_PAGE
   );
 
-  // Phân trang kanji
-  const currentKanjis = selectedLesson
-    ? selectedLesson.kanjis.slice(
-        (kanjiPage - 1) * KANJIS_PER_PAGE,
-        kanjiPage * KANJIS_PER_PAGE
-      )
-    : [];
+  // Tìm kiếm toàn bộ Kanji
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+
+    const query = searchQuery.trim().toLowerCase();
+    const results: { kanji: Kanji; lessonId: number }[] = [];
+
+    lessons.forEach((lesson) => {
+      lesson.kanjiList.forEach((k) => {
+        if (
+          k.kanji.includes(query) ||
+          k.on.toLowerCase().includes(query) ||
+          k.kun.toLowerCase().includes(query) ||
+          k.hanViet.toLowerCase().includes(query) ||
+          k.meaning.toLowerCase().includes(query)
+        ) {
+          results.push({ kanji: k, lessonId: lesson.id });
+        }
+      });
+    });
+
+    return results;
+  }, [searchQuery, lessons]);
+
+  // Kanji hiện tại khi chọn bài học
+  const currentKanjis = useMemo(() => {
+    if (!selectedLesson) return [];
+    return selectedLesson.kanjiList.slice(
+      (kanjiPage - 1) * KANJI_PER_PAGE,
+      kanjiPage * KANJI_PER_PAGE
+    );
+  }, [selectedLesson, kanjiPage]);
+
   const totalKanjiPages = selectedLesson
-    ? Math.ceil(selectedLesson.kanjis.length / KANJIS_PER_PAGE)
+    ? Math.ceil(selectedLesson.kanjiList.length / KANJI_PER_PAGE)
     : 0;
 
-  return (
-    <div className="min-h-screen">
-      <Navigation currentPage="kanji" onNavigate={onNavigate} />
-      <Background />
+  if (isLoading) {
+    return <NekoLoading message="Mèo đang chuẩn bị bài học Kanji cho bạn..." />;
+  }
 
-      <main className="relative z-10 container mx-auto px-4 py-12">
+  if (error && lessons.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-pink-900">
+        <div className="text-center text-white">
+          <div className="text-9xl animate-bounce">Meow</div>
+          <p className="text-4xl font-bold mb-8">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-10 py-5 bg-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/30 transition-all text-2xl font-bold"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="subtle-gradient-background-relative">
+      <Background />
+      <Navigation currentPage="kanji" onNavigate={onNavigate} />
+
+      <main className="container mx-auto px-4 py-12 relative z-10">
         {/* Header + Search */}
         <div className="text-center mb-12">
-          <h1 className="relative z-10 mb-12 md:mb-16">
-            <div className="absolute inset-0 -z-10 rounded-3xl" />
-            <span className="hero-section-title hero-text-glow">
-              Học Chữ Kanji
-            </span>
-          </h1>
+          <h1 className="hero-title-style hero-text-glow">Học Chữ Kanji</h1>
+          <p className="pulsing-hero-caption">
+            Cùng mèo học từng nét một nào! 😺
+          </p>
 
-          {/* THANH TÌM KIẾM */}
-          <div className="max-w-4xl mx-auto">
+          {/* Thanh tìm kiếm */}
+          <div className="max-w-4xl mx-auto mt-12">
             <div className="relative group">
               <div className="glass-effect-container animate-fade-in">
                 <div className="element-overlay-positioned">
@@ -422,7 +176,7 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm Kanji... (猫, ねこ, mèo, bài 1...)"
+                  placeholder="Tìm Kanji... (猫, 人, 日...)"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -446,15 +200,17 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
                     onClick={() => setSelectedKanji(kanji)}
                   >
                     <div className="full-gradient-hover-effect" />
-                    <div className="flex items-center justify-between gap-6">
+                    <div className="flex items-center justify-between gap-6 p-6">
                       <div className="flex-1 text-left">
-                        <p className="rainbow-glow-title">{kanji.kanji}</p>
+                        <p className="rainbow-glow-title text-5xl">
+                          {kanji.kanji}
+                        </p>
                         <p className="small-rainbow-glow">
-                          {kanji.on} / {kanji.kun}
+                          {kanji.on} {kanji.kun && `/ ${kanji.kun}`}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="white-rainbow-glow-bold">
+                        <p className="white-rainbow-glow-bold text-3xl">
                           {kanji.meaning}
                         </p>
                         <p className="small-white-rainbow-glow">
@@ -469,135 +225,121 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           </div>
         </div>
 
-        {/* Danh sách bài học hoặc kanji */}
-        {!selectedLesson ? (
+        {/* Danh sách bài học */}
+        {!selectedLesson && !searchQuery && (
           <>
-            {/* DANH SÁCH BÀI HỌC */}
-            <div className="max-w-7xl mx-auto">
-              <div
-                key={lessonPage}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16"
-              >
-                {currentLessons.map((lesson) => (
-                  <button
-                    key={lesson.id}
-                    onClick={() => {
-                      setSelectedLesson(lesson);
-                      setKanjiPage(1);
-                      setSearchQuery("");
-                    }}
-                    className="responsive-hover-card animate-fade-in"
-                  >
-                    <div className="text-gray-800 animate-pulse-soft">
-                      <Cat className="relative w-full h-full" />
-                    </div>
-                    <div className="text-center py-6">
-                      <p className="hero-text-glow text-white text-4xl">
-                        Bài {lesson.id}
-                      </p>
-                      <p className="hero-text-glow text-2xl text-white mt-2 px-4 line-clamp-2">
-                        {lesson.title}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Phân trang bài học */}
-              {totalLessonPages > 1 && (
-                <div className="flex justify-center items-center gap-6 mt-12">
-                  <button
-                    onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
-                    disabled={lessonPage === 1}
-                    className="custom-button"
-                    aria-label="Previous lessons page"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-black" />
-                  </button>
-
-                  <div className="flex gap-3 items-center">
-                    {Array.from({ length: totalLessonPages }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setLessonPage(i + 1)}
-                        aria-label={`Go to lesson page ${i + 1}`}
-                        className={`rounded-full transition-all duration-200 flex items-center justify-center ${
-                          lessonPage === i + 1
-                            ? "custom-element"
-                            : "button-icon-effect"
-                        }`}
-                      >
-                        {lessonPage === i + 1 ? i + 1 : ""}
-                      </button>
-                    ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-12">
+              {currentLessons.map((lesson) => (
+                <button
+                  key={lesson.id}
+                  onClick={() => {
+                    setSelectedLesson(lesson);
+                    setKanjiPage(1);
+                    setSearchQuery("");
+                  }}
+                  className="interactive-blur-card"
+                >
+                  <Cat
+                    className="w-24 h-24 text-pink-500 animate-bounce drop-shadow-2xl"
+                    strokeWidth={2}
+                  />
+                  <div className="text-center">
+                    <p className="hero-text-glow text-white text-4xl">
+                      Bài {lesson.id}
+                    </p>
+                    <p className="hero-text-glow text-2xl text-white mt-2 px-4 line-clamp-2">
+                      {lesson.title}
+                    </p>
                   </div>
-
-                  <button
-                    onClick={() =>
-                      setLessonPage((p) => Math.min(totalLessonPages, p + 1))
-                    }
-                    disabled={lessonPage === totalLessonPages}
-                    className="circular-icon-button"
-                    aria-label="Next lessons page"
-                  >
-                    <ChevronRight className="w-6 h-6 text-black" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          /* CHI TIẾT BÀI HỌC - DANH SÁCH KANJI */
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-center mb-10">
-              <div className="w-full flex flex-col items-center gap-4">
-                <h2 className="text-3xl hero-text-glow text-white">
-                  {selectedLesson.title}
-                </h2>
-                <button
-                  onClick={() => setSelectedLesson(null)}
-                  className="button"
-                >
-                  ← Tất cả bài học
-                </button>
-              </div>
-            </div>
-
-            {/* GRID KANJI - 4 CỘT */}
-            <div
-              key={`${selectedLesson?.id || "none"}-${kanjiPage}`}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-8 mt-4"
-            >
-              {currentKanjis.map((kanji, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedKanji(kanji)}
-                  className="kanji-simple-card animate-fade-in"
-                >
-                  <p className="text-8xl text-black font-black">
-                    {kanji.kanji}
-                  </p>
                 </button>
               ))}
             </div>
 
-            {/* Phân trang kanji */}
+            {totalLessonPages > 1 && (
+              <div className="flex justify-center items-center gap-6 mt-12">
+                <button
+                  onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
+                  disabled={lessonPage === 1}
+                  className="custom-button"
+                >
+                  <ChevronLeft className="w-6 h-6 text-black" />
+                </button>
+
+                <div className="flex gap-3 items-center">
+                  {Array.from({ length: totalLessonPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setLessonPage(i + 1)}
+                      className={`rounded-full transition-all duration-200 flex items-center justify-center ${
+                        lessonPage === i + 1
+                          ? "custom-element"
+                          : "button-icon-effect"
+                      }`}
+                    >
+                      {lessonPage === i + 1 ? i + 1 : ""}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() =>
+                    setLessonPage((p) => Math.min(totalLessonPages, p + 1))
+                  }
+                  disabled={lessonPage === totalLessonPages}
+                  className="circular-icon-button"
+                >
+                  <ChevronRight className="w-6 h-6 text-black" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Chi tiết bài học */}
+        {selectedLesson && !searchQuery && (
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <button
+                onClick={() => setSelectedLesson(null)}
+                className="glass-pill-button mb-8"
+              >
+                ← Tất cả bài học
+              </button>
+
+              <h1 className="text-6xl md:text-8xl font-black text-white hero-text-glow">
+                Bài {selectedLesson.id}: {selectedLesson.title}
+              </h1>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mb-20">
+              {currentKanjis.map((k, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedKanji(k)}
+                  className="aspect-square bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center border border-gray-200"
+                >
+                  <span className="text-6xl md:text-8xl font-bold text-black">
+                    {k.kanji}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             {totalKanjiPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-16">
                 <button
                   onClick={() => setKanjiPage((p) => Math.max(1, p - 1))}
                   disabled={kanjiPage === 1}
                   className="custom-button"
-                  aria-label="Previous kanji page"
                 >
-                  <ChevronLeft className="w-6 h-6 text-white" />
+                  <ChevronLeft className="w-6 h-6 text-black" />
                 </button>
+
                 <div className="flex gap-3 items-center">
                   {Array.from({ length: totalKanjiPages }, (_, i) => (
                     <button
                       key={i}
                       onClick={() => setKanjiPage(i + 1)}
-                      aria-label={`Go to page ${i + 1}`}
                       className={`rounded-full transition-all duration-200 flex items-center justify-center ${
                         kanjiPage === i + 1
                           ? "custom-element"
@@ -608,55 +350,156 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
                     </button>
                   ))}
                 </div>
+
                 <button
                   onClick={() =>
                     setKanjiPage((p) => Math.min(totalKanjiPages, p + 1))
                   }
                   disabled={kanjiPage === totalKanjiPages}
                   className="circular-icon-button"
-                  aria-label="Next kanji page"
                 >
-                  <ChevronRight className="w-6 h-6 text-white" />
+                  <ChevronRight className="w-6 h-6 text-black" />
                 </button>
               </div>
             )}
           </div>
         )}
+
+        {/* Modal chi tiết */}
+        {selectedKanji && (
+          <KanjiDetailModal
+            kanji={selectedKanji}
+            onClose={() => setSelectedKanji(null)}
+          />
+        )}
       </main>
+
+      {/* Mèo bay */}
+      <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
+        <img
+          src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+          alt="Flying Neko"
+          className="w-40 h-40 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-full object-cover shadow-2xl animate-fly drop-shadow-2xl"
+          style={{
+            filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
+          }}
+        />
+      </div>
 
       <Footer />
 
-      {/* MODAL CHI TIẾT KANJI */}
-      {selectedKanji && (
-        <KanjiDetailModal
-          kanji={selectedKanji}
-          onClose={() => setSelectedKanji(null)}
-        />
-      )}
-
+      {/* Toàn bộ style giữ nguyên */}
       <style>{`
-        /* THẺ KANJI ĐƠN GIẢN - TRẮNG + CHỮ ĐEN */
+        .pulsing-hero-caption {
+          position: relative;
+          display: inline-block;
+          color: #ffffff;
+          margin-top: 1.5rem;
+          padding-left: 2rem;
+          padding-right: 2rem;
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+          font-size: 1.5rem;
+          line-height: 2rem;
+          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6),
+            0 0 15px rgba(255, 255, 255, 0.4);
+          animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @media (min-width: 768px) {
+          .pulsing-hero-caption {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+          }
+        }
+
+        .hero-title-style {
+          position: relative;
+          display: block;
+          padding-left: 2.5rem;
+          padding-right: 2.5rem;
+          padding-top: 2rem;
+          padding-bottom: 2rem;
+          font-size: 3.75rem;
+          line-height: 1;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          color: #ffffff;
+          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+            0 0 20px rgba(255, 255, 255, 0.3);
+          transform: translateY(-0.75rem);
+          animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @media (min-width: 768px) {
+          .hero-title-style {
+            padding-left: 3.5rem;
+            padding-right: 3.5rem;
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+            font-size: 4.5rem;
+            transform: translateY(-1rem);
+          }
+        }
+        @media (min-width: 1024px) {
+          .hero-title-style {
+            padding-left: 5rem;
+            padding-right: 5rem;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+            font-size: 8rem;
+            transform: translateY(-1.25rem);
+          }
+        }
         .kanji-simple-card {
-          background-color: #ffffff;
+          /* Nền trắng có độ trong suốt để tạo hiệu ứng kính */
+          background-color: rgba(255, 255, 255, 0.9);
+
+          /* Bo góc cực lớn 32px */
           border-radius: 2rem;
+
+          /* Khoảng cách bên trong rộng rãi */
           padding: 3rem 2rem;
           min-height: 200px;
+
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 300ms ease-in-out;
-          border: 2px solid rgba(0, 0, 0, 0.05);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+          /* Viền trắng mờ tạo độ dày cho mặt kính */
+          border: 2px solid rgba(255, 255, 255, 0.4);
+
+          /* Hiệu ứng bóng đổ đa tầng (shadow-xl) */
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+          /* Chuyển động mượt 400ms */
+          transition: all 400ms ease-in-out;
+          cursor: pointer;
+
+          /* Quan trọng: Hiệu ứng làm mờ lớp nền phía sau (nếu có màu nền) */
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
         }
 
+        /* Hiệu ứng Hover giống style Glassmorphism */
         .kanji-simple-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-          border-color: rgba(255, 199, 234, 0.5);
+          /* Phóng lớn nhẹ 105% */
+          transform: scale(1.05);
+
+          /* Viền chuyển sang màu hồng đặc trưng của bạn */
+          border-color: #f472b6;
+
+          /* Nền trong suốt hơn một chút khi hover */
+          background-color: rgba(255, 255, 255, 0.8);
+
+          /* Đổ bóng sâu hơn khi thẻ nổi lên */
+          box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15);
         }
 
+        /* Hiệu ứng khi nhấn */
         .kanji-simple-card:active {
-          transform: translateY(-2px);
+          transform: scale(0.98);
         }
 
         .circular-gradient-hover-glow {
@@ -666,7 +509,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           bottom: 0;
           left: 0;
           border-radius: 9999px;
-          background-image: linear-gradient(to right, 
+          background-image: linear-gradient(
+            to right,
             rgba(244, 114, 182, 0.3),
             rgba(168, 85, 247, 0.3)
           );
@@ -788,7 +632,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
         }
 
         @keyframes pulse {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 1;
           }
           50% {
@@ -826,12 +671,13 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           border-width: 2px;
           border-color: rgba(255, 255, 255, 0.4);
           transition: all 400ms ease-in-out;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         .glassmorphism-card:hover {
           border-color: #f472b6;
-          background-color: rgba(255, 255, 255, 0.80);
+          background-color: rgba(255, 255, 255, 0.8);
           transform: scale(1.05);
         }
 
@@ -840,10 +686,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           line-height: 1.75rem;
           color: #ffffff;
           margin-top: 0.5rem;
-          text-shadow: 
-            0 0 3px rgba(255, 255, 255, 0.9),
-            0 0 8px rgba(255, 0, 150, 0.9),
-            0 0 12px rgba(147, 51, 234, 0.9),
+          text-shadow: 0 0 3px rgba(255, 255, 255, 0.9),
+            0 0 8px rgba(255, 0, 150, 0.9), 0 0 12px rgba(147, 51, 234, 0.9),
             0 0 16px rgba(6, 182, 212, 0.9);
         }
 
@@ -852,10 +696,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           line-height: 2.25rem;
           font-weight: 700;
           color: #ffffff;
-          text-shadow: 
-            0 0 4px rgba(255, 255, 255, 0.8),
-            0 0 10px rgba(255, 0, 150, 0.9),
-            0 0 15px rgba(147, 51, 234, 0.9),
+          text-shadow: 0 0 4px rgba(255, 255, 255, 0.8),
+            0 0 10px rgba(255, 0, 150, 0.9), 0 0 15px rgba(147, 51, 234, 0.9),
             0 0 20px rgba(6, 182, 212, 0.9);
           filter: none;
         }
@@ -865,10 +707,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           line-height: 2rem;
           color: #ffffff;
           margin-top: 0.25rem;
-          text-shadow: 
-            0 0 2px rgba(255, 255, 255, 0.8),
-            0 0 5px rgba(255, 0, 150, 0.9),
-            0 0 8px rgba(147, 51, 234, 0.9),
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.8),
+            0 0 5px rgba(255, 0, 150, 0.9), 0 0 8px rgba(147, 51, 234, 0.9),
             0 0 12px rgba(6, 182, 212, 0.9);
         }
 
@@ -877,10 +717,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           line-height: 2.5rem;
           font-weight: 900;
           color: #ffffff;
-          text-shadow: 
-            0 0 4px rgba(255, 255, 255, 0.8),
-            0 0 10px rgba(255, 0, 150, 0.9),
-            0 0 15px rgba(147, 51, 234, 0.9),
+          text-shadow: 0 0 4px rgba(255, 255, 255, 0.8),
+            0 0 10px rgba(255, 0, 150, 0.9), 0 0 15px rgba(147, 51, 234, 0.9),
             0 0 20px rgba(6, 182, 212, 0.9);
         }
 
@@ -910,15 +748,15 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           border-radius: 1rem;
           padding: 1.5rem;
           transition: all 400ms ease-in-out;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         .glass-card-hover-effect:hover {
           border-color: #f472b6;
           background-color: rgba(255, 255, 255, 0.2);
           transform: scale(1.02);
-          box-shadow: 
-            0 25px 50px -12px rgba(0, 0, 0, 0.25),
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
             0 0 15px rgba(236, 72, 153, 0.3);
         }
 
@@ -963,7 +801,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           height: 3rem;
           color: #ffffff;
           z-index: 20;
-          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 10px #f472b6);
+          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))
+            drop-shadow(0 0 10px #f472b6);
         }
 
         .glass-effect-container {
@@ -973,8 +812,7 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           border-radius: 9999px;
           border-width: 4px;
           border-color: rgba(255, 255, 255, 0.4);
-          box-shadow: 
-            0 25px 50px -12px rgba(0, 0, 0, 0.25),
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
             0 0 0 8px rgba(255, 255, 255, 0.1);
           overflow: hidden;
         }
@@ -989,7 +827,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           font-weight: 900;
           letter-spacing: 0.05em;
           color: #ffffff;
-          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.04));
+          filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15))
+            drop-shadow(0 10px 10px rgba(0, 0, 0, 0.04));
           transform: translateY(-0.75rem);
           font-size: 3.75rem;
           line-height: 1;
@@ -1022,7 +861,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
         }
 
         @keyframes pulse-soft {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 1;
           }
           50% {
@@ -1077,7 +917,8 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
           padding-right: 1rem;
           height: 2.5rem;
           font-weight: 700;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
 
         @media (min-width: 768px) {
@@ -1104,7 +945,7 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
         }
 
         .button:hover {
-          background-color: rgba(255,255,255,0.6);
+          background-color: rgba(255, 255, 255, 0.6);
         }
 
         @media (min-width: 768px) {
@@ -1123,8 +964,13 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
         }
 
         @keyframes pulse-soft {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.8; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
         }
 
         .animate-pulse-soft {
@@ -1132,14 +978,9 @@ export function KanjiPage({ onNavigate }: KanjiPageProps) {
         }
 
         .hero-text-glow {
-          text-shadow: 
-            0 0 20px #FF69B4,
-            0 0 40px #A020F0,
-            0 0 60px #00FFFF,
-            0 0 80px #FF69B4,
-            0 0 100px #A020F0,
-            0 4px 20px rgba(0,0,0,0.9);
-          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+          text-shadow: 0 0 20px #ff69b4, 0 0 40px #a020f0, 0 0 60px #00ffff,
+            0 0 80px #ff69b4, 0 0 100px #a020f0, 0 4px 20px rgba(0, 0, 0, 0.9);
+          filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.8));
         }
 
         .animate-fade-in {
