@@ -1,6 +1,7 @@
 // src/components/KanjiDetailModal.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import HanziWriter, { type CharacterJson } from "hanzi-writer";
 
 interface KanjiCompound {
   word: string;
@@ -16,7 +17,6 @@ interface Kanji {
   meaning: string;
   compounds: KanjiCompound[];
   strokes: number;
-  svgPaths?: string[];
 }
 
 interface KanjiDetailModalProps {
@@ -25,15 +25,79 @@ interface KanjiDetailModalProps {
 }
 
 export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
-  const [isAnimating, setIsAnimating] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const writerRef = useRef<HanziWriter | null>(null);
 
   useEffect(() => {
-    setIsAnimating(true);
+    if (!containerRef.current) return;
+
+    containerRef.current.innerHTML = "";
+
+    const writer = HanziWriter.create(containerRef.current, kanji.kanji, {
+      width: 320,
+      height: 320,
+      padding: 20,
+      showOutline: true,
+      outlineColor: "#e5e7eb",
+      strokeColor: "#111827",
+      radicalColor: "#dc2626",
+      drawingColor: "#111827",
+      strokeAnimationSpeed: 1.2,
+      delayBetweenStrokes: 400,
+      showCharacter: false,
+      charDataLoader: (char: string, onLoad: (data: CharacterJson) => void) => {
+        const code = char
+          .charCodeAt(0)
+          .toString(16)
+          .padStart(5, "0")
+          .toUpperCase();
+
+        // Ưu tiên data KanjiVG chuẩn Nhật
+        fetch(
+          `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${char}.json`
+        )
+          .then((r) => (r.ok ? r.json() : Promise.reject()))
+          .then((data) => onLoad(data as CharacterJson))
+          .catch(() => {
+            // Fallback về data mặc định – đảm bảo luôn có data hợp lệ
+            HanziWriter.loadCharacterData(char)
+              .then((fallbackData) => {
+                if (fallbackData) {
+                  onLoad(fallbackData);
+                } else {
+                  // Data trống an toàn nếu cả fallback cũng undefined (rất hiếm)
+                  onLoad({
+                    strokes: [],
+                    medians: [],
+                    radicals: {},
+                  } as CharacterJson);
+                }
+              })
+              .catch(() => {
+                // Nếu lỗi → data trống
+                onLoad({
+                  strokes: [],
+                  medians: [],
+                  radicals: {},
+                } as CharacterJson);
+              });
+          });
+      },
+    });
+
+    writerRef.current = writer;
+    writer.animateCharacter();
+
+    return () => {
+      if (containerRef.current) containerRef.current.innerHTML = "";
+      writerRef.current = null;
+    };
   }, [kanji.kanji]);
 
   const handleReplay = () => {
-    setIsAnimating(false);
-    setTimeout(() => setIsAnimating(true), 100);
+    if (writerRef.current) {
+      writerRef.current.animateCharacter();
+    }
   };
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -57,29 +121,24 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
 
         {/* Body */}
         <div className="p-8 md:p-12 space-y-12">
-          {/* PHẦN TRÊN: 2 CỘT CÂN ĐỐI – KANJI TRÁI + THỨ TỰ NÉT PHẢI */}
+          {/* PHẦN TRÊN: 2 CỘT CÂN ĐỐI */}
           <div className="responsive-hero-grid">
             {/* CỘT TRÁI: CHỮ KANJI */}
-            <div className="flex items-center justify-center h-full">
-              <div className="centered-content-box flex items-center justify-center">
-                <div className="hero-display-massive">{kanji.kanji}</div>
+            <div className="flex items-center justify-center h-full px-4">
+              <div className="bg-gray-50 rounded-2xl w-full h-full flex items-center justify-center shadow-inner">
+                <div className="display-ultra-massive">{kanji.kanji}</div>
               </div>
             </div>
 
-            {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT */}
+            {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT – HANZI-WRITER */}
             <div className="flex flex-col h-full justify-center">
               <div
                 onClick={handleReplay}
-                className="interactive-empty-state-box flex-center-both-col"
+                className="interactive-empty-state-box flex-center-both-col cursor-pointer"
                 role="button"
                 tabIndex={0}
               >
-                <KanjiStrokeSVG
-                  kanji={kanji.kanji}
-                  isAnimating={isAnimating}
-                  strokes={kanji.strokes}
-                  svgPaths={kanji.svgPaths}
-                />
+                <div ref={containerRef} className="w-full max-w-lg mx-auto" />
                 <p className="description-text-spaced mt-8 text-center">
                   Bấm vào để xem lại animation viết nét
                 </p>
@@ -116,7 +175,6 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
             </div>
           </div>
 
-          {/* TỪ GHÉP PHỔ BIẾN – ĐƯA XUỐNG DƯỚI RIÊNG, RỘNG RÃI */}
           {/* TỪ GHÉP PHỔ BIẾN – CHIA 2 CỘT ĐỀU NHAU */}
           <div className="mt-12">
             <p className="label-medium-gray mb-6">Từ ghép phổ biến</p>
@@ -177,24 +235,33 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         </div>
       </div>
 
-      {/* Style giữ nguyên từ file của bạn */}
+      {/* Style giữ nguyên */}
       <style>{`
-      .flex-center-both-col {
-  /* flex */
-  display: flex;
-
-  /* flex-col */
-  flex-direction: column;
-
-  /* justify-center */
-  justify-content: center;
-
-  /* items-center */
-  align-items: center;
-
-  /* Thường đi kèm với h-full hoặc min-h-screen để thấy rõ hiệu ứng căn giữa */
-  min-height: 100%;
-}
+        .display-ultra-massive {
+          font-size: 8rem;
+          font-weight: 900;
+          color: #111827;
+          line-height: 1;
+          user-select: none;
+          transition: font-size 0.3s ease-in-out;
+        }
+        @media (min-width: 768px) {
+          .display-ultra-massive {
+            font-size: 160px;
+          }
+        }
+        @media (min-width: 1024px) {
+          .display-ultra-massive {
+            font-size: 200px;
+          }
+        }
+        .flex-center-both-col {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          min-height: 100%;
+        }
         .description-text-spaced {
           margin-top: 1.5rem;
           font-size: 1.125rem;
@@ -207,19 +274,10 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
           padding: 2rem;
           background-color: #f9fafb;
           border-radius: 1rem;
-          cursor: pointer;
           transition: all 150ms ease;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
         }
         .interactive-empty-state-box:hover {
           background-color: #f3f4f6;
-        }
-        .paragraph-reading-large {
-          font-size: 1.5rem;
-          line-height: 1.8;
-          color: #1f2937;
         }
         .heading-display-lg {
           font-size: 1.875rem;
@@ -247,7 +305,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         }
         .responsive-hero-grid {
           display: grid;
-          grid-template-columns: repeat(1, minmax(0, 1fr));
+          grid-template-columns: 1fr;
           align-items: center;
           gap: 2rem;
         }
@@ -258,19 +316,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         }
         @media (min-width: 1024px) {
           .responsive-hero-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-        .hero-display-massive {
-          font-size: 8rem;
-          font-weight: 900;
-          color: #111827;
-          line-height: 1;
-          margin: 0;
-        }
-        @media (min-width: 768px) {
-          .hero-display-massive {
-            font-size: 160px;
+            grid-template-columns: repeat(2, 1fr);
           }
         }
         .centered-content-box {
@@ -342,153 +388,5 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         }
       `}</style>
     </div>
-  );
-}
-
-// KanjiStrokeSVG – giữ nguyên
-function KanjiStrokeSVG({
-  kanji,
-  isAnimating,
-  strokes,
-  svgPaths,
-}: {
-  kanji: string;
-  isAnimating: boolean;
-  strokes: number;
-  svgPaths?: string[];
-}) {
-  const paths =
-    svgPaths && svgPaths.length > 0
-      ? svgPaths
-      : generatePlaceholderPaths(strokes);
-
-  function generatePlaceholderPaths(count: number) {
-    const paths: string[] = [];
-    const cx = 120,
-      cy = 120,
-      size = 80;
-    for (let i = 0; i < count; i++) {
-      const angle = (i * 360) / count;
-      const x1 = cx + Math.cos((angle * Math.PI) / 180) * size;
-      const y1 = cy + Math.sin((angle * Math.PI) / 180) * size;
-      const x2 = cx + Math.cos(((angle + 60) * Math.PI) / 180) * (size * 0.6);
-      const y2 = cy + Math.sin(((angle + 60) * Math.PI) / 180) * (size * 0.6);
-      paths.push(`M ${x1} ${y1} L ${cx} ${cy} L ${x2} ${y2}`);
-    }
-    return paths;
-  }
-
-  return (
-    <svg width="100%" height="300" viewBox="0 0 240 240" className="mx-auto">
-      <rect
-        x="20"
-        y="20"
-        width="200"
-        height="200"
-        fill="none"
-        stroke="#e5e7eb"
-        strokeWidth="1"
-        strokeDasharray="4,4"
-      />
-      <line
-        x1="120"
-        y1="20"
-        x2="120"
-        y2="220"
-        stroke="#e5e7eb"
-        strokeWidth="1"
-        strokeDasharray="4,4"
-      />
-      <line
-        x1="20"
-        y1="120"
-        x2="220"
-        y2="120"
-        stroke="#e5e7eb"
-        strokeWidth="1"
-        strokeDasharray="4,4"
-      />
-
-      <text
-        x="120"
-        y="160"
-        fontSize="130"
-        textAnchor="middle"
-        fill="#f3f4f6"
-        fontWeight="900"
-      >
-        {kanji}
-      </text>
-
-      {paths.map((path, i) => (
-        <path
-          key={i}
-          d={path}
-          fill="none"
-          stroke="#111827"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            strokeDasharray: 300,
-            strokeDashoffset: isAnimating ? 0 : 300,
-            animation: isAnimating
-              ? `draw 0.8s ease-out ${i * 0.3}s forwards`
-              : "none",
-          }}
-        />
-      ))}
-
-      {isAnimating &&
-        paths.map((path, i) => {
-          const match = path.match(/M\s*([\d.]+),([\d.]+)/);
-          if (!match) return null;
-          const x = parseFloat(match[1]);
-          const y = parseFloat(match[2]);
-
-          return (
-            <g
-              key={`num-${i}`}
-              style={{
-                animation: `fade 0.4s ease-out ${i * 0.3 + 0.6}s forwards`,
-                opacity: 0,
-              }}
-            >
-              <circle cx={x} cy={y} r="14" fill="#dc2626" />
-              <text
-                x={x}
-                y={y + 5}
-                fontSize="16"
-                fontWeight="900"
-                textAnchor="middle"
-                fill="white"
-              >
-                {i + 1}
-              </text>
-            </g>
-          );
-        })}
-
-      <style>{`
-        @keyframes draw {
-          from {
-            stroke-dashoffset: 300;
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-        @keyframes fade {
-          from {
-            opacity: 0;
-            transform: scale(0);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
-    </svg>
   );
 }
