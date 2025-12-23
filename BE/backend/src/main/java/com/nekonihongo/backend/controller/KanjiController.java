@@ -40,10 +40,6 @@ public class KanjiController {
                                         k.getHanViet(),
                                         k.getMeaning(),
                                         k.getStrokes(),
-                                        k.getStrokePaths().stream()
-                                                .sorted(Comparator.comparing(p -> p.getStrokeOrder()))
-                                                .map(p -> p.getPathData())
-                                                .toList(),
                                         k.getCompounds().stream()
                                                 .sorted(Comparator.comparing(c -> c.getDisplayOrder()))
                                                 .map(c -> new KanjiCompoundDto(c.getWord(), c.getReading(),
@@ -73,10 +69,6 @@ public class KanjiController {
                                 k.getHanViet(),
                                 k.getMeaning(),
                                 k.getStrokes(),
-                                k.getStrokePaths().stream()
-                                        .sorted(Comparator.comparing(p -> p.getStrokeOrder()))
-                                        .map(p -> p.getPathData())
-                                        .toList(),
                                 k.getCompounds().stream()
                                         .sorted(Comparator.comparing(c -> c.getDisplayOrder()))
                                         .map(c -> new KanjiCompoundDto(c.getWord(), c.getReading(), c.getMeaning()))

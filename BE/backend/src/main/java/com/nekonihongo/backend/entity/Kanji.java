@@ -17,7 +17,6 @@ public class Kanji {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,7 +48,5 @@ public class Kanji {
     @OrderBy("displayOrder ASC")
     private List<KanjiCompound> compounds = new ArrayList<>();
 
-    @OneToMany(mappedBy = "kanji", cascade = { CascadeType.ALL }, orphanRemoval = true)
-    @OrderBy("strokeOrder ASC")
-    private List<KanjiStrokePath> strokePaths = new ArrayList<>();
+    // ĐÃ XÓA: List<KanjiStrokePath> strokePaths và svgPaths
 }

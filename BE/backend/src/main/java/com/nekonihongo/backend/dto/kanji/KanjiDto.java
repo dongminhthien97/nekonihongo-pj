@@ -17,6 +17,5 @@ public class KanjiDto {
     private String hanViet; // Âm Hán Việt
     private String meaning; // Ý nghĩa
     private Integer strokes; // Số nét
-    private List<String> svgPaths; // Path cho animation viết nét (có thể null hoặc empty)
     private List<KanjiCompoundDto> compounds; // Từ ghép phổ biến
 }
