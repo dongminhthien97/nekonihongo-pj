@@ -1,7 +1,6 @@
 // src/components/KanjiDetailModal.tsx
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import HanziWriter, { type CharacterJson } from "hanzi-writer";
 
 interface KanjiCompound {
   word: string;
@@ -26,82 +25,116 @@ interface KanjiDetailModalProps {
 
 export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const writerRef = useRef<HanziWriter | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     containerRef.current.innerHTML = "";
 
-    const writer = HanziWriter.create(containerRef.current, kanji.kanji, {
-      width: 320,
-      height: 320,
-      padding: 20,
-      showOutline: true,
-      outlineColor: "#e5e7eb",
-      strokeColor: "#111827",
-      radicalColor: "#dc2626",
-      drawingColor: "#111827",
-      strokeAnimationSpeed: 1.2,
-      delayBetweenStrokes: 400,
-      showCharacter: false,
-      charDataLoader: (char: string, onLoad: (data: CharacterJson) => void) => {
-        const code = char
-          .charCodeAt(0)
-          .toString(16)
-          .padStart(5, "0")
-          .toUpperCase();
+    const unicode = kanji.kanji.charCodeAt(0).toString(16).padStart(5, "0");
 
-        // Ưu tiên data KanjiVG chuẩn Nhật
-        fetch(
-          `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${char}.json`
-        )
-          .then((r) => (r.ok ? r.json() : Promise.reject()))
-          .then((data) => onLoad(data as CharacterJson))
-          .catch(() => {
-            // Fallback về data mặc định – đảm bảo luôn có data hợp lệ
-            HanziWriter.loadCharacterData(char)
-              .then((fallbackData) => {
-                if (fallbackData) {
-                  onLoad(fallbackData);
-                } else {
-                  // Data trống an toàn nếu cả fallback cũng undefined (rất hiếm)
-                  onLoad({
-                    strokes: [],
-                    medians: [],
-                    radicals: {},
-                  } as CharacterJson);
-                }
-              })
-              .catch(() => {
-                // Nếu lỗi → data trống
-                onLoad({
-                  strokes: [],
-                  medians: [],
-                  radicals: {},
-                } as CharacterJson);
-              });
-          });
-      },
-    });
+    fetch(
+      `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${unicode}.svg`
+    )
+      .then((r) => {
+        if (r.ok) return r.text();
+        throw new Error("No SVG");
+      })
+      .then((svgText) => {
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+        const svgElement = svgDoc.documentElement;
 
-    writerRef.current = writer;
-    writer.animateCharacter();
+        // STYLE SỐ THỨ TỰ NÉT – MÀU ĐỎ NỔI BẬT
+        const textElements = svgElement.querySelectorAll("text");
+        textElements.forEach((text) => {
+          text.style.fill = "#dc2626"; // đỏ nổi (red-600)
+          text.style.fontWeight = "bold";
+          text.style.fontSize = "10px"; // to hơn, dễ đọc
+          text.style.fontFamily = "sans-serif";
+          text.style.textAnchor = "middle";
+          text.style.dominantBaseline = "middle";
+          // Thêm bóng nhẹ để nổi hơn trên nền
+          text.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.3))";
+        });
+
+        const cleanedSvg = new XMLSerializer().serializeToString(svgElement);
+        containerRef.current!.innerHTML = cleanedSvg;
+
+        // Animate nét
+        const paths = containerRef.current!.querySelectorAll("path");
+        paths.forEach((path, i) => {
+          const length = path.getTotalLength();
+          path.style.strokeDasharray = `${length}`;
+          path.style.strokeDashoffset = `${length}`;
+          path.style.animation = `draw 1s ease-in-out ${i * 0.3}s forwards`;
+          path.style.stroke = "#111827";
+          path.style.fill = "none";
+          path.style.strokeWidth = "10";
+          path.style.strokeLinecap = "round";
+          path.style.strokeLinejoin = "round";
+        });
+      })
+      .catch(() => {
+        console.warn(
+          `[KanjiVG] Không load SVG cho "${kanji.kanji}". Dùng placeholder.`
+        );
+        const placeholder = createSVGPlaceholder(kanji.strokes || 4);
+        containerRef.current!.innerHTML = placeholder;
+      });
 
     return () => {
       if (containerRef.current) containerRef.current.innerHTML = "";
-      writerRef.current = null;
     };
   }, [kanji.kanji]);
 
   const handleReplay = () => {
-    if (writerRef.current) {
-      writerRef.current.animateCharacter();
-    }
-  };
+    const container = containerRef.current;
+    if (!container) return;
 
+    const svg = container.querySelector("svg");
+    if (!svg) return;
+
+    const paths = svg.querySelectorAll("path");
+
+    paths.forEach((path, i) => {
+      // Clone path để reset hoàn toàn
+      const newPath = path.cloneNode(true) as SVGPathElement;
+      path.parentNode?.replaceChild(newPath, path);
+
+      const length = newPath.getTotalLength();
+      newPath.style.strokeDasharray = `${length}`;
+      newPath.style.strokeDashoffset = `${length}`;
+      newPath.style.animation = `draw 1s ease-in-out ${i * 0.3}s forwards`;
+    });
+  };
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose();
+  };
+
+  // Tạo SVG placeholder đơn giản
+  const createSVGPlaceholder = (strokeCount: number): string => {
+    let paths = "";
+    const cx = 160,
+      cy = 160,
+      size = 100;
+
+    for (let i = 0; i < strokeCount; i++) {
+      const angle = (i * 360) / strokeCount;
+      const x1 = cx + Math.cos((angle * Math.PI) / 180) * size;
+      const y1 = cy + Math.sin((angle * Math.PI) / 180) * size;
+      const x2 = cx + Math.cos(((angle + 60) * Math.PI) / 180) * (size * 0.6);
+      const y2 = cy + Math.sin(((angle + 60) * Math.PI) / 180) * (size * 0.6);
+
+      paths += `<path d="M${x1},${y1} L${cx},${cy} L${x2},${y2}" stroke="#111827" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" />`;
+    }
+
+    return `
+      <svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="100%" height="100%" fill="none" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="6,6" />
+        ${paths}
+      </svg>
+    `;
   };
 
   return (
@@ -130,18 +163,36 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
               </div>
             </div>
 
-            {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT – HANZI-WRITER */}
+            {/* CỘT PHẢI: THỨ TỰ NÉT VIẾT – KANJIVG SVG + CSS ANIMATION */}
             <div className="flex flex-col h-full justify-center">
-              <div
-                onClick={handleReplay}
-                className="interactive-empty-state-box flex-center-both-col cursor-pointer"
-                role="button"
-                tabIndex={0}
-              >
-                <div ref={containerRef} className="w-full max-w-lg mx-auto" />
-                <p className="description-text-spaced mt-8 text-center">
-                  Bấm vào để xem lại animation viết nét
-                </p>
+              <div className="flex flex-col items-center space-y-6">
+                {/* SVG container */}
+                <div
+                  ref={containerRef}
+                  className="w-full h-full flex items-center justify-center kanji-svg-container"
+                  style={{
+                    maxWidth: "320px",
+                    maxHeight: "320px",
+                    minHeight: "200px",
+                  }}
+                />
+
+                {/* Button replay riêng biệt – đẹp, rõ ràng */}
+                <button onClick={handleReplay} className="btn-icon-minimal">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -181,7 +232,6 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
             <div className="bg-gray-50 rounded-2xl p-8">
               {kanji.compounds.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Cột trái */}
                   <div className="space-y-6">
                     {kanji.compounds
                       .slice(0, Math.ceil(kanji.compounds.length / 2))
@@ -202,8 +252,6 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
                         </div>
                       ))}
                   </div>
-
-                  {/* Cột phải */}
                   <div className="space-y-6">
                     {kanji.compounds
                       .slice(Math.ceil(kanji.compounds.length / 2))
@@ -235,11 +283,64 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
         </div>
       </div>
 
-      {/* Style giữ nguyên */}
+      {/* Style giữ nguyên + animation draw */}
       <style>{`
+ .btn-icon-minimal {
+  /* Hiển thị flex để căn giữa icon */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Kích thước nút nhỏ gọn (44px x 44px là kích thước tối thiểu tốt cho cảm ứng) */
+  width: 44px;
+  height: 44px;
+  padding: 0; /* Loại bỏ padding vì kích thước đã cố định */
+
+  /* Nền trong suốt hoặc xám rất nhẹ */
+  background-color: transparent; 
+  color: #4b5563; /* Màu icon mặc định (xám) */
+
+  /* Hình tròn hoàn hảo */
+  border-radius: 9999px; 
+
+  /* Không có đường viền */
+  border: none;
+  cursor: pointer;
+
+  /* Hiệu ứng chuyển động mượt mà */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Loại bỏ shadow mặc định nếu có */
+  box-shadow: none;
+}
+
+/* Hiệu ứng Hover: Nền xám nhạt và icon đậm hơn */
+.btn-icon-minimal:hover {
+  background-color: #e5e7eb; /* Nền xám nhạt khi hover */
+  color: #1f2937; /* Icon đậm hơn */
+  transform: translateY(-1px); /* Nhích nhẹ */
+}
+
+/* Hiệu ứng Active (Khi nhấn) */
+.btn-icon-minimal:active {
+  background-color: #d1d5db; /* Nền đậm hơn chút khi nhấn */
+  transform: translateY(0);
+}
+      .kanji-svg-container > svg {
+  width: 100%;
+  height: 100%;
+  max-width: 280px;
+  max-height: 280px;
+  object-fit: contain;
+}
+        @keyframes draw {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
         .display-ultra-massive {
           font-size: 8rem;
-          font-weight: 900;
+          font-weight: 500;
           color: #111827;
           line-height: 1;
           user-select: none;
@@ -318,14 +419,6 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
           .responsive-hero-grid {
             grid-template-columns: repeat(2, 1fr);
           }
-        }
-        .centered-content-box {
-          text-align: center;
-          padding: 3rem 2rem;
-          background-color: #f9fafb;
-          border-radius: 1rem;
-          width: 100%;
-          height: 100%;
         }
         .icon-gray-medium {
           width: 1.75rem;

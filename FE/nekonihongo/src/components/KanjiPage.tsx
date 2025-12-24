@@ -8,8 +8,8 @@ import { KanjiDetailModal } from "../components/KanjiDetailModal";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 
-const LESSONS_PER_PAGE = 5;
-const KANJI_PER_PAGE = 20;
+const LESSONS_PER_PAGE = 12;
+const KANJI_PER_PAGE = 12;
 
 interface KanjiCompound {
   word: string;
