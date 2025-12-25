@@ -11,6 +11,9 @@ import { ExercisePage } from "./components/ExercisePage";
 import { MyPage } from "./pages/MyPage";
 import { DashboardAdmin } from "./pages/admin/DashboardAdmin";
 import { MyPageUser } from "./pages/user/MyPageUser";
+import { FlashcardKanji } from "./components/FlashcardKanji";
+import { VocabularySelector } from "./components/VocabularySelector";
+import { VocabularyN5 } from "./components/VocabularyN5";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -96,6 +99,9 @@ function MainApp() {
       {currentPage === "flashcard" && (
         <FlashcardPage onNavigate={handleNavigate} />
       )}
+      {currentPage === "flashcard-kanji" && (
+        <FlashcardKanji onNavigate={handleNavigate} />
+      )}
       {currentPage === "exercise" && (
         <ExercisePage onNavigate={handleNavigate} />
       )}
@@ -104,6 +110,12 @@ function MainApp() {
         <DashboardAdmin onNavigate={handleNavigate} />
       )}
       {currentPage === "user" && <MyPageUser onNavigate={handleNavigate} />}
+      {currentPage === "vocabulary-selector" && (
+        <VocabularySelector onNavigate={handleNavigate} />
+      )}
+      {currentPage === "vocabulary-n5" && (
+        <VocabularyN5 onNavigate={handleNavigate} />
+      )}
     </div>
   );
 }

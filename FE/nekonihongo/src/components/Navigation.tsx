@@ -21,7 +21,7 @@ export function Navigation({
 }) {
   const navItems = [
     { id: "landing", label: "Trang chủ", icon: Home },
-    { id: "vocabulary", label: "Từ vựng", icon: Languages },
+    { id: "vocabulary-selector", label: "Từ vựng", icon: Languages },
     { id: "grammar", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji", label: "Kanji", icon: FileText },
     // { id: "flashcard", label: "Flashcard", icon: CreditCard },

@@ -25,7 +25,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Vocabulary Card */}
           <button
-            onClick={() => onNavigate("vocabulary")}
+            onClick={() => onNavigate("vocabulary-selector")}
             className="responsive-hover-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">

@@ -7,6 +7,7 @@ import { Background } from "./Background";
 import { KanjiDetailModal } from "../components/KanjiDetailModal";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
+import { NekoAlertModal } from "./NekoAlertModal";
 
 const LESSONS_PER_PAGE = 12;
 const KANJI_PER_PAGE = 12;
@@ -50,6 +51,7 @@ export function KanjiPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedKanji, setSelectedKanji] = useState<Kanji | null>(null);
+  const [showNoLessonModal, setShowNoLessonModal] = useState(false);
 
   useEffect(() => {
     const fetchKanjiLessons = async () => {
@@ -88,6 +90,47 @@ export function KanjiPage({
 
     fetchKanjiLessons();
   }, [onNavigate]);
+
+  const handleStartFlashcardKanji = () => {
+    if (!selectedLesson || selectedLesson.kanjiList.length === 0) {
+      setShowNoLessonModal(true);
+      return;
+    }
+
+    // Lấy tất cả compounds từ các Kanji trong bài
+    let allCompounds: KanjiCompound[] = [];
+    selectedLesson.kanjiList.forEach((kanji) => {
+      if (kanji.compounds && kanji.compounds.length > 0) {
+        allCompounds = allCompounds.concat(kanji.compounds);
+      }
+    });
+
+    if (allCompounds.length === 0) {
+      alert("Bài học này chưa có từ ghép để học flashcard!");
+      return;
+    }
+
+    // Chọn 10 compounds ngẫu nhiên (cho phép trùng nếu ít hơn 10)
+    let selectedCompounds = [...allCompounds];
+    if (selectedCompounds.length > 10) {
+      selectedCompounds = selectedCompounds
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+    }
+
+    // Lưu vào localStorage để FlashcardKanji đọc
+    localStorage.setItem(
+      "nekoFlashcardKanjiData",
+      JSON.stringify({
+        lessonId: selectedLesson.id,
+        lessonTitle: selectedLesson.title,
+        compounds: selectedCompounds,
+        allCompounds: allCompounds, // để học tiếp có thể lấy lại
+      })
+    );
+
+    requestAnimationFrame(() => onNavigate("flashcard-kanji"));
+  };
 
   // Phân trang bài học
   const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
@@ -386,6 +429,38 @@ export function KanjiPage({
           </div>
         )}
       </main>
+      {/* MÈO BAY SIÊU DỄ THƯƠNG – CLICK VÀO HỌC FLASHCARD KANJI TỪ BÀI HIỆN TẠI */}
+      <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
+        <div
+          className="relative group cursor-pointer"
+          onClick={handleStartFlashcardKanji}
+        >
+          <div className="tooltip-slide-out">
+            <div className="colored-border-label">
+              <p className="text-xl font-bold drop-shadow-md">
+                Học flashcard Kanji từ bài hiện tại nào mèo ơi! 🐾
+              </p>
+              <div className="absolute bottom-0 right-8 translate-y-full">
+                <div className="triangle-down-pink"></div>
+              </div>
+            </div>
+            <div className="absolute bottom-full mb-2 right-12 text-4xl animate-bounce">
+              ✨
+            </div>
+          </div>
+
+          <img
+            src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+            alt="Flying Neko"
+            className="responsive-circular-image-hover"
+            style={{
+              filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.6))",
+            }}
+          />
+
+          <div className="circular-gradient-hover-glow"></div>
+        </div>
+      </div>
 
       <Footer />
 
@@ -396,6 +471,16 @@ export function KanjiPage({
           onClose={() => setSelectedKanji(null)}
         />
       )}
+      <NekoAlertModal
+        isOpen={showNoLessonModal}
+        onClose={() => setShowNoLessonModal(false)}
+        title="Meow meow..."
+        message={
+          !selectedLesson
+            ? "Hãy chọn 1 bài học trước nhé"
+            : "Bài này chưa có từ vựng nào cả... Mèo buồn quá!"
+        }
+      />
 
       <style>{`
 .kanji-simple-card {
