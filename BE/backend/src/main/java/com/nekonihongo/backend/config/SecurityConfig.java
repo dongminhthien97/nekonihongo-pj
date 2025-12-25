@@ -60,6 +60,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
                                                 .requestMatchers("/api/vocabulary/**").permitAll() // nếu có
+                                                .requestMatchers("/api/vocabulary/n5/**").permitAll()
 
                                                 // CÁC API CẦN AUTH
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
