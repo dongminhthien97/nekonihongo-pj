@@ -84,7 +84,7 @@ export function KanjiPage({
 
         setError("Không thể tải dữ liệu Kanji. Mèo đang cố gắng...");
       } finally {
-        setTimeout(() => setIsLoading(false), 1500);
+        setTimeout(() => setIsLoading(false), 600);
       }
     };
 

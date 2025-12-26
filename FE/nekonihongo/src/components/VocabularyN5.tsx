@@ -34,12 +34,18 @@ export function VocabularyN5({
         setIsLoading(true);
         const res = await api.get("/vocabulary/n5?page=1&size=1000");
         const data = res.data?.data || [];
+
+        //loading
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
         setWords(data);
       } catch (err: any) {
         console.error("Lỗi tải N5:", err);
         setError("Không tải được từ vựng N5. Mèo đang cố gắng...");
       } finally {
-        setIsLoading(false);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 600);
       }
     };
 
@@ -157,26 +163,26 @@ export function VocabularyN5({
 
         {/* Chọn ngày học – chỉ hiển thị 25 từ/ngày */}
         <div className="text-center mb-10">
-          <p className="text-white text-2xl mb-4">
+          <p className="text-white text-3xl mb-4">
             Học theo ngày – 25 từ mỗi ngày
           </p>
-          <div className="flex justify-center items-center gap-4 flex-wrap">
+          <div className="flex-center-group">
             <button
               onClick={() => setSelectedDay((d) => Math.max(1, d - 1))}
               disabled={selectedDay === 1}
-              className="px-6 py-3 bg-white/80 rounded-full font-bold hover:bg-white transition"
+              className="btn-primary"
             >
               ← Ngày trước
             </button>
 
-            <span className="text-white text-xl font-bold bg-black/50 px-6 py-3 rounded-full">
+            <span className="btn-secondary">
               Ngày {selectedDay} / {totalDays} ({currentDayWords.length} từ)
             </span>
 
             <button
               onClick={() => setSelectedDay((d) => Math.min(totalDays, d + 1))}
               disabled={selectedDay === totalDays}
-              className="px-6 py-3 bg-white/80 rounded-full font-bold hover:bg-white transition"
+              className="btn-primary"
             >
               Ngày sau →
             </button>
@@ -266,6 +272,88 @@ export function VocabularyN5({
 
       <Footer />
       <style>{`
+      .flex-center-group {
+  /* flex */
+  display: flex;
+
+  /* justify-center */
+  justify-content: center;
+
+  /* items-center */
+  align-items: center;
+
+  /* gap-4 (16px) */
+  gap: 1rem;
+
+  /* flex-wrap */
+  flex-wrap: wrap;
+
+  /* Thêm một chút margin để tách biệt với các khối khác */
+  margin: 2rem 0;
+}
+      .btn-secondary {
+  /* text-white */
+  color: #ffffff;
+
+  /* text-xl (20px) */
+  font-size: 1.25rem;
+
+  /* font-bold */
+  font-weight: 700;
+
+  /* bg-black/50 (Nền đen trong suốt 50%) */
+  background-color: rgba(0, 0, 0, 0.5);
+
+  /* px-6 py-3 (Ngang 24px, Dọc 12px) */
+  padding: 0.75rem 1.5rem;
+
+  /* rounded-full */
+  border-radius: 9999px;
+
+  /* Cấu hình cơ bản */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Thêm viền nhẹ để tách nền tốt hơn */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px); /* Hiệu ứng kính mờ nhẹ cho nền tối */
+}
+
+.btn-secondary:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+      .btn-primary {
+  /* px-6 py-3 (Ngang 24px, Dọc 12px) */
+  padding: 0.75rem 1.5rem;
+
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8);
+
+  /* rounded-full */
+  border-radius: 9999px;
+
+  /* font-bold */
+  font-weight: 700;
+  
+  /* Cấu hình cơ bản */
+  border: none;
+  cursor: pointer;
+  color: #1e293b; /* Màu chữ tối để tương phản với nền trắng */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* transition */
+  transition: all 0.3s ease;
+}
+
+/* hover:bg-white */
+.btn-primary:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: translateY(-2px); /* Thêm hiệu ứng nhấc lên nhẹ cho chuyên nghiệp */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
       .list-item-hover {
   /* border-b border-gray-200 */
   border-bottom: 1px solid #e5e7eb;

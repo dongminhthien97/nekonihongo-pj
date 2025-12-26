@@ -25,7 +25,7 @@ export function Navigation({
     { id: "grammar", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji", label: "Kanji", icon: FileText },
     // { id: "flashcard", label: "Flashcard", icon: CreditCard },
-    { id: "exercise", label: "Bài tập", icon: Dumbbell },
+    { id: "exercise-selector", label: "Bài tập", icon: Dumbbell },
     { id: "mypage", label: "MyPage", icon: User },
     {
       id: "logout",

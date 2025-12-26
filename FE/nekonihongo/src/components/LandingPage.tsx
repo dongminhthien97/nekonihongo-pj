@@ -84,7 +84,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           </button>
 
           {/* Flashcard Card */}
-          <button
+          {/* <button
             onClick={() => onNavigate("flashcard")}
             className="interactive-elevated-card"
           >
@@ -101,11 +101,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 <span className="text-2xl">✨</span>
               </div>
             </div>
-          </button>
+          </button> */}
 
           {/* Exercise Card */}
           <button
-            onClick={() => onNavigate("exercise")}
+            onClick={() => onNavigate("exercise-selector")}
             className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">

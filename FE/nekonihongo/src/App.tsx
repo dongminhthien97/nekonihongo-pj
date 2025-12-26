@@ -14,6 +14,8 @@ import { MyPageUser } from "./pages/user/MyPageUser";
 import { FlashcardKanji } from "./components/FlashcardKanji";
 import { VocabularySelector } from "./components/VocabularySelector";
 import { VocabularyN5 } from "./components/VocabularyN5";
+import { ExerciseSelector } from "./components/ExerciseSelector";
+import { Toaster } from "react-hot-toast";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -102,9 +104,9 @@ function MainApp() {
       {currentPage === "flashcard-kanji" && (
         <FlashcardKanji onNavigate={handleNavigate} />
       )}
-      {currentPage === "exercise" && (
+      {/* {currentPage === "exercise" && (
         <ExercisePage onNavigate={handleNavigate} />
-      )}
+      )} */}
       {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
       {currentPage === "admin" && (
         <DashboardAdmin onNavigate={handleNavigate} />
@@ -116,6 +118,51 @@ function MainApp() {
       {currentPage === "vocabulary-n5" && (
         <VocabularyN5 onNavigate={handleNavigate} />
       )}
+      {currentPage === "exercise-selector" && (
+        <ExerciseSelector onNavigate={handleNavigate} />
+      )}
+      {currentPage === "exercise-n5" && (
+        <ExercisePage onNavigate={handleNavigate} />
+      )}
+      <>
+        {/* Các route/page của bạn */}
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={12}
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+              borderRadius: "24px",
+              padding: "16px 24px",
+              boxShadow: "0 10px 30px rgba(255, 182, 233, 0.4)",
+              backdropFilter: "blur(10px)",
+              border: "2px solid rgba(255, 199, 234, 0.5)",
+              fontSize: "18px",
+              fontWeight: "600",
+            },
+            success: {
+              icon: "😻",
+              style: {
+                borderColor: "#77FFD9",
+                boxShadow: "0 10px 30px rgba(119, 255, 217, 0.4)",
+              },
+            },
+            error: {
+              icon: "😿",
+              style: {
+                borderColor: "#FF77C2",
+                boxShadow: "0 10px 30px rgba(255, 119, 194, 0.4)",
+              },
+            },
+            loading: {
+              icon: "🐱",
+            },
+          }}
+        />
+      </>
     </div>
   );
 }

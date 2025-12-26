@@ -63,7 +63,7 @@ export function GrammarPage({
           "bài học"
         );
 
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 600));
 
         setLessons(serverLessons);
         setError("");
@@ -81,7 +81,7 @@ export function GrammarPage({
 
         setError("Không thể kết nối đến server! Mèo đang cố gắng...");
       } finally {
-        setTimeout(() => setIsLoading(false), 1500);
+        setTimeout(() => setIsLoading(false), 600);
       }
     };
 

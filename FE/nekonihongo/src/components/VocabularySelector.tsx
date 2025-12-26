@@ -9,8 +9,6 @@ interface VocabType {
   subtitle: string;
   description: string;
   icon: string;
-  gradientFrom: string;
-  gradientTo: string;
 }
 
 const vocabTypes: VocabType[] = [
@@ -20,8 +18,6 @@ const vocabTypes: VocabType[] = [
     subtitle: "Giáo trình chuẩn Nhật Bản",
     description: "Học theo bài có cấu trúc rõ ràng, phù hợp người mới bắt đầu",
     icon: "📚",
-    gradientFrom: "from-pink-500",
-    gradientTo: "to-purple-600",
   },
   {
     id: "n5",
@@ -29,8 +25,6 @@ const vocabTypes: VocabType[] = [
     subtitle: "~800 từ vựng chuẩn thi",
     description: "Học theo ngày, flashcard thông minh, dễ đạt chứng chỉ",
     icon: "🎯",
-    gradientFrom: "from-cyan-500",
-    gradientTo: "to-blue-600",
   },
 ];
 
@@ -52,60 +46,48 @@ export function VocabularySelector({
       <Navigation currentPage="vocabulary" onNavigate={onNavigate} />
       <Background />
 
-      <main className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+      <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
         {/* Tiêu đề fade in đầu tiên */}
-        <div className="text-center mb-16 md:mb-24 animate-fade-in">
+        <div className="text-center mb-16 md:mb-24">
           <h1 className="hero-section-title hero-text-glow">
             Chọn lộ trình học
           </h1>
-          <p className="text-xl md:text-3xl text-white/90 font-medium max-w-4xl mx-auto">
-            Mèo đã chuẩn bị sẵn 2 phong cách học siêu hay cho bạn rồi đấy! 🐾
+          <p className="lead-text">
+            Mèo đã chuẩn bị sẵn phong cách học siêu hay cho bạn rồi đấy! 🐾
           </p>
         </div>
 
         {/* Cards chọn loại – fade in lần lượt với delay */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+        <div className="grid-container">
           {vocabTypes.map((type, index) => (
             <button
               key={type.id}
               onClick={() => handleSelect(type.id)}
-              className={`group relative overflow-hidden rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-700 transform hover:scale-105 hover:-translate-y-6 animate-fade-in-delay`}
+              className={`glass-card`}
               style={{ animationDelay: `${0.3 + index * 0.2}s` }} // Card đầu 0.3s, card sau 0.5s
             >
               {/* Gradient nền khi hover */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${type.gradientFrom} ${type.gradientTo} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
-              />
+              <div className={`gradient-overlay`} />
 
               {/* Ánh sáng blur khi hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-700">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-white/30 rounded-full blur-3xl -translate-x-48 -translate-y-48" />
-                <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/30 rounded-full blur-3xl translate-x-48 translate-y-48" />
+              <div className="subtle-overlay">
+                <div className="glow-orb orb-top" />
+                <div className="glow-orb orb-bottom" />
               </div>
 
               {/* Nội dung */}
               <div className="relative z-10 p-10 md:p-16 text-center">
-                <div className="text-8xl md:text-9xl mb-8 transform group-hover:scale-110 transition-transform duration-500">
-                  {type.icon}
-                </div>
+                <div className="hero-text">{type.icon}</div>
 
-                <h2 className="text-4xl md:text-5xl font-black text-white mb-4 drop-shadow-lg">
-                  {type.title}
-                </h2>
+                <h2 className="card-title">{type.title}</h2>
 
-                <p className="text-xl md:text-2xl text-white/90 font-semibold mb-6">
-                  {type.subtitle}
-                </p>
+                <p className="card-subtitle">{type.subtitle}</p>
 
-                <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-md mx-auto mb-10">
-                  {type.description}
-                </p>
+                <p className="card-description">{type.description}</p>
 
-                <div className="inline-flex items-center gap-4 text-white text-xl md:text-2xl font-bold">
+                <div className="flex-container">
                   <span>Bấm để bắt đầu</span>
-                  <span className="text-4xl transform group-hover:translate-x-6 transition-transform duration-500">
-                    →
-                  </span>
+                  <span className="moving-icon">→</span>
                 </div>
               </div>
             </button>
@@ -114,14 +96,14 @@ export function VocabularySelector({
 
         {/* Footer text – fade in cuối cùng */}
         <div
-          className="text-center mt-20 md:mt-32 animate-fade-in-delay"
+          className="footer-container text-center"
           style={{ animationDelay: "0.8s" }}
         >
-          <p className="text-2xl md:text-3xl text-white/90 font-medium mb-6">
+          <p className="accent-text">
             Dù bạn chọn lộ trình nào, mèo cũng sẽ đồng hành cùng bạn đến cùng
             nhé! 💕
           </p>
-          <div className="text-6xl md:text-8xl animate-bounce">🐾</div>
+          <div className="bouncing-icon">🐾</div>
         </div>
       </main>
 
@@ -129,7 +111,381 @@ export function VocabularySelector({
 
       {/* CSS cho fade-in animation */}
       <style>{`
-            .hero-section-title {
+                    .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+          opacity: 0;
+        }
+                  @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      .grid-container {
+  /* max-w-6xl (1152px) */
+  max-width: 72rem;
+  
+  /* mx-auto (Căn giữa toàn bộ lưới) */
+  margin-left: auto;
+  margin-right: auto;
+
+  /* grid grid-cols-1 */
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+
+  /* gap-12 (48px) */
+  gap: 3rem;
+  
+  padding: 1rem; /* Padding nhỏ để không bị dính sát mép màn hình điện thoại */
+}
+
+/* lg:grid-cols-3 & lg:gap-20 (Màn hình từ 1024px trở lên) */
+@media (min-width: 1024px) {
+  .grid-container {
+    /* Chia làm 3 cột bằng nhau */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    
+    /* gap-20 (80px) */
+    gap: 5rem;
+  }
+}
+      .lead-text {
+  /* text-xl (20px) */
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+
+  /* text-white/90 */
+  color: rgba(255, 255, 255, 0.9);
+
+  /* font-medium */
+  font-weight: 500;
+
+  /* max-w-4xl (896px) */
+  max-width: 56rem;
+
+  /* mx-auto (Căn giữa khối văn bản) */
+  margin-left: auto;
+  margin-right: auto;
+
+  /* Căn giữa nội dung chữ */
+  text-align: center;
+}
+
+/* md:text-3xl (Màn hình từ 768px trở lên - 30px) */
+@media (min-width: 768px) {
+  .lead-text {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+      .bouncing-icon {
+  /* text-6xl (60px) */
+  font-size: 3.75rem;
+  line-height: 1;
+
+  /* Cấu hình để animation hoạt động tốt */
+  display: inline-block;
+
+  /* animate-bounce */
+  animation: bounce 1s infinite;
+}
+
+/* md:text-8xl (Màn hình từ 768px trở lên - 96px) */
+@media (min-width: 768px) {
+  .bouncing-icon {
+    font-size: 6rem;
+  }
+}
+
+/* Định nghĩa Keyframes cho animate-bounce (Chuẩn Tailwind) */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+      .accent-text {
+  /* text-2xl (24px) */
+  font-size: 1.5rem;
+  line-height: 2rem;
+
+  /* text-white/90 (Độ trong suốt 90%) */
+  color: rgba(255, 255, 255, 0.9);
+
+  /* font-medium */
+  font-weight: 500;
+
+  /* mb-6 (24px) */
+  margin-bottom: 1.5rem;
+}
+
+/* md:text-3xl (Màn hình từ 768px trở lên - 30px) */
+@media (min-width: 768px) {
+  .accent-text {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
+/* md:mt-32 (Màn hình từ 768px trở lên - 128px) */
+@media (min-width: 768px) {
+  .footer-container {
+    margin-top: 8rem;
+  }
+}
+
+      .moving-icon {
+  /* text-4xl */
+  font-size: 2.25rem; /* 36px */
+  line-height: 2.5rem;
+
+  /* Cấu hình để transform hoạt động */
+  display: inline-block;
+
+  /* transition-transform duration-500 */
+  transition: transform 0.5s ease;
+  will-change: transform;
+}
+
+/* group-hover:translate-x-6 */
+/* Khi di chuột vào .glass-card (group), icon dịch sang phải 1.5rem (24px) */
+.glass-card:hover .moving-icon {
+  transform: translateX(1.5rem);
+}
+      .flex-container {
+  /* inline-flex items-center gap-4 */
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem; /* 4 * 4px = 16px */
+
+  /* text-white text-xl font-bold */
+  color: #ffffff;
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  
+  /* Đảm bảo căn chỉnh mượt mà */
+  vertical-align: middle;
+}
+
+/* md:text-2xl (Màn hình từ 768px trở lên) */
+@media (min-width: 768px) {
+  .flex-container {
+    font-size: 1.5rem; /* 24px */
+  }
+}
+      .card-description {
+  /* text-lg (18px) */
+  font-size: 1.125rem;
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* leading-relaxed (line-height: 1.625) */
+  line-height: 1.625;
+  
+  /* max-w-md (448px) */
+  max-width: 28rem;
+  
+  /* mx-auto (Căn giữa theo chiều ngang) */
+  margin-left: auto;
+  margin-right: auto;
+  
+  /* mb-10 (10 * 4px = 40px) */
+  margin-bottom: 2.5rem;
+  
+  /* Đảm bảo chữ trông mịn hơn trên nền tối */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* md:text-xl (Màn hình từ 768px trở lên - 20px) */
+@media (min-width: 768px) {
+  .card-description {
+    font-size: 1.25rem;
+  }
+}
+      .card-subtitle {
+  /* text-xl (20px) */
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+
+  /* text-white */
+  color: #ffffff;
+
+  /* font-semibold */
+  font-weight: 600;
+
+  /* mb-6 (6 * 4px = 24px) */
+  margin-bottom: 1.5rem;
+}
+
+/* md:text-2xl (Màn hình từ 768px trở lên - 24px) */
+@media (min-width: 768px) {
+  .card-subtitle {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+      .card-title {
+  /* text-4xl */
+  font-size: 2.25rem; /* 36px */
+  line-height: 2.5rem;
+  
+  /* font-black */
+  font-weight: 900;
+  
+  /* text-white */
+  color: #ffffff;
+  
+  /* mb-4 (4 * 4px) */
+  margin-bottom: 1rem;
+  
+  /* drop-shadow-lg */
+  filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.04)) 
+          drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));
+}
+
+/* md:text-5xl (Màn hình từ 768px trở lên) */
+@media (min-width: 768px) {
+  .card-title {
+    font-size: 3rem; /* 48px */
+    line-height: 1;
+  }
+}
+      .hero-text {
+  /* text-8xl */
+  font-size: 6rem; /* 96px */
+  line-height: 1;
+  margin-bottom: 2rem; /* mb-8 (8 * 4px = 32px) */
+  
+  /* Cấu hình để transform hoạt động mượt mà */
+  display: inline-block; 
+  transition: transform 0.5s ease; /* duration-500 */
+  will-change: transform; /* Tối ưu hiệu năng cho trình duyệt */
+}
+
+/* md:text-9xl (Dành cho màn hình từ 768px trở lên) */
+@media (min-width: 768px) {
+  .hero-text {
+    font-size: 8rem; /* 128px */
+  }
+}
+
+/* group-hover:scale-110 */
+/* Khi di chuột vào .glass-card thì .hero-text sẽ phóng to */
+.glass-card:hover .hero-text {
+  transform: scale(1.1);
+}
+      /* Class dùng chung cho cả 2 vầng sáng */
+.glow-orb {
+  position: absolute;
+  width: 24rem; /* w-96 */
+  height: 24rem; /* h-96 */
+  background-color: rgba(255, 255, 255, 0.3); /* bg-white/30 */
+  border-radius: 50%; /* rounded-full */
+  filter: blur(64px); /* blur-3xl */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Vị trí góc trên trái */
+.orb-top {
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* Vị trí góc dưới phải (Mã bạn vừa gửi) */
+.orb-bottom {
+  bottom: 0;
+  right: 0;
+  /* translate-x-48 translate-y-48 = dịch chuyển ra ngoài 50% */
+  transform: translate(50%, 50%);
+}
+      .subtle-overlay {
+  /* absolute inset-0 */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  /* Giả sử bạn muốn phủ màu trắng hoặc màu chủ đạo của thương hiệu */
+  background-color: white; 
+
+  /* opacity-0 và transition-opacity duration-700 */
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  pointer-events: none; /* Đảm bảo lớp này không ngăn cản việc click vào nội dung */
+}
+
+/* group-hover:opacity-40 */
+.glass-card:hover .subtle-overlay {
+  opacity: 0.4;
+}
+      .gradient-overlay {
+  /* absolute inset-0 */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  /* bg-gradient-to-br (Ví dụ: từ xanh sang tím) */
+  background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+
+  /* opacity-0 + transition-opacity duration-700 */
+  opacity: 0;
+  transition: opacity 0.7s ease;
+  z-index: 0; /* Đảm bảo nằm dưới nội dung */
+}
+
+/* group-hover:opacity-100 */
+.glass-card:hover .gradient-overlay {
+  opacity: 1;
+}
+
+/* Đảm bảo nội dung luôn hiển thị trên lớp gradient */
+.content {
+  position: relative;
+  z-index: 1;
+}
+      .glass-card {
+  /* Cấu trúc cơ bản */
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem; /* rounded-3xl */
+  
+  /* Hiệu ứng Glassmorphism */
+  background-color: rgba(255, 255, 255, 0.1); /* bg-white/10 */
+  backdrop-filter: blur(24px); /* backdrop-blur-xl */
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* border-white/20 */
+  
+  /* Đổ bóng và Chuyển cảnh */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* shadow-2xl */
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); /* duration-700 */
+  
+  /* Animation khi load trang */
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Hiệu ứng Hover (Hover state) */
+.glass-card:hover {
+  transform: scale(1.05) translateY(-24px); /* hover:scale-105 hover:-translate-y-6 */
+  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6); /* hover:shadow-3xl */
+}
+
+  .hero-section-title {
   /* relative */
   position: relative;
   
@@ -262,10 +618,6 @@ export function VocabularySelector({
         .animate-pulse-soft {
           animation: pulse-soft 2s ease-in-out infinite;
         }
-              .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-          opacity: 0;
-        }
                   @keyframes fade-in {
           0% {
             opacity: 0;
@@ -286,16 +638,6 @@ export function VocabularySelector({
             transform: translateY(0);
           }
         }
-
-        .animate-fade-in {
-          animation: fadeIn 1s ease-out forwards;
-        }
-
-        .animate-fade-in-delay {
-          opacity: 0;
-          animation: fadeIn 1.2s ease-out forwards;
-        }
-
         @keyframes gradient {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
