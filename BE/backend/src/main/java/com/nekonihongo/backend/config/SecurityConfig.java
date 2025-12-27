@@ -59,8 +59,10 @@ public class SecurityConfig {
                                                 // CÁC API CÔNG KHAI PHẢI ĐẶT TRƯỚC .anyRequest()
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/grammar/n5/**").permitAll()
                                                 .requestMatchers("/api/vocabulary/**").permitAll() // nếu có
                                                 .requestMatchers("/api/vocabulary/n5/**").permitAll()
+                                                .requestMatchers("/api/kanji/n5/**").permitAll()
 
                                                 // CÁC API CẦN AUTH
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()

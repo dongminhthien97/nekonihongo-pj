@@ -2,6 +2,7 @@
 package com.nekonihongo.backend.controller;
 
 import com.nekonihongo.backend.dto.ApiResponse;
+import com.nekonihongo.backend.dto.GrammarPatternDTO;
 import com.nekonihongo.backend.dto.grammar.GrammarExampleDto;
 import com.nekonihongo.backend.dto.grammar.GrammarLessonDto;
 import com.nekonihongo.backend.dto.grammar.GrammarPointDto;
@@ -9,10 +10,9 @@ import com.nekonihongo.backend.entity.GrammarExample;
 import com.nekonihongo.backend.entity.GrammarLesson;
 import com.nekonihongo.backend.entity.GrammarPoint;
 import com.nekonihongo.backend.repository.GrammarLessonRepository;
+import com.nekonihongo.backend.service.GrammarService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class GrammarController {
 
         private final GrammarLessonRepository lessonRepository;
+        private final GrammarService grammarService;
 
         @GetMapping("/lessons")
         public ApiResponse<List<GrammarLessonDto>> getAllLessons() {
@@ -116,5 +117,10 @@ public class GrammarController {
                                                 .toList());
 
                 return ApiResponse.success(dto, "Lấy bài học ngữ pháp thành công!");
+        }
+
+        @GetMapping("/n5")
+        public List<GrammarPatternDTO> getN5Grammar() {
+                return grammarService.getN5GrammarPatterns();
         }
 }

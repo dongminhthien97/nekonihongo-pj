@@ -75,10 +75,33 @@ public class ExerciseService {
                 .build();
     }
 
+    public List<ExerciseDTO> getN5GrammarExercises() {
+        List<Exercise> exercises = exerciseRepository
+                .findByCategory_NameAndLevel_LevelOrderByLessonNumber(
+                        CategoryType.GRAMMAR,
+                        JlptLevelType.N5);
+
+        return exercises.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<ExerciseDTO> getN5KanjiExercises() {
+        List<Exercise> exercises = exerciseRepository
+                .findByCategory_NameAndLevel_LevelOrderByLessonNumber(
+                        CategoryType.KANJI,
+                        JlptLevelType.N5);
+
+        return exercises.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     // Import từ JSON (sau này dùng)
     @Transactional
     public void importN5VocabularyExercises(List<Object> jsonData) {
         // Logic import từ JSON (59 bài)
         // Sẽ viết chi tiết khi có full JSON
     }
+
 }

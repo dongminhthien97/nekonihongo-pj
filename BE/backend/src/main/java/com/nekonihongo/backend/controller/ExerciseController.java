@@ -30,4 +30,15 @@ public class ExerciseController {
         ExerciseDTO exercise = exerciseService.getExerciseById(id);
         return ResponseEntity.ok(exercise);
     }
+
+    @GetMapping("/grammar/n5")
+    public List<ExerciseDTO> getN5GrammarExercises() {
+        return exerciseService.getN5GrammarExercises();
+    }
+
+    @GetMapping("/kanji/n5")
+    public List<ExerciseDTO> getN5KanjiExercises() {
+        return exerciseService.getN5KanjiExercises();
+    }
+
 }
