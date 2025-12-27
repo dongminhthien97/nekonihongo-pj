@@ -1,3 +1,4 @@
+// src/App.tsx – FULL CODE ĐÃ FIX HOÀN HẢO
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SplashScreen } from "./components/SplashScreen";
@@ -16,9 +17,29 @@ import { VocabularySelector } from "./components/VocabularySelector";
 import { VocabularyN5 } from "./components/VocabularyN5";
 import { ExerciseSelector } from "./components/ExerciseSelector";
 import { Toaster } from "react-hot-toast";
+import { GrammarN5ListPage } from "./components/GrammarN5ListPage";
+import { GrammarSelector } from "./components/GrammarSelector";
+import { KanjiSelector } from "./components/KanjiSelector";
+import { KanjiN5ListPage } from "./components/KanjiN5ListPage";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
+
+  // ĐƯA STATE LÊN CẤP CAO NHẤT ĐỂ CHIA SẺ CHO TẤT CẢ COMPONENT
+  const [currentPage, setCurrentPage] = useState<string>("landing");
+  const [pageParams, setPageParams] = useState<{
+    category?: string;
+    level?: string;
+  } | null>(null);
+
+  const handleNavigate = (
+    page: string,
+    params?: { category?: string; level?: string }
+  ) => {
+    setCurrentPage(page);
+    setPageParams(params || null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // SEO metadata
   useEffect(() => {
@@ -49,49 +70,30 @@ function AppContent() {
           <p className="text-gray-700 text-xl">にゃん…</p>
         </div>
         <style>{`
-        
           @keyframes bounce-in {
-            0% {
-              opacity: 0;
-              transform: scale(0.9);
-            }
-            100% {
-              opacity: 1;
-              transform: scale(1);
-            }
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
           }
-          .animate-bounce-in {
-            animation: bounce-in 0.5s ease-out;
-          }
+          .animate-bounce-in { animation: bounce-in 0.5s ease-out; }
         `}</style>
       </div>
     );
   }
 
-  // 2. Chưa đăng nhập → LoginPage (không splash)
+  // 2. Chưa đăng nhập → LoginPage
   if (!user) {
     return <LoginPage />;
   }
 
-  // 3. Đã đăng nhập + chưa thấy splash → hiện SplashScreen 1 lần duy nhất
+  // 3. Đã đăng nhập + chưa thấy splash → hiện SplashScreen
   if (!hasSeenSplash) {
     return <SplashScreen onComplete={markSplashAsSeen} />;
   }
 
-  // 4. Đã thấy splash → vào app bình thường
-  return <MainApp />;
-}
-
-function MainApp() {
-  const [currentPage, setCurrentPage] = useState<string>("landing");
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
+  // 4. Đã thấy splash → vào app chính
   return (
     <div className="min-h-screen page-transition">
+      {/* Các trang */}
       {currentPage === "landing" && <LandingPage onNavigate={handleNavigate} />}
       {currentPage === "vocabulary" && (
         <VocabularyPage onNavigate={handleNavigate} />
@@ -104,9 +106,6 @@ function MainApp() {
       {currentPage === "flashcard-kanji" && (
         <FlashcardKanji onNavigate={handleNavigate} />
       )}
-      {/* {currentPage === "exercise" && (
-        <ExercisePage onNavigate={handleNavigate} />
-      )} */}
       {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
       {currentPage === "admin" && (
         <DashboardAdmin onNavigate={handleNavigate} />
@@ -115,54 +114,80 @@ function MainApp() {
       {currentPage === "vocabulary-selector" && (
         <VocabularySelector onNavigate={handleNavigate} />
       )}
+      {currentPage === "grammar-selector" && (
+        <GrammarSelector onNavigate={handleNavigate} />
+      )}
       {currentPage === "vocabulary-n5" && (
         <VocabularyN5 onNavigate={handleNavigate} />
       )}
+      {currentPage === "grammar-n5" && (
+        <GrammarN5ListPage onNavigate={handleNavigate} />
+      )}
+
+      {/* Trang chọn loại bài tập */}
       {currentPage === "exercise-selector" && (
         <ExerciseSelector onNavigate={handleNavigate} />
       )}
-      {currentPage === "exercise-n5" && (
+
+      {/* ExercisePage dùng chung cho tất cả loại + level */}
+      {currentPage === "exercise" && (
+        <ExercisePage
+          onNavigate={handleNavigate}
+          category={pageParams?.category || "vocabulary"}
+          level={pageParams?.level || "n5"}
+        />
+      )}
+
+      {/* Giữ route cũ nếu cần tương thích ngược */}
+      {(currentPage === "exercise-n5" ||
+        currentPage === "exercise-grammar-n5" ||
+        currentPage === "exercise-kanji-n5") && (
         <ExercisePage onNavigate={handleNavigate} />
       )}
-      <>
-        {/* Các route/page của bạn */}
-        <Toaster
-          position="top-center"
-          reverseOrder={false}
-          gutter={12}
-          toastOptions={{
-            duration: 5000,
+      {currentPage === "kanji-selector" && (
+        <KanjiSelector onNavigate={handleNavigate} />
+      )}
+      {currentPage === "kanji-n5" && (
+        <KanjiN5ListPage onNavigate={handleNavigate} />
+      )}
+
+      {/* Toaster – toast dễ thương toàn app */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        gutter={12}
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: "rgba(255, 255, 255, 0.9)",
+            color: "#000",
+            borderRadius: "24px",
+            padding: "16px 24px",
+            boxShadow: "0 10px 30px rgba(255, 182, 233, 0.4)",
+            backdropFilter: "blur(10px)",
+            border: "2px solid rgba(255, 199, 234, 0.5)",
+            fontSize: "18px",
+            fontWeight: "600",
+          },
+          success: {
+            icon: "😻",
             style: {
-              background: "rgba(255, 255, 255, 0.9)",
-              color: "#000",
-              borderRadius: "24px",
-              padding: "16px 24px",
-              boxShadow: "0 10px 30px rgba(255, 182, 233, 0.4)",
-              backdropFilter: "blur(10px)",
-              border: "2px solid rgba(255, 199, 234, 0.5)",
-              fontSize: "18px",
-              fontWeight: "600",
+              borderColor: "#77FFD9",
+              boxShadow: "0 10px 30px rgba(119, 255, 217, 0.4)",
             },
-            success: {
-              icon: "😻",
-              style: {
-                borderColor: "#77FFD9",
-                boxShadow: "0 10px 30px rgba(119, 255, 217, 0.4)",
-              },
+          },
+          error: {
+            icon: "😿",
+            style: {
+              borderColor: "#FF77C2",
+              boxShadow: "0 10px 30px rgba(255, 119, 194, 0.4)",
             },
-            error: {
-              icon: "😿",
-              style: {
-                borderColor: "#FF77C2",
-                boxShadow: "0 10px 30px rgba(255, 119, 194, 0.4)",
-              },
-            },
-            loading: {
-              icon: "🐱",
-            },
-          }}
-        />
-      </>
+          },
+          loading: {
+            icon: "🐱",
+          },
+        }}
+      />
     </div>
   );
 }

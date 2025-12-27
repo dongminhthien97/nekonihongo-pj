@@ -6,6 +6,7 @@ import { Footer } from "./Footer";
 import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
+import toast from "react-hot-toast";
 
 interface N5Word {
   level: string;
@@ -72,12 +73,12 @@ export function VocabularyN5({
 
   const handleStartFlashcardDay = () => {
     if (currentDayWords.length === 0) {
-      alert("Ngày này chưa có từ để học flashcard! 😿");
+      toast("Ngày này chưa có từ để học flashcard! 😿", { icon: "😿" });
       return;
     }
 
     console.log(
-      "Bắt đầu flashcard ngày",
+      "🎴 [VOCABULARY N5] Bắt đầu flashcard ngày",
       selectedDay,
       "- Số từ:",
       currentDayWords.length
@@ -91,10 +92,14 @@ export function VocabularyN5({
         .slice(0, 10);
     }
 
-    // === MAP ĐÚNG FIELD CHO FLASHCARDPAGE ===
+    console.log(
+      `📚 [VOCABULARY N5] Chọn ${selectedWords.length} từ để học flashcard`
+    );
+
+    // Map đúng field cho FlashcardPage
     const mappedSelectedWords = selectedWords.map((w) => ({
       japanese: w.tuVung,
-      kanji: w.hanTu || w.tuVung, // fallback nếu hanTu rỗng
+      kanji: w.hanTu || w.tuVung, // fallback nếu không có Hán tự
       vietnamese: w.tiengViet,
     }));
 
@@ -104,22 +109,33 @@ export function VocabularyN5({
       vietnamese: w.tiengViet,
     }));
 
-    // Lưu vào localStorage đúng cấu trúc FlashcardPage mong đợi
+    // === TRANG GỐC – ĐÚNG CHO VOCABULARY N5 ===
+    const originPage = "vocabulary-n5";
+
+    // Lưu data flashcard chính (10 từ)
+    const flashcardData = {
+      lessonId: `N5-Day${selectedDay}`,
+      lessonTitle: `JLPT N5 - Ngày ${selectedDay}`,
+      words: mappedSelectedWords,
+      originPage: originPage, // ← Đảm bảo quay về đúng trang Vocabulary N5
+    };
+
+    localStorage.setItem("nekoFlashcardData", JSON.stringify(flashcardData));
+
+    // Lưu tất cả từ trong ngày (25 từ) để học tiếp
     localStorage.setItem(
-      "nekoFlashcardData",
+      "nekoFlashcardAllWords",
       JSON.stringify({
-        lessonId: `N5-Day${selectedDay}`,
-        lessonTitle: `JLPT N5 - Ngày ${selectedDay}`,
-        words: mappedSelectedWords, // ← 10 từ đã map đúng field
+        words: mappedAllWordsInDay,
+        originPage: originPage, // đồng bộ
       })
     );
 
-    localStorage.setItem(
-      "nekoFlashcardAllWords",
-      JSON.stringify(mappedAllWordsInDay) // ← 25 từ để học tiếp
+    console.log(
+      "💾 [VOCABULARY N5] Đã lưu flashcard data với originPage:",
+      originPage
     );
-
-    console.log("Đã lưu flashcard data - 10 từ:", mappedSelectedWords);
+    console.log("10 từ học:", mappedSelectedWords);
 
     requestAnimationFrame(() => onNavigate("flashcard"));
   };
@@ -1355,8 +1371,7 @@ export function VocabularyN5({
             opacity: 1;
             transform: translateY(0);
           }
-        }
-        
+        }       
   `}</style>
     </div>
   );

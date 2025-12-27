@@ -11,6 +11,7 @@ interface Word {
   japanese: string;
   kanji: string;
   vietnamese: string;
+  hanViet?: string;
 }
 
 interface FlashcardData {
@@ -74,21 +75,31 @@ export function FlashcardPage({
     };
 
     loadFlashcardData();
-
-    // CHỈ XÓA SAU KHI ĐÃ LOAD XONG VÀ ĐÃ QUA 1 GIÂY LOADING
-    const cleanupTimer = setTimeout(() => {
-      if (dataProcessed) {
-        localStorage.removeItem("nekoFlashcardData");
-        console.log("Đã dọn dẹp nekoFlashcardData khỏi localStorage");
-      }
-    }, 1500); // đợi thêm 0.5s để chắc chắn state đã cập nhật
-
-    return () => {
-      clearTimeout(loadingTimer);
-      clearTimeout(cleanupTimer);
-    };
   }, [onNavigate]);
 
+  const handleReturnToOrigin = () => {
+    const saved = localStorage.getItem("nekoFlashcardData");
+    let targetPage = "vocabulary-n5"; // fallback an toàn
+
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.originPage) {
+          targetPage = data.originPage;
+          console.log("🎯 Quay về trang gốc:", targetPage);
+        }
+      } catch (e) {
+        console.warn("Lỗi parse flashcard data");
+      }
+    }
+
+    // XÓA SAU KHI ĐÃ ĐỌC XONG originPage
+    localStorage.removeItem("nekoFlashcardData");
+    localStorage.removeItem("nekoFlashcardAllWords");
+    console.log("🧹 Đã dọn dẹp flashcard data khỏi localStorage");
+
+    onNavigate(targetPage);
+  };
   // HIỆN LOADING 1 GIÂY ĐẦU TIÊN
   if (isLoading) {
     return (
@@ -285,6 +296,14 @@ export function FlashcardPage({
             {/* Mặt sau */}
             <div className="flashcard-back-face">
               <p className="centered-hero-text">{currentWord.vietnamese}</p>
+
+              {/* Chỉ hiển thị Âm Hán Việt nếu có (tức là flashcard từ Kanji N5) */}
+              {currentWord.hanViet && (
+                <div className="mt-6 text-center">
+                  <p className="HanViet">Âm Hán: {currentWord.hanViet}</p>
+                </div>
+              )}
+
               <p className="caption-text-white-subtle">Nhấn để quay lại</p>
               <Sparkles className="absolute-pulsing-icon" />
             </div>
@@ -357,10 +376,10 @@ export function FlashcardPage({
                   Học tiếp 10 từ nữa!
                 </button>
                 <button
-                  onClick={() => onNavigate("vocabulary")}
+                  onClick={handleReturnToOrigin}
                   className="gray-cta-button-large gray-cta-button-large:hover"
                 >
-                  Về trang từ vựng
+                  Về trang trước
                 </button>
               </div>
             </div>
@@ -766,8 +785,15 @@ export function FlashcardPage({
   color: rgba(255, 255, 255, 0.9);
   margin-top: 1.5rem;
 }
+
+.HanViet{
+font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+}
       .centered-hero-text {
-  font-size: 3.75rem;
+  font-size: 5.00rem;
   font-weight: 900;
   color: #ffffff;
   text-align: center;

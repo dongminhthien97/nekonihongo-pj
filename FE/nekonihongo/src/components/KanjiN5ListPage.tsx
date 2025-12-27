@@ -1,476 +1,353 @@
-// VocabularyPage.tsx
-import { useState, useMemo, useEffect } from "react";
-import { Search, ChevronLeft, ChevronRight, Cat, Sparkles } from "lucide-react";
+// src/components/KanjiN5ListPage.tsx
+import { useState, useEffect } from "react";
+import { Search } from "lucide-react";
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import api from "../api/auth";
 import { NekoLoading } from "../components/NekoLoading";
-import { NekoAlertModal } from "../components/NekoAlertModal";
+import api from "../api/auth";
+import toast from "react-hot-toast";
 
-interface Word {
-  japanese: string;
+interface KanjiItem {
+  stt: string;
   kanji: string;
-  vietnamese: string;
-  category?: string;
+  hanViet: string;
+  meaning: string;
+  onYomi: string;
+  kunYomi: string;
 }
 
-interface Lesson {
-  id: number;
-  title: string;
-  icon: string;
-  words: Word[];
-}
+const KANJI_PER_DAY = 25;
 
-interface VocabularyPageProps {
+export function KanjiN5ListPage({
+  onNavigate,
+}: {
   onNavigate: (page: string) => void;
-}
-const localVocabularyLessons: Lesson[] = [];
-
-export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [lessonPage, setLessonPage] = useState(1);
-  const [wordPage, setWordPage] = useState(1);
+}) {
+  const [kanjiList, setKanjiList] = useState<KanjiItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [showNoLessonModal, setShowNoLessonModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDay, setSelectedDay] = useState(1);
 
-  const LESSONS_PER_PAGE = 12;
-  const WORDS_PER_PAGE = 12;
-
-  // LẤY DỮ LIỆU THẬT TỪ BACKEND
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchKanjiN5 = async () => {
       try {
-        console.log("Bắt đầu tải từ vựng mèo... Meow!");
+        setIsLoading(true);
+        const res = await api.get("/kanji/n5"); // API backend trả list Kanji N5
 
-        const res = await api.get("/vocabulary/lessons");
-        const serverLessons = res.data.data || [];
-
-        console.log(
-          "Tải thành công từ server thành công!",
-          serverLessons.length,
-          "bài học"
-        );
-
-        // Đảm bảo loading hiện ít nhất 1.5 giây – trải nghiệm mượt mà, sang trọng
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        setLessons(serverLessons);
-      } catch (err: any) {
-        console.error("Lỗi khi tải từ vựng:", err);
-
-        if (err.response?.status === 401) {
-          console.warn("Token hết hạn – mèo đưa bạn về login...");
-          alert("Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé");
-
-          // Xóa hết dữ liệu đăng nhập
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("nekoUser");
-
-          // Chuyển về login
-          onNavigate("login");
-          return;
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setKanjiList(res.data);
+          toast.success(`Tải thành công ${res.data.length} Kanji N5! 🖌️😻`);
+        } else {
+          setKanjiList([]);
+          toast("Chưa có Kanji nào. Mèo sẽ sớm cập nhật nhé! 😺");
         }
-
-        // Các lỗi khác (500, mạng, v.v.) → fallback local data + thông báo
-        setLessons(localVocabularyLessons || []);
-        setError(
-          "Không thể kết nối đến server! Mèo đã tải dữ liệu mẫu cho bạn rồi"
-        );
+      } catch (err: any) {
+        toast.error("Không tải được Kanji N5. Mèo đang sửa đây... 😿");
       } finally {
-        // Đảm bảo loading tắt sau đúng 1.5s dù có lỗi hay không
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 600);
+        setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [onNavigate]);
-  // Bắt đầu học flashcard từ bài đã chọn
-  const handleStartFlashcard = () => {
-    if (!selectedLesson || selectedLesson.words.length === 0) {
-      setShowNoLessonModal(true);
+    fetchKanjiN5();
+  }, []);
+
+  // Tìm kiếm
+  const searchedKanji = kanjiList.filter((k) =>
+    searchQuery.trim()
+      ? k.kanji.includes(searchQuery) ||
+        k.hanViet.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        k.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        k.onYomi.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        k.kunYomi.toLowerCase().includes(searchQuery.toLowerCase())
+      : true
+  );
+
+  const totalDays = Math.ceil(searchedKanji.length / KANJI_PER_DAY);
+  const currentDayKanji = searchedKanji.slice(
+    (selectedDay - 1) * KANJI_PER_DAY,
+    selectedDay * KANJI_PER_DAY
+  );
+
+  const handleStartFlashcardDay = () => {
+    if (currentDayKanji.length === 0) {
+      toast("Ngày này chưa có Kanji để học flashcard! 😿");
       return;
     }
 
-    console.log("Bắt đầu flashcard từ bài:", selectedLesson.title);
-    console.log("Tổng số từ trong bài:", selectedLesson.words.length);
-
-    // === CÓ BÀI HỌC + CÓ TỪ → VÀO FLASHCARD NGAY! ===
-    let selectedWords = [...selectedLesson.words];
-
-    // Random 10 từ nếu bài có nhiều hơn 10 từ
-    if (selectedWords.length > 10) {
-      selectedWords = selectedWords
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 10);
+    let selected = [...currentDayKanji];
+    if (selected.length > 10) {
+      selected = selected.sort(() => Math.random() - 0.5).slice(0, 10);
     }
 
-    console.log("Số từ sẽ học flashcard:", selectedWords.length);
+    const flashcardData = selected.map((k) => ({
+      japanese: k.kanji,
+      kanji: k.kanji,
+      vietnamese: k.meaning,
+      onYomi: k.onYomi,
+      kunYomi: k.kunYomi,
+      hanViet: k.hanViet || undefined,
+    }));
 
-    // === XÁC ĐỊNH TRANG GỐC ĐỂ QUAY VỀ SAU KHI HỌC XONG ===
-    // Thay đổi giá trị này tùy theo trang bạn đang ở:
-    // - VocabularyN5 → "vocabulary-n5"
-    // - GrammarN5ListPage → "grammar-n5"
-    // - KanjiN5 → "kanji-n5"
-    // - Exercise → "exercise"
-    const originPage = "vocabulary"; // ← Thay bằng route đúng của trang hiện tại
-
-    // Lưu data flashcard chính (10 từ)
-    const flashcardData = {
-      lessonId: selectedLesson.id,
-      lessonTitle: selectedLesson.title,
-      words: selectedWords,
-      originPage: originPage, // ← THÊM ĐỂ BIẾT QUAY VỀ ĐÂU
-    };
-
-    localStorage.setItem("nekoFlashcardData", JSON.stringify(flashcardData));
-
-    // Lưu tất cả từ trong bài để học tiếp (nếu cần)
     localStorage.setItem(
-      "nekoFlashcardAllWords",
+      "nekoFlashcardData",
       JSON.stringify({
-        words: selectedLesson.words,
-        originPage: originPage, // ← Cũng thêm để đồng bộ (tùy chọn)
+        lessonId: `KanjiN5-Day${selectedDay}`,
+        lessonTitle: `Kanji N5 - Ngày ${selectedDay}`,
+        words: flashcardData,
+        originPage: "kanji-n5",
       })
     );
 
-    console.log("Đã lưu flashcard data với originPage:", originPage);
-    console.log("10 từ học:", selectedWords);
-
-    requestAnimationFrame(() => onNavigate("flashcard"));
+    onNavigate("flashcard");
   };
-  // TÌM KIẾM THẬT TỪ BACKEND
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const fetchSearch = async () => {
-      try {
-        const res = await api.get(
-          `/vocabulary/search?q=${encodeURIComponent(searchQuery)}`
-        );
-        return res.data.data || [];
-      } catch {
-        return [];
-      }
-    };
-    // Vì useMemo không hỗ trợ async trực tiếp → dùng trick
-    let results: { word: Word; lessonId: number }[] = [];
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      lessons.forEach((lesson) => {
-        lesson.words.forEach((word) => {
-          if (
-            word.japanese.toLowerCase().includes(query) ||
-            word.kanji.toLowerCase().includes(query) ||
-            word.vietnamese.toLowerCase().includes(query)
-          ) {
-            results.push({ word, lessonId: lesson.id });
-          }
-        });
-      });
-    }
-    return results.slice(0, 20);
-  }, [searchQuery, lessons]);
 
-  // Phân trang bài học
-  const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
-  const currentLessons = lessons.slice(
-    (lessonPage - 1) * LESSONS_PER_PAGE,
-    lessonPage * LESSONS_PER_PAGE
-  );
-
-  // Phân trang từ vựng
-  const currentWords = selectedLesson
-    ? selectedLesson.words.slice(
-        (wordPage - 1) * WORDS_PER_PAGE,
-        wordPage * WORDS_PER_PAGE
-      )
-    : [];
-  const totalWordPages = selectedLesson
-    ? Math.ceil(selectedLesson.words.length / WORDS_PER_PAGE)
-    : 0;
-  // Render
-  if (isLoading) {
-    return <NekoLoading message="Đang tải từ vựng mèo..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-3xl font-bold text-red-400">{error}</p>
-      </div>
-    );
-  }
+  if (isLoading) return <NekoLoading message="Mèo đang vẽ Kanji N5..." />;
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="vocabulary" onNavigate={onNavigate} />
+      <Navigation currentPage="kanji" onNavigate={onNavigate} />
       <Background />
 
-      <main className="relative z-10 container mx-auto px-4 py-12">
-        {/* Header + Search */}
-        <div className="text-center mb-12">
-          <h1 className="relative z-10 mb-12 md:mb-16">
-            {/* KHUNG ĐEN MỜ + VIỀN NEON + TRONG SUỐT CÓ THỂ ĐIỀU CHỈNH */}
-            <div className="absolute inset-0 -z-10 rounded-3xl" />
-            {/* CHỮ CHÍNH – ĐEN ĐẬM + GLOW TRẮNG */}
-            <span className="hero-section-title hero-text-glow">
-              Từ Vựng Tiếng Nhật
-            </span>
-          </h1>
-          {/* THANH TÌM KIẾM SIÊU ĐỈNH – VIỀN NỔI BẬT + TEXT CĂN GIỮA */}
-          <div className="max-w-4xl mx-auto">
-            <div className="relative group ">
-              {/* Thanh input chính – nền trắng mờ, viền sáng, bóng đẹp */}
-              <div className="glass-effect-container animate-fade-in">
-                {/* ICON TÌM KIẾM SIÊU NỔI */}
-                <div className="element-overlay-positioned">
-                  <Search className="icon-centered-left" strokeWidth={5} />
-                </div>
+      <main className="relative z-10 mb-12 md:mb-16">
+        <h1 className="hero-section-title hero-text-glow text-center">
+          Kanji JLPT N5 (~{kanjiList.length} chữ)
+        </h1>
 
-                {/* INPUT – TEXT CĂN GIỮA HOÀN HẢO */}
-                <input
-                  type="text"
-                  placeholder="Tìm từ vựng... (猫, neko, mèo, bài 10...)"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setSelectedLesson(null);
-                  }}
-                  className="transparent-search-input"
-                />
-              </div>
-            </div>
-            {/* Kết quả tìm kiếm – CARD SIÊU TO */}
-            {searchResults.length > 0 && (
-              <div className="mt-10 max-w-4xl mx-auto space-y-4 animate-fade-in">
-                <p className="pulsing-centered-text">
-                  Tìm thấy {searchResults.length} kết quả
-                </p>
-                {searchResults.map(({ word, lessonId }, idx) => (
-                  <div key={idx} className="glass-card-hover-effect">
-                    <div className="full-gradient-hover-effect" />
-                    <div className="flex items-center justify-between gap-6">
-                      <div className="flex-1 text-left">
-                        <p className="rainbow-glow-title">{word.japanese}</p>
-                        <p className="small-rainbow-glow">{word.kanji}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="white-rainbow-glow-bold">
-                          {word.vietnamese}
-                        </p>
-                        <p className="small-white-rainbow-glow">
-                          Bài {lessonId}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Danh sách bài học hoặc từ vựng */}
-        {!selectedLesson ? (
-          <>
-            {/* Danh sách bài học + phân trang */}
-            <div className="max-w-7xl mx-auto ">
-              <div
-                key={lessonPage}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-4 gap-8 mb-16"
-              >
-                {currentLessons.map((lesson) => (
-                  <button
-                    key={lesson.id}
-                    onClick={() => {
-                      setSelectedLesson(lesson);
-                      setWordPage(1);
-                      setSearchQuery("");
-                    }}
-                    className="responsive-hover-card animate-fade-in"
-                  >
-                    <div className="text-gray-800 animate-pulse-soft">
-                      {/* MÈO SIÊU DỄ THƯƠNG – MẶC ĐỊNH CHO MỌI BÀI! */}
-                      <Cat className="relative w-full h-full" />
-                    </div>
-                    <div className="text-center py-6">
-                      <p className="hero-text-glow text-white text-4xl">
-                        Bài {lesson.id}
-                      </p>
-                      <p className="hero-text-glow text-2xl text-white  mt-2 px-4 line-clamp-2">
-                        {lesson.title}
-                      </p>
-                    </div>
-                  </button>
-                  // </div>
-                ))}
-              </div>
-
-              {/* Phân trang bài học — đồng bộ với style phân trang từ vựng */}
-              {totalLessonPages > 1 && (
-                <div className="flex justify-center items-center gap-6 mt-12">
-                  <button
-                    onClick={() => setLessonPage((p) => Math.max(1, p - 1))}
-                    disabled={lessonPage === 1}
-                    className="custom-button"
-                    aria-label="Previous lessons page"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-black" />
-                  </button>
-
-                  <div className="flex gap-3 items-center">
-                    {Array.from({ length: totalLessonPages }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setLessonPage(i + 1)}
-                        aria-label={`Go to lesson page ${i + 1}`}
-                        className={`rounded-full transition-all duration-200 flex items-center justify-center ${
-                          lessonPage === i + 1
-                            ? "custom-element"
-                            : "button-icon-effect"
-                        }`}
-                      >
-                        {lessonPage === i + 1 ? i + 1 : ""}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setLessonPage((p) => Math.min(totalLessonPages, p + 1))
-                    }
-                    disabled={lessonPage === totalLessonPages}
-                    className="circular-icon-button"
-                    aria-label="Next lessons page"
-                  >
-                    <ChevronRight className="w-6 h-6 text-black" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          /* Trong bài học – từ vựng + phân trang */
-          <div className="max-w-7xl mx-auto">
-            <div className="flex  items-center justify-right mb-10">
-              <div className="w-full  flex flex-col items-center gap-4">
-                <h2 className=" text-3xl hero-text-glow text-white">
-                  {selectedLesson.title}
-                </h2>
-                <button
-                  onClick={() => setSelectedLesson(null)}
-                  className="button"
-                >
-                  ← Tất cả bài học
-                </button>
-              </div>
-            </div>
-            <div
-              key={`${selectedLesson?.id || "none"}-${wordPage}`}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-4"
+        <div className="text-center mb-10">
+          <p className="text-white text-3xl mb-4">
+            Học theo ngày – 25 Kanji mỗi ngày
+          </p>
+          <div className="flex-center-group">
+            <button
+              onClick={() => setSelectedDay((d) => Math.max(1, d - 1))}
+              disabled={selectedDay === 1}
+              className="btn-primary"
             >
-              {currentWords.map((word, idx) => (
-                <div key={idx} className="glassmorphism-card animate-fade-in">
-                  <div className="text-center space-y-4">
-                    <p className="text-5xl font-black text-black">
-                      {word.japanese}
-                    </p>
-                    <p className="text-4xl text-cyan-200">{word.kanji}</p>
-                    <p className="text-3xl text-black font-medium">
-                      {word.vietnamese}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Phân trang từ vựng */}
-            {totalWordPages > 1 && (
-              <div className="flex justify-center items-center gap-6 mt-16">
-                <button
-                  onClick={() => setWordPage((p) => Math.max(1, p - 1))}
-                  disabled={wordPage === 1}
-                  className="circular-icon-button"
-                  aria-label="Previous words page"
-                >
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </button>
-                <div className="flex gap-3 items-center">
-                  {Array.from({ length: totalWordPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setWordPage(i + 1)}
-                      aria-label={`Go to page ${i + 1}`}
-                      className={`rounded-full transition-all duration-200 flex items-center justify-center ${
-                        wordPage === i + 1
-                          ? "custom-element"
-                          : "button-icon-effect"
-                      }`}
-                    >
-                      {wordPage === i + 1 ? i + 1 : ""}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() =>
-                    setWordPage((p) => Math.min(totalWordPages, p + 1))
-                  }
-                  disabled={wordPage === totalWordPages}
-                  className="circular-icon-button"
-                  aria-label="Next words page"
-                >
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </button>
-              </div>
-            )}
+              ← Ngày trước
+            </button>
+            <span className="btn-secondary">
+              Ngày {selectedDay} / {totalDays} ({currentDayKanji.length} Kanji)
+            </span>
+            <button
+              onClick={() => setSelectedDay((d) => Math.min(totalDays, d + 1))}
+              disabled={selectedDay === totalDays}
+              className="btn-primary"
+            >
+              Ngày sau →
+            </button>
           </div>
-        )}
-      </main>
-      {/* MÈO BAY SIÊU DỄ THƯƠNG – HOVER HIỆN BONG BÓNG CHAT + CLICK VÀO HỌC FLASHCARD */}
-      <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
-        <div
-          className="relative group cursor-pointer"
-          onClick={handleStartFlashcard}
-        >
-          {/* Bong bóng chat – chỉ hiện khi hover */}
-          <div className="tooltip-slide-out">
-            <div className="colored-border-label">
-              <p className="text-xl font-bold drop-shadow-md">
-                Đi học flashcard nào!
-              </p>
-              <div className="absolute bottom-0 right-8 translate-y-full">
-                <div className="triangle-down-pink"></div>
-              </div>
-            </div>
-            <div className="absolute bottom-full mb-2 right-12 text-4xl animate-bounce">
-              ✨
-            </div>
-          </div>
-
-          {/* Mèo bay – có hiệu ứng hover nhẹ */}
-          <img
-            src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
-            alt="Flying Neko"
-            className="responsive-circular-image-hover"
-            style={{
-              filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.6))",
-            }}
-          />
-
-          {/* Hiệu ứng lấp lánh khi hover */}
-          <div className="circular-gradient-hover-glow"></div>
         </div>
-      </div>
+
+        <div className="main-container-glass">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gradient-pink-purple">
+              <tr>
+                <th className="p-6 text-center font-bold">STT</th>
+                <th className="p-6 text-center font-bold">Kanji</th>
+                <th className="p-6 text-center font-bold">Âm Hán</th>
+                <th className="p-6 text-center font-bold">Nghĩa</th>
+                <th className="p-6 text-center font-bold">Âm On</th>
+                <th className="p-6 text-center font-bold">Âm Kun</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              {currentDayKanji.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="p-12 text-center text-gray-500 text-2xl"
+                  >
+                    Không có Kanji nào trong ngày này 😿
+                  </td>
+                </tr>
+              ) : (
+                currentDayKanji.map((k) => (
+                  <tr key={k.stt} className="list-item-hover">
+                    <td className="p-6 text-center font-medium">{k.stt}</td>
+                    <td className="p-6 text-center">
+                      <span className="text-6xl font-black text-gray-900">
+                        {k.kanji}
+                      </span>
+                    </td>
+                    <td className="p-6 text-center text-2xl">
+                      {k.hanViet || "-"}
+                    </td>
+                    <td className="p-6 text-center text-2xl text-gray-800">
+                      {k.meaning}
+                    </td>
+                    <td className="p-6 text-center text-xl text-purple-700">
+                      {k.onYomi || "-"}
+                    </td>
+                    <td className="p-6 text-center text-xl text-blue-700">
+                      {k.kunYomi || "-"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* MÈO BAY FLASHCARD */}
+        <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
+          <div
+            className="relative group cursor-pointer"
+            onClick={handleStartFlashcardDay}
+          >
+            <div className="tooltip-slide-out">
+              <div className="colored-border-label">
+                <p className="text-xl font-bold drop-shadow-md">
+                  Học flashcard 10 Kanji ngày {selectedDay} nào mèo ơi! 🖌️🐾
+                </p>
+              </div>
+            </div>
+            <img
+              src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
+              alt="Flying Neko"
+              className="responsive-circular-image-hover"
+            />
+            <div className="circular-gradient-hover-glow"></div>
+          </div>
+        </div>
+      </main>
 
       <Footer />
-
       <style>{`
+      .flex-center-group {
+  /* flex */
+  display: flex;
+
+  /* justify-center */
+  justify-content: center;
+
+  /* items-center */
+  align-items: center;
+
+  /* gap-4 (16px) */
+  gap: 1rem;
+
+  /* flex-wrap */
+  flex-wrap: wrap;
+
+  /* Thêm một chút margin để tách biệt với các khối khác */
+  margin: 2rem 0;
+}
+      .btn-secondary {
+  /* text-white */
+  color: #ffffff;
+
+  /* text-xl (20px) */
+  font-size: 1.25rem;
+
+  /* font-bold */
+  font-weight: 700;
+
+  /* bg-black/50 (Nền đen trong suốt 50%) */
+  background-color: rgba(0, 0, 0, 0.5);
+
+  /* px-6 py-3 (Ngang 24px, Dọc 12px) */
+  padding: 0.75rem 1.5rem;
+
+  /* rounded-full */
+  border-radius: 9999px;
+
+  /* Cấu hình cơ bản */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Thêm viền nhẹ để tách nền tốt hơn */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px); /* Hiệu ứng kính mờ nhẹ cho nền tối */
+}
+
+.btn-secondary:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+      .btn-primary {
+  /* px-6 py-3 (Ngang 24px, Dọc 12px) */
+  padding: 0.75rem 1.5rem;
+
+  /* bg-white/80 */
+  background-color: rgba(255, 255, 255, 0.8);
+
+  /* rounded-full */
+  border-radius: 9999px;
+
+  /* font-bold */
+  font-weight: 700;
+  
+  /* Cấu hình cơ bản */
+  border: none;
+  cursor: pointer;
+  color: #1e293b; /* Màu chữ tối để tương phản với nền trắng */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* transition */
+  transition: all 0.3s ease;
+}
+
+/* hover:bg-white */
+.btn-primary:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: translateY(-2px); /* Thêm hiệu ứng nhấc lên nhẹ cho chuyên nghiệp */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+      .list-item-hover {
+  /* border-b border-gray-200 */
+  border-bottom: 1px solid #e5e7eb;
+
+  /* transition-colors */
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Đảm bảo con trỏ chuột thay đổi để người dùng biết có thể tương tác */
+  cursor: pointer;
+}
+
+/* hover:bg-pink-50/70 */
+.list-item-hover:hover {
+  background-color: rgba(253, 242, 248, 0.7);
+}
+      .bg-gradient-pink-purple {
+  /* bg-gradient-to-r from-pink-500 to-purple-600 */
+  background: linear-gradient(to right, #ec4899, #9333ea);
+  
+  /* text-white */
+  color: #ffffff;
+}
+      .main-container-glass {
+  /* max-w-7xl */
+  max-width: 80rem; /* 1280px */
+  
+  /* mx-auto */
+  margin-left: auto;
+  margin-right: auto;
+
+  /* overflow-x-auto */
+  overflow-x: auto;
+
+  /* rounded-2xl */
+  border-radius: 1rem;
+
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* bg-white/90 + backdrop-blur-md */
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  /* Thêm viền mảnh để định hình khối kính */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+  /* Đảm bảo nội dung không dính sát mép */
+  width: 100%;
+}
 
       .circular-gradient-hover-glow {
   position: absolute;
@@ -1420,19 +1297,8 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-        
+        }       
   `}</style>
-      <NekoAlertModal
-        isOpen={showNoLessonModal}
-        onClose={() => setShowNoLessonModal(false)}
-        title="Meow meow..."
-        message={
-          !selectedLesson
-            ? "Hãy chọn 1 bài học trước nhé"
-            : "Bài này chưa có từ vựng nào cả... Mèo buồn quá!"
-        }
-      />
     </div>
   );
 }

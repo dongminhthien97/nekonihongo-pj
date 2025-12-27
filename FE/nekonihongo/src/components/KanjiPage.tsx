@@ -141,35 +141,89 @@ export function KanjiPage({
     );
   }, [lessons, lessonPage]);
 
-  // Tìm kiếm toàn bộ Kanji
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
 
-    const query = searchQuery.trim().toLowerCase();
-    const results: { kanji: Kanji; lessonId: number; lessonTitle: string }[] =
-      [];
+    const query = searchQuery.trim();
+    const results: {
+      type: "compound" | "kanji";
+      word?: string; // chỉ có khi là từ ghép
+      reading?: string;
+      meaning?: string;
+      lessonId: number;
+      lessonTitle: string;
+      kanjiList: Kanji[]; // các Kanji thành phần
+    }[] = [];
 
+    // 1. Tìm theo TỪ GHÉP (ưu tiên cao nhất – giống tra từ điển)
     lessons.forEach((lesson) => {
       lesson.kanjiList.forEach((k) => {
-        if (
-          k.kanji.toLowerCase().includes(query) ||
-          k.on.toLowerCase().includes(query) ||
-          k.kun.toLowerCase().includes(query) ||
-          k.hanViet.toLowerCase().includes(query) ||
-          k.meaning.toLowerCase().includes(query)
-        ) {
-          results.push({
-            kanji: k,
-            lessonId: lesson.id,
-            lessonTitle: lesson.title,
+        if (k.compounds && k.compounds.length > 0) {
+          k.compounds.forEach((compound) => {
+            if (compound.word.includes(query)) {
+              // Tìm tất cả Kanji trong lesson có trong từ ghép này
+              const relatedKanji = lesson.kanjiList.filter((kj) =>
+                compound.word.includes(kj.kanji)
+              );
+
+              results.push({
+                type: "compound",
+                word: compound.word,
+                reading: compound.reading,
+                meaning: compound.meaning,
+                lessonId: lesson.id,
+                lessonTitle: lesson.title,
+                kanjiList: relatedKanji,
+              });
+            }
           });
         }
       });
     });
 
-    return results;
-  }, [searchQuery, lessons]);
+    // 2. Nếu không tìm thấy từ ghép → tìm theo Kanji riêng lẻ (fallback)
+    if (results.length === 0) {
+      lessons.forEach((lesson) => {
+        lesson.kanjiList.forEach((k) => {
+          const normalizedKanji = (k.kanji || "").toLowerCase();
+          const normalizedOn = (k.on || "").toLowerCase();
+          const normalizedKun = (k.kun || "").toLowerCase();
+          const normalizedHanViet = (k.hanViet || "").toLowerCase();
+          const normalizedMeaning = (k.meaning || "").toLowerCase();
 
+          const queryLower = query.toLowerCase();
+
+          if (
+            normalizedKanji.includes(queryLower) ||
+            normalizedOn.includes(queryLower) ||
+            normalizedKun.includes(queryLower) ||
+            normalizedHanViet.includes(queryLower) ||
+            normalizedMeaning.includes(queryLower)
+          ) {
+            results.push({
+              type: "kanji",
+              lessonId: lesson.id,
+              lessonTitle: lesson.title,
+              kanjiList: [k],
+            });
+          }
+        });
+      });
+    }
+
+    // Loại bỏ trùng lặp từ ghép (nếu nhiều Kanji cùng có từ ghép giống nhau)
+    const uniqueResults = results.filter(
+      (result, index, self) =>
+        index ===
+        self.findIndex((r) =>
+          r.type === "compound"
+            ? r.word === result.word
+            : r.kanjiList[0].kanji === result.kanjiList[0].kanji
+        )
+    );
+
+    return uniqueResults;
+  }, [searchQuery, lessons]);
   // Kanji hiện tại khi chọn bài học
   const currentKanjis = useMemo(() => {
     if (!selectedLesson) return [];
@@ -241,32 +295,102 @@ export function KanjiPage({
 
             {/* Kết quả tìm kiếm */}
             {searchResults.length > 0 && (
-              <div className="mt-10 max-w-4xl mx-auto space-y-4 animate-fade-in">
-                <p className="pulsing-centered-text">
-                  Tìm thấy {searchResults.length} kết quả
+              <div className="mt-10 max-w-4xl mx-auto space-y-6 animate-fade-in">
+                <p className="pulsing-centered-text text-2xl md:text-3xl">
+                  Tìm thấy {searchResults.length} kết quả cho "{searchQuery}"
                 </p>
-                {searchResults.map(({ kanji, lessonId }, idx) => (
+
+                {searchResults.map((result, idx) => (
                   <div
                     key={idx}
-                    className="glass-card-hover-effect cursor-pointer"
-                    onClick={() => setSelectedKanji(kanji)}
+                    className="glass-card-hover-effect cursor-pointer group"
+                    onClick={() => {
+                      // Chọn Kanji đầu tiên trong danh sách để xem chi tiết
+                      if (result.kanjiList.length > 0) {
+                        setSelectedKanji(result.kanjiList[0]);
+                      }
+                    }}
+                    style={{ animationDelay: `${idx * 0.1}s` }}
                   >
                     <div className="full-gradient-hover-effect" />
-                    <div className="flex items-center justify-between gap-6">
-                      <div className="flex-1 text-left">
-                        <p className="rainbow-glow-title">{kanji.kanji}</p>
-                        <p className="small-rainbow-glow">
-                          {kanji.on} / {kanji.kun}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="white-rainbow-glow-bold">
-                          {kanji.meaning}
-                        </p>
-                        <p className="small-white-rainbow-glow">
-                          Bài {lessonId} • {kanji.strokes} nét
-                        </p>
-                      </div>
+
+                    <div className="relative z-10 p-8 md:p-10">
+                      {result.type === "compound" ? (
+                        /* ===== HIỂN THỊ TỪ GHÉP – GIỐNG TỪ ĐIỂN SIÊU ĐẸP ===== */
+                        <div className="text-center space-y-6 max-w-4xl mx-auto p-4">
+                          {/* Từ ghép lớn - Giữ vai trò Spotlight */}
+                          <div className="space-y-2">
+                            <h2 className="rainbow-glow-title">
+                              {result.word}
+                            </h2>
+
+                            {/* Cách đọc: Thanh lịch và rõ ràng */}
+                            <p className="text-3xl md:text-2xl text-black font-semibold italic">
+                              {result.reading}
+                            </p>
+
+                            {/* Nghĩa tiếng Việt: Điểm nhấn màu sắc dịu */}
+                            <p className="text-3xl md:text-2xl text-black font-semibold italic">
+                              「 {result.meaning} 」
+                            </p>
+                          </div>
+
+                          {/* Thông tin bài học: Nhẹ nhàng, nằm trong một badge mờ */}
+                          <div className="inline-block px-4 py-1 text-3xl md:text-base">
+                            📚 Bài {result.lessonId} –{" "}
+                            <span className="text-black">
+                              {result.lessonTitle}
+                            </span>
+                          </div>
+
+                          {/* Các Kanji thành phần - Layout dạng Card chuyên nghiệp */}
+
+                          {result.kanjiList.map((k) => (
+                            <div key={k.kanji} className="kanji-crystal-card">
+                              {/* Trang trí background nhẹ cho mỗi card */}
+                              <div className="absolute -top-4 -right-4 w-16 h-16 text-black" />
+
+                              <p className="text-5xl font-black rainbow-glow-title mb-4">
+                                {k.kanji}
+                              </p>
+
+                              <div className="space-y-1">
+                                <p className="text-3xl text-black font-bold leading-tight">
+                                  {k.meaning}
+                                </p>
+                                <div className="w-8 mx-auto my-2" />
+                                <p className="text-2xl text-white/50 leading-relaxed uppercase tracking-tighter">
+                                  <span className="block">On: {k.on}</span>
+                                  <span className="block">Kun: {k.kun}</span>
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        /* ===== HIỂN THỊ KANJI RIÊNG LẺ – GIỮ NGUYÊN STYLE CŨ ===== */
+                        <div className="flex items-center justify-between gap-6">
+                          <div className="flex-1 text-left">
+                            <p className="rainbow-glow-title text-5xl md:text-6xl font-black">
+                              {result.kanjiList[0].kanji}
+                            </p>
+                            <p className="small-rainbow-glow text-xl md:text-2xl mt-2">
+                              {result.kanjiList[0].on} /{" "}
+                              {result.kanjiList[0].kun}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="white-rainbow-glow-bold text-2xl md:text-3xl">
+                              {result.kanjiList[0].meaning}
+                            </p>
+                            <p className="small-white-rainbow-glow text-lg mt-3">
+                              Bài {result.lessonId} •{" "}
+                              {result.kanjiList[0].strokes} nét
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -483,7 +607,7 @@ export function KanjiPage({
       />
 
       <style>{`
-.kanji-simple-card {
+      .kanji-simple-card {
   /* Nền trắng có độ trong suốt để tạo hiệu ứng kính */
   background-color: rgba(255, 255, 255, 0.9); 
   
@@ -532,6 +656,76 @@ export function KanjiPage({
 /* Hiệu ứng khi nhấn */
 .kanji-simple-card:active {
   transform: scale(0.98);
+}
+
+      .kanji-crystal-card {
+  position: relative; /* relative */
+  
+  /* bg-white/10 + backdrop-blur-xl */
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px); /* xl blur thường là 24px */
+  -webkit-backdrop-filter: blur(24px);
+
+  /* rounded-[32px] */
+  border-radius: 32px;
+  padding: 1.5rem; /* p-6 */
+  
+  /* border border-white/20 */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Tránh tràn nội dung khi hover hoặc có hiệu ứng ánh sáng */
+  overflow: hidden; /* overflow-hidden */
+
+  /* transition-all duration-500 */
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+/* Hiệu ứng Hover chuyên nghiệp */
+.kanji-crystal-card:hover {
+  /* hover:border-white/40 + hover:bg-white/15 */
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.15);
+  
+  /* hover:-translate-y-2 */
+  transform: translateY(-8px);
+  
+  /* Tăng cường bóng đổ khi thẻ nổi lên */
+  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.4);
+}
+.rainbow-glow-title {
+  /* Kích thước cực đại: 60px (mobile) -> 72px (desktop) */
+  font-size: clamp(3.75rem, 10vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em; /* Thu hẹp một chút để các khối màu đặc hơn */
+
+  /* Gradient 5 màu rực rỡ */
+  background: linear-gradient(
+    45deg, 
+    #ff3366, #ffcc00, #33ff99, #00ccff, #9933ff
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  
+  /* Hiệu ứng chuyển động màu mượt mà */
+  animation: rainbow-flow 6s ease infinite;
+
+  /* drop-shadow-2xl: Đổ bóng cực sâu để tách lớp */
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
+
+  /* Khử răng cưa cực mạnh cho font lớn */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
         .circular-gradient-hover-glow {
@@ -748,7 +942,7 @@ export function KanjiPage({
         }
 
         .rainbow-glow-title {
-          font-size: 2.25rem;
+          font-size: 3.25rem;
           line-height: 2.5rem;
           font-weight: 900;
           color: #ffffff;

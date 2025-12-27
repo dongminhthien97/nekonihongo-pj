@@ -1,350 +1,155 @@
-// src/components/ExerciseSelector.tsx
-import { useState, useEffect } from "react";
+// src/components/KanjiSelector.tsx
 import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
 import { Background } from "./Background";
-import api from "../api/auth";
 import toast from "react-hot-toast";
 
-interface Category {
-  id: number;
-  name: string; // "VOCABULARY", "GRAMMAR", "KANJI"
-  displayName: string;
-  description: string;
-}
+const kanjiTypes = [
+  {
+    id: "minna",
+    title: "Minna no Nihongo",
+    subtitle: "Kanji theo giáo trình chuẩn",
+    description: "Học Kanji theo bài Minna – có nét viết, ví dụ, từ ghép",
+    icon: "📖",
+    status: "available",
+  },
+  {
+    id: "jlpt-n5",
+    title: "JLPT N5",
+    subtitle: "~100 Kanji cơ bản",
+    description: "Danh sách Kanji chính thức cho kỳ thi JLPT N5",
+    icon: "🎯",
+    status: "available",
+  },
+  {
+    id: "jlpt-n4",
+    title: "JLPT N4",
+    subtitle: "~200 Kanji",
+    description: "Sắp ra mắt – mèo đang chuẩn bị rất kỹ đây!",
+    icon: "🔜",
+    status: "coming-soon",
+  },
+  {
+    id: "jlpt-n3",
+    title: "JLPT N3",
+    subtitle: "~400 Kanji",
+    description: "Sắp ra mắt",
+    icon: "⏳",
+    status: "coming-soon",
+  },
+  {
+    id: "jlpt-n2",
+    title: "JLPT N2",
+    subtitle: "~1000 Kanji",
+    description: "Sắp ra mắt",
+    icon: "🚀",
+    status: "coming-soon",
+  },
+];
 
-interface Level {
-  id: number;
-  level: string; // "N5", "N4", "N3", "N2", "N1"
-  displayName: string;
-}
-
-export function ExerciseSelector({
+export function KanjiSelector({
   onNavigate,
 }: {
-  onNavigate: (
-    page: string,
-    params?: { category?: string; level?: string }
-  ) => void;
+  onNavigate: (page: string) => void;
 }) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Lấy data từ DB
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-
-        const [catRes, levelRes] = await Promise.all([
-          api.get("/categories"),
-          api.get("/levels"),
-        ]);
-
-        setCategories(catRes.data);
-
-        // Sắp xếp N5 → N1 (giảm dần)
-        setLevels(
-          levelRes.data.sort((a: Level, b: Level) =>
-            b.level.localeCompare(a.level)
-          )
-        );
-
-        toast.success("Mèo đã chuẩn bị sẵn các loại bài tập cho bạn rồi! 😻", {
-          duration: 600,
-        });
-      } catch (err) {
-        toast.error("Không tải được dữ liệu. Mèo đang sửa đây... 😿");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleCategorySelect = (category: Category) => {
-    setSelectedCategory(category);
-  };
-
-  const handleLevelSelect = (level: Level) => {
-    if (!selectedCategory) return;
-
-    const catName = selectedCategory.name.toLowerCase(); // "vocabulary", "grammar", "kanji"
-    const levelName = level.level.toLowerCase(); // "n5", "n4", ...
-
-    const isAvailable =
-      (catName === "vocabulary" && levelName === "n5") ||
-      (catName === "grammar" && levelName === "n5") ||
-      (catName === "kanji" && levelName === "n5");
-
-    if (isAvailable) {
-      onNavigate("exercise", { category: catName, level: levelName });
+  const handleSelect = (id: string) => {
+    if (id === "minna") {
+      onNavigate("kanji"); // Trang KanjiPage hiện có (Minna)
+    } else if (id === "jlpt-n5") {
+      onNavigate("kanji-n5"); // Trang list JLPT N5
     } else {
-      toast("Bài tập này sẽ sớm ra mắt nhé! Mèo đang chuẩn bị rất kỹ đây 😺", {
+      toast("Kanji JLPT cấp này sẽ sớm ra mắt nhé! Mèo đang vẽ nét đây 🖌️😺", {
         icon: "⏳",
-        duration: 1000,
+        duration: 5000,
       });
     }
   };
 
-  const handleBack = () => {
-    setSelectedCategory(null);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="main-viewport">
-        <div className="text-center">
-          <div className="text-8xl mb-8 animate-bounce">🐱</div>
-          <p className="text-4xl text-white animate-pulse">
-            Mèo đang chuẩn bị...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen relative">
-      <Navigation currentPage="exercise" onNavigate={onNavigate} />
+      <Navigation currentPage="kanji" onNavigate={onNavigate} />
       <Background />
 
       <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
-        {/* Tiêu đề */}
         <div className="text-center mb-16 md:mb-24">
           <h1 className="hero-section-title hero-text-glow">
-            {!selectedCategory
-              ? "Chọn loại bài tập"
-              : `Bài tập ${selectedCategory.displayName}`}
+            Chọn lộ trình học Kanji
           </h1>
           <p className="lead-text">
-            {!selectedCategory
-              ? "Mèo đã chuẩn bị sẵn các loại bài tập siêu hay cho bạn rồi đấy! 🐾"
-              : "Chọn cấp độ JLPT bạn muốn luyện tập nào!"}
+            Mèo đã chuẩn bị sẵn các cách học Kanji siêu hay cho bạn rồi đây! 🐾
           </p>
         </div>
 
-        {/* Bước 1: Chọn loại bài tập */}
-        {!selectedCategory && (
-          <div className="grid-container">
-            {categories.map((cat, index) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategorySelect(cat)}
-                className="glass-card group"
-                style={{ animationDelay: `${0.3 + index * 0.2}s` }}
-              >
-                <div
-                  className={`gradient-overlay ${
-                    cat.name === "VOCABULARY"
-                      ? "rainbow-gradient"
-                      : cat.name === "GRAMMAR"
-                      ? "ocean-gradient"
-                      : "nature-gradient"
-                  }`}
-                />
-                <div className="subtle-overlay">
-                  <div className="glow-orb orb-top" />
-                  <div className="glow-orb orb-bottom" />
+        <div className="grid-container">
+          {kanjiTypes.map((type, index) => (
+            <button
+              key={type.id}
+              onClick={() => handleSelect(type.id)}
+              disabled={type.status === "coming-soon"}
+              className={`glass-card group relative overflow-hidden ${
+                type.status === "coming-soon"
+                  ? "opacity-70 cursor-not-allowed"
+                  : ""
+              }`}
+              style={{ animationDelay: `${0.3 + index * 0.2}s` }}
+            >
+              <div
+                className={`gradient-overlay bg-gradient-to-br ${
+                  type.id === "minna"
+                    ? "from-green-400 to-teal-500"
+                    : type.id === "jlpt-n5"
+                    ? "from-indigo-400 to-purple-500"
+                    : "from-gray-400 to-gray-600"
+                }`}
+              />
+              <div className="subtle-overlay">
+                <div className="glow-orb orb-top" />
+                <div className="glow-orb orb-bottom" />
+              </div>
+
+              <div className="relative z-10 p-10 md:p-16 text-center">
+                <div className="hero-text group-hover:scale-110 transition-transform duration-500">
+                  {type.icon}
+                </div>
+                <h2 className="card-title">{type.title}</h2>
+                <p className="card-subtitle">{type.subtitle}</p>
+                <p className="card-description">{type.description}</p>
+                <div className="flex-container mt-8">
+                  <span>
+                    {type.status === "available"
+                      ? "Bấm để học"
+                      : "Sắp ra mắt..."}
+                  </span>
+                  <span className="moving-icon">→</span>
                 </div>
 
-                <div className="relative z-10 p-10 md:p-16 text-center">
-                  <div className="hero-text group-hover:scale-110 transition-transform duration-500">
-                    {cat.name === "VOCABULARY"
-                      ? "📚"
-                      : cat.name === "GRAMMAR"
-                      ? "✍️"
-                      : "🖌️"}
+                {type.status === "coming-soon" && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                    <p className="text-3xl font-bold text-white animate-pulse">
+                      Coming Soon ✨
+                    </p>
                   </div>
-
-                  <h2 className="card-title">{cat.displayName}</h2>
-                  <p className="card-subtitle">Học theo cấp độ JLPT</p>
-                  <p className="card-description">{cat.description}</p>
-
-                  <div className="flex-container">
-                    <span>Bấm để chọn</span>
-                    <span className="moving-icon">→</span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Bước 2: Chọn level JLPT */}
-        {selectedCategory && (
-          <div className="max-w-6xl mx-auto">
-            <button onClick={handleBack} className="glass-button">
-              <span className="text-2xl group-hover:-translate-x-2 transition-transform">
-                ←
-              </span>
-              <span>Quay lại chọn loại</span>
+                )}
+              </div>
             </button>
+          ))}
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {levels.map((level, index) => {
-                const catName = selectedCategory.name.toLowerCase();
-                const levelName = level.level.toLowerCase();
-                const isAvailable =
-                  (catName === "vocabulary" && levelName === "n5") ||
-                  (catName === "grammar" && levelName === "n5") ||
-                  (catName === "kanji" && levelName === "n5");
-
-                return (
-                  <button
-                    key={level.id}
-                    onClick={() => isAvailable && handleLevelSelect(level)}
-                    disabled={!isAvailable}
-                    className={`glass-card relative overflow-hidden transition-all duration-500 ${
-                      isAvailable
-                        ? "hover:scale-105 cursor-pointer"
-                        : "opacity-70 cursor-not-allowed"
-                    }`}
-                    style={{ animationDelay: `${index * 0.15}s` }}
-                  >
-                    <div className="relative z-10 p-8 text-center">
-                      <div className="text-6xl mb-4">
-                        {isAvailable ? "🎯" : "🔒"}
-                      </div>
-                      <h3 className="text-3xl font-black text-white mb-2 drop-shadow-lg">
-                        {level.displayName}
-                      </h3>
-                      <p className="text-xl text-white/90 mb-6">
-                        {level.level === "N5"
-                          ? "Cơ bản nhất"
-                          : level.level === "N4"
-                          ? "Nền tảng vững"
-                          : level.level === "N3"
-                          ? "Trung cấp"
-                          : level.level === "N2"
-                          ? "Nâng cao"
-                          : "Thành thạo"}
-                      </p>
-                      <div className="text-lg font-bold text-white">
-                        {isAvailable ? "Bắt đầu ngay →" : "Sắp ra mắt..."}
-                      </div>
-                    </div>
-
-                    {!isAvailable && (
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-20">
-                        <p className="text-2xl text-white font-bold animate-pulse">
-                          Coming Soon ✨
-                        </p>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Footer dễ thương */}
         <div
           className="footer-container text-center"
           style={{ animationDelay: "0.8s" }}
         >
           <p className="accent-text">
-            Dù bạn chọn loại bài nào, mèo cũng sẽ đồng hành cùng bạn đến cùng
-            nhé! 💕
+            Học Kanji cùng mèo – nhớ lâu, viết đẹp, dùng chuẩn! Mèo tin bạn làm
+            được 💪🖌️
           </p>
           <div className="bouncing-icon">🐾</div>
         </div>
       </main>
 
       <Footer />
-
-      {/* Giữ nguyên CSS đẹp lung linh như cũ */}
       <style>{`
-      /* Dải màu cho Vocabulary */
-.rainbow-gradient {
-  background: linear-gradient(135deg, #f472b6, #a855f7); /* Pink to Purple */
-}
-
-/* Dải màu cho Grammar */
-.ocean-gradient {
-  background: linear-gradient(135deg, #60a5fa, #06b6d4); /* Blue to Cyan */
-}
-
-/* Dải màu cho Các mục khác (Ví dụ: Kanji/Listen) */
-.nature-gradient {
-  background: linear-gradient(135deg, #4ade80, #14b8a6); /* Green to Teal */
-}
-
-/* Lớp phủ chung để tạo độ trong suốt và hiệu ứng kính */
-.gradient-overlay {
-  position: absolute;
-  inset: 0;
-  opacity: 0.2; /* Độ mờ nhẹ để không che mất nội dung */
-  transition: opacity 0.3s ease;
-}
-
-.group:hover .gradient-overlay {
-  opacity: 0.4; /* Sáng lên khi di chuột vào thẻ cha */
-}
-      .glass-button {
-  /* Layout & Spacing */
-  display: flex;                /* flex */
-  align-items: center;          /* items-center */
-  gap: 0.5rem;                  /* gap-2 */
-  margin-bottom: 3rem;          /* mb-12 (48px) */
-  padding: 0.75rem 1.5rem;      /* py-3 px-6 */
-  
-  /* Style & Shape */
-  border-radius: 20px;          /* rounded-[20px] */
-  color: rgba(255, 255, 255, 0.9); /* text-white/90 */
-  font-weight: 700;
-  
-  /* Glassmorphism Effect */
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  
-  /* Animation */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* transition-all */
-  cursor: pointer;
-}
-
-/* Hiệu ứng hover cho text và nền */
-.glass-button:hover {
-  color: #ffffff;               /* hover:text-white */
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-      .rainbow-gradient {
-  /* from-pink-400 (#f472b6) to-purple-500 (#a855f7) */
-  background: linear-gradient(135deg, #f472b6, #a855f7);
-  
-  /* Để áp dụng cho chữ (Text Gradient) */
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-      .main-viewport {
-  /* min-h-screen: Chiếm toàn bộ chiều cao trình duyệt */
-  min-height: 100vh;
-
-  /* flex items-center justify-center: Căn giữa nội dung tuyệt đối */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* bg-gradient-to-br from-pink-100 to-purple-100 */
-  background: linear-gradient(135deg, #fce4ec, #f3e5f5);
-
-  /* Chống cuộn ngang không mong muốn */
-  overflow-x: hidden;
-  
-  /* Đảm bảo nội dung không bị dính sát mép trên mobile */
-  padding: 1rem;
-}
-                           .animate-fade-in {
+                    .animate-fade-in {
           animation: fade-in 0.6s ease-out forwards;
           opacity: 0;
         }
