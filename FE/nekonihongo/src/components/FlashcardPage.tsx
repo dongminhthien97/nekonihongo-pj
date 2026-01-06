@@ -86,7 +86,6 @@ export function FlashcardPage({
         const data = JSON.parse(saved);
         if (data.originPage) {
           targetPage = data.originPage;
-          console.log("🎯 Quay về trang gốc:", targetPage);
         }
       } catch (e) {
         console.warn("Lỗi parse flashcard data");
@@ -96,8 +95,6 @@ export function FlashcardPage({
     // XÓA SAU KHI ĐÃ ĐỌC XONG originPage
     localStorage.removeItem("nekoFlashcardData");
     localStorage.removeItem("nekoFlashcardAllWords");
-    console.log("🧹 Đã dọn dẹp flashcard data khỏi localStorage");
-
     onNavigate(targetPage);
   };
   // HIỆN LOADING 1 GIÂY ĐẦU TIÊN

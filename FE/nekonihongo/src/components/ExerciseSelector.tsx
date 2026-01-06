@@ -55,7 +55,7 @@ export function ExerciseSelector({
         );
 
         toast.success("Mèo đã chuẩn bị sẵn các loại bài tập cho bạn rồi! 😻", {
-          duration: 600,
+          duration: 1000,
         });
       } catch (err) {
         toast.error("Không tải được dữ liệu. Mèo đang sửa đây... 😿");

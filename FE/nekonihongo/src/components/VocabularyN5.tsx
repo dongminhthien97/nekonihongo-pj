@@ -77,13 +77,6 @@ export function VocabularyN5({
       return;
     }
 
-    console.log(
-      "🎴 [VOCABULARY N5] Bắt đầu flashcard ngày",
-      selectedDay,
-      "- Số từ:",
-      currentDayWords.length
-    );
-
     // Random 10 từ từ 25 từ ngày hiện tại
     let selectedWords = [...currentDayWords];
     if (selectedWords.length > 10) {
@@ -91,11 +84,6 @@ export function VocabularyN5({
         .sort(() => Math.random() - 0.5)
         .slice(0, 10);
     }
-
-    console.log(
-      `📚 [VOCABULARY N5] Chọn ${selectedWords.length} từ để học flashcard`
-    );
-
     // Map đúng field cho FlashcardPage
     const mappedSelectedWords = selectedWords.map((w) => ({
       japanese: w.tuVung,
@@ -130,13 +118,6 @@ export function VocabularyN5({
         originPage: originPage, // đồng bộ
       })
     );
-
-    console.log(
-      "💾 [VOCABULARY N5] Đã lưu flashcard data với originPage:",
-      originPage
-    );
-    console.log("10 từ học:", mappedSelectedWords);
-
     requestAnimationFrame(() => onNavigate("flashcard"));
   };
 

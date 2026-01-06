@@ -57,17 +57,8 @@ export function KanjiPage({
     const fetchKanjiLessons = async () => {
       try {
         setIsLoading(true);
-        console.log("🐱 Bắt đầu tải bài học Kanji từ backend...");
-
         const res = await api.get("/kanji/lessons");
         const serverLessons: KanjiLesson[] = res.data.data || [];
-
-        console.log(
-          "🎉 Tải Kanji thành công!",
-          serverLessons.length,
-          "bài học"
-        );
-
         setLessons(serverLessons);
         setError("");
       } catch (err: any) {

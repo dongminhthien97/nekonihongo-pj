@@ -45,7 +45,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
           {/* Grammar Card */}
           <button
-            onClick={() => onNavigate("grammar")}
+            onClick={() => onNavigate("grammar-selector")}
             className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
@@ -65,7 +65,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
           {/* Kanji Card */}
           <button
-            onClick={() => onNavigate("kanji")}
+            onClick={() => onNavigate("kanji-selector")}
             className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">

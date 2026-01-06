@@ -38,11 +38,9 @@ export function GrammarN5ListPage({
         if (res.data && Array.isArray(res.data)) {
           if (res.data.length > 0) {
             setPatterns(res.data);
-            console.log(
-              `📚 [GRAMMAR N5] Set ${res.data.length} cấu trúc thành công`
-            );
             toast.success(
-              `Tải thành công ${res.data.length} cấu trúc ngữ pháp N5! 😻`
+              `Tải thành công ${res.data.length} cấu trúc ngữ pháp N5! 😻`,
+              { duration: 1000 }
             );
           } else {
             setPatterns([]);
@@ -71,13 +69,12 @@ export function GrammarN5ListPage({
           toast.error(
             "Phiên đăng nhập hết hạn rồi... Mèo đưa bạn về đăng nhập nhé 😿",
             {
-              duration: 3000,
+              duration: 1000,
             }
           );
 
           // CHUYỂN TRANG SAU KHI ALERT ĐÓNG
           setTimeout(() => {
-            console.log("🚪 [GRAMMAR N5] THỰC HIỆN CHUYỂN HƯỚNG VỀ LOGIN");
             onNavigate("login");
           }, 1000); // tăng lên 4 giây để kịp đọc alert + log
         } else {
@@ -106,11 +103,6 @@ export function GrammarN5ListPage({
         p.exampleMeaning.toLowerCase().includes(searchQuery.toLowerCase())
       : true
   );
-
-  console.log(
-    `🔎 [GRAMMAR N5] Kết quả tìm kiếm: ${searchedPatterns.length} pattern`
-  );
-
   // Phân trang
   const totalDays = Math.ceil(searchedPatterns.length / PATTERNS_PER_DAY);
   const currentDayPatterns = searchedPatterns.slice(
@@ -118,13 +110,7 @@ export function GrammarN5ListPage({
     selectedDay * PATTERNS_PER_DAY
   );
 
-  console.log(
-    `📊 [GRAMMAR N5] Tổng ngày: ${totalDays} | Ngày hiện tại: ${selectedDay} | Hiển thị: ${currentDayPatterns.length} pattern`
-  );
-
   const handleStartFlashcardDay = () => {
-    console.log("🎴 [GRAMMAR N5] Bắt đầu flashcard ngày", selectedDay);
-
     if (currentDayPatterns.length === 0) {
       toast("Ngày này chưa có cấu trúc để học flashcard! 😿", { icon: "😿" });
       return;
@@ -135,10 +121,6 @@ export function GrammarN5ListPage({
     if (selected.length > 10) {
       selected = selected.sort(() => Math.random() - 0.5).slice(0, 10);
     }
-
-    console.log(
-      `📚 [GRAMMAR N5] Chọn ${selected.length} cấu trúc để học flashcard`
-    );
 
     // Map đúng field cho FlashcardPage
     const flashcardData = selected.map((p) => ({
@@ -179,13 +161,6 @@ export function GrammarN5ListPage({
         originPage: originPage,
       })
     );
-
-    console.log(
-      "💾 [GRAMMAR N5] Đã lưu flashcard data với originPage:",
-      originPage
-    );
-    console.log("10 cấu trúc học:", flashcardData);
-
     requestAnimationFrame(() => onNavigate("flashcard"));
   };
 

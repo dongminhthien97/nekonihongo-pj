@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import api from "../api/auth";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 interface Question {
   id: number;
@@ -37,6 +38,37 @@ interface Exercise {
   questions: Question[];
 }
 
+interface SubmitExerciseRequest {
+  correctAnswers: number;
+  totalQuestions: number;
+  difficultyLevel: number;
+  exerciseType: string;
+  exerciseId: number;
+  username: string;
+}
+
+interface ExerciseResult {
+  userId: number;
+  pointsEarned: number;
+  totalPoints: number;
+  leveledUp: boolean;
+  oldLevel: number;
+  newLevel: number;
+  levelInfo: LevelInfo;
+  streak: number;
+  message: string;
+}
+
+interface LevelInfo {
+  currentLevel: number;
+  totalPoints: number;
+  nextLevelPoints: number;
+  pointsInCurrentLevel: number;
+  pointsNeededForNextLevel: number;
+  progressToNextLevel: number;
+  exercisesNeededForNextLevel: number;
+}
+
 export function ExercisePage({
   onNavigate,
   category = "vocabulary",
@@ -56,6 +88,10 @@ export function ExercisePage({
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const hasShownToast = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { user: authUser, updateUser, refreshUser } = useAuth();
+  const isAuthenticated = !!authUser;
 
   // Phân trang danh sách bài tập
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,36 +113,28 @@ export function ExercisePage({
     const fetchExercises = async () => {
       try {
         setIsLoading(true);
-
         const endpoint = `/exercises/${category}/${level}`;
         const res = await api.get(endpoint);
-
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           setExercises(res.data);
-
           if (!hasShownToast.current) {
             hasShownToast.current = true;
             toast.success(
               `Tải thành công ${
                 res.data.length
               } bài tập ${level.toUpperCase()}! 😻`,
-              {
-                duration: 1000,
-              }
+              { duration: 1000 }
             );
           }
         } else {
           setExercises([]);
           toast(
             "Bài tập này sẽ sớm ra mắt nhé! Mèo đang chuẩn bị rất kỹ đây 😺",
-            {
-              icon: "⏳",
-              duration: 600,
-            }
+            { icon: "⏳", duration: 1000 }
           );
         }
       } catch (err: any) {
-        console.error("Lỗi tải bài tập:", err);
+        console.error("❌ Lỗi tải bài tập:", err);
         if (err.response?.status === 401) {
           toast.error(
             "Phiên đăng nhập hết hạn rồi... Mèo đưa bạn về đăng nhập nhé 😿",
@@ -133,27 +161,24 @@ export function ExercisePage({
 
   const handleExerciseSelect = async (exerciseId: number) => {
     const loadingToast = toast.loading("Mèo đang chuẩn bị bài tập... 🐱");
-
     try {
       const res = await api.get(`/exercises/${exerciseId}`);
       const exercise: Exercise = res.data;
-
       if (!exercise.questions || exercise.questions.length === 0) {
         toast.dismiss(loadingToast);
         toast.error("Bài tập này chưa có câu hỏi. Mèo sẽ bổ sung sớm nhé! 😿");
         return;
       }
-
       const shuffled = [...exercise.questions].sort(() => Math.random() - 0.5);
-
       setSelectedExercise(exercise);
       setShuffledQuestions(shuffled);
       setUserAnswers(new Array(shuffled.length).fill(null));
       setShowResult(false);
       setScore(0);
-
       toast.dismiss(loadingToast);
-      toast.success(`Sẵn sàng làm bài "${exercise.title}" rồi! 🎉`);
+      toast.success(`Sẵn sàng làm bài "${exercise.title}" rồi! 🎉`, {
+        duration: 1000,
+      });
     } catch (err: any) {
       toast.dismiss(loadingToast);
       toast.error("Không tải được bài tập này. Mèo đang kiểm tra lại... 😿");
@@ -166,21 +191,32 @@ export function ExercisePage({
     setUserAnswers(newAnswers);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     let correctCount = 0;
     shuffledQuestions.forEach((q, i) => {
       const correctIndex = ["A", "B", "C", "D"].indexOf(q.correctOption);
       if (userAnswers[i] === correctIndex) correctCount++;
     });
+
     setScore(correctCount);
     setShowResult(true);
 
     toast.success(
       `Nộp bài thành công! Bạn được ${correctCount}/${shuffledQuestions.length} điểm! 🎉`,
-      {
-        duration: 2000,
-      }
+      { duration: 2000 }
     );
+
+    if (authUser?.id && selectedExercise) {
+      await submitExerciseResults(correctCount, shuffledQuestions.length);
+    } else {
+      toast(
+        "Bạn chưa đăng nhập. Kết quả sẽ không được lưu. Hãy đăng nhập để nhận điểm nhé! 😺",
+        {
+          icon: "🔒",
+          duration: 4000,
+        }
+      );
+    }
   };
 
   const handleRetry = () => {
@@ -198,7 +234,7 @@ export function ExercisePage({
   const handleBackToList = () => {
     setSelectedExercise(null);
     setShowResult(false);
-    setCurrentPage(1); // Reset về trang 1 khi quay lại danh sách
+    setCurrentPage(1);
   };
 
   const getScoreMessage = (score: number, total: number) => {
@@ -217,7 +253,101 @@ export function ExercisePage({
     return "😻";
   };
 
-  // Loading
+  const determineDifficultyLevel = (
+    category: string,
+    level: string
+  ): number => {
+    const levelMap: Record<string, number> = {
+      n5: 1,
+      n4: 2,
+      n3: 3,
+      n2: 4,
+      n1: 5,
+    };
+
+    const baseDifficulty = levelMap[level.toLowerCase()] || 1;
+    return category === "grammar" ? baseDifficulty + 1 : baseDifficulty;
+  };
+
+  const submitExerciseResults = async (
+    correctCount: number,
+    totalQuestions: number
+  ) => {
+    if (!authUser?.id || !selectedExercise) {
+      toast.error("Không thể lưu kết quả. Vui lòng đăng nhập lại! 🔒");
+      return null;
+    }
+
+    setIsSubmitting(true);
+    const submissionToast = toast.loading("Đang lưu kết quả... ⏳");
+
+    try {
+      const difficultyLevel = determineDifficultyLevel(category, level);
+
+      const request: SubmitExerciseRequest = {
+        correctAnswers: correctCount,
+        totalQuestions: totalQuestions,
+        difficultyLevel: difficultyLevel,
+        exerciseType: category.toUpperCase(),
+        exerciseId: selectedExercise.id,
+        username: authUser.username,
+      };
+
+      const response = await api.post("/exercises/submit", request);
+      const result: ExerciseResult = response.data.data;
+
+      // Toast level up hoặc normal
+      if (result.leveledUp) {
+        toast.success(
+          <div className="text-center">
+            <div className="text-2xl font-bold mb-2">🎉 LEVEL UP! 🎉</div>
+            <div className="text-lg mb-1">
+              Level {result.oldLevel} → Level {result.newLevel}
+            </div>
+            <div className="text-sm">
+              +{result.pointsEarned} điểm • Tổng: {result.totalPoints} điểm
+            </div>
+            <div className="text-xs mt-2">{result.message}</div>
+          </div>,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success(
+          <div className="text-center">
+            <div className="text-lg font-bold">✅ Hoàn thành bài tập!</div>
+            <div>
+              +{result.pointsEarned} điểm • Tổng: {result.totalPoints} điểm
+            </div>
+          </div>,
+          { duration: 3000 }
+        );
+      }
+
+      // === REAL-TIME UPDATE CONTEXT ===
+      updateUser({
+        points: result.totalPoints,
+        level: result.newLevel,
+        streak: result.streak,
+      });
+
+      // (Tùy chọn) Refresh full data từ backend để đồng bộ chắc chắn
+      await refreshUser();
+      return result;
+    } catch (error: any) {
+      console.error("❌ Lỗi khi lưu kết quả:", error);
+      if (error.response?.status === 401) {
+        toast.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        setTimeout(() => onNavigate("login"), 2000);
+      } else {
+        toast.error("Không thể lưu kết quả bài tập. Vui lòng thử lại!");
+      }
+      return null;
+    } finally {
+      setIsSubmitting(false);
+      toast.dismiss(submissionToast);
+    }
+  };
+
   if (isLoading && !selectedExercise) {
     return <NekoLoading message="Mèo đang chuẩn bị bài tập..." />;
   }
@@ -250,6 +380,14 @@ export function ExercisePage({
             </span>{" "}
             {level.toUpperCase()} cùng mèo nhé!
           </p>
+
+          <div
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              isAuthenticated
+                ? "bg-green-500/20 text-green-300"
+                : "bg-red-500/20 text-red-300"
+            }`}
+          ></div>
         </div>
 
         {/* Danh sách bài tập với phân trang */}
@@ -305,7 +443,6 @@ export function ExercisePage({
               )}
             </div>
 
-            {/* Phân trang đồng bộ style từ vựng */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-16">
                 <button
@@ -434,13 +571,28 @@ export function ExercisePage({
             <div className="mt-10 flex justify-center">
               <button
                 onClick={handleSubmit}
-                disabled={userAnswers.some((a) => a === null)}
+                disabled={userAnswers.some((a) => a === null) || isSubmitting}
                 className="submit-button"
               >
-                <CheckCircle className="check-icon" />
-                <span className="font-bold">Nộp bài</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin h-6 w-6 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    <span className="font-bold">Đang xử lý...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="check-icon" />
+                    <span className="font-bold">Nộp bài</span>
+                  </>
+                )}
               </button>
             </div>
+
+            {!isAuthenticated && (
+              <div className="mt-4 text-center text-yellow-300 text-sm">
+                ⚠️ Bạn chưa đăng nhập. Kết quả sẽ không được lưu!
+              </div>
+            )}
           </div>
         )}
 
@@ -461,6 +613,14 @@ export function ExercisePage({
                 {getScoreMessage(score, selectedExercise.questions.length)}
               </p>
 
+              {!isAuthenticated && (
+                <div className="mt-4 p-3 bg-yellow-500/20 rounded-lg">
+                  <p className="text-yellow-300 text-sm">
+                    ⚠️ Kết quả chưa được lưu vì bạn chưa đăng nhập
+                  </p>
+                </div>
+              )}
+
               <div className="flex flex-wrap justify-center gap-6 mt-10">
                 <button onClick={handleRetry} className="action-button">
                   <RotateCcw className="w-6 h-6" />
@@ -476,7 +636,6 @@ export function ExercisePage({
               </div>
             </div>
 
-            {/* Chi tiết câu trả lời */}
             <div className="mt-10 space-y-4">
               <h3 className="result-header">Chi tiết câu trả lời ✨</h3>
               {shuffledQuestions.map((question, index) => {
@@ -568,7 +727,6 @@ export function ExercisePage({
         )}
       </main>
 
-      {/* Mèo bay góc phải */}
       <div className="fixed bottom-10 right-10 pointer-events-none z-50 hidden lg:block">
         <img
           src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
@@ -581,7 +739,6 @@ export function ExercisePage({
       </div>
 
       <Footer />
-
       {/* CSS giữ nguyên đẹp lung linh */}
       <style>{`
            .circular-icon-button {

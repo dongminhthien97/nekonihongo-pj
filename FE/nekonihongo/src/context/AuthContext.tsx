@@ -7,22 +7,26 @@ import {
   type ReactNode,
 } from "react";
 import { loginRequest } from "../api/auth";
+import api from "../api/auth";
+import toast from "react-hot-toast";
 
 export interface User {
   id: number;
   username: string;
   fullName?: string;
   email: string;
-  role: "USER" | "ADMIN"; // backend trả về chữ HOA
+  role: "USER" | "ADMIN";
   avatarUrl?: string;
   level: number;
   points: number;
   streak?: number;
-  vocabularyProgress: number;
-  kanjiProgress: number;
-  grammarProgress: number;
-  exerciseProgress: number;
-  joinDate: string; // ISO string từ backend
+  longestStreak?: number;
+  joinDate: string;
+  lastLoginDate?: string;
+  vocabularyProgress?: number;
+  kanjiProgress?: number;
+  grammarProgress?: number;
+  exerciseProgress?: number;
 }
 
 interface AuthContextType {
@@ -32,6 +36,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
   markSplashAsSeen: () => void;
   onNavigate?: (page: string) => void;
 }
@@ -49,60 +54,101 @@ export const AuthProvider = ({
   const [loading, setLoading] = useState(true);
   const [hasSeenSplash, setHasSeenSplash] = useState(false);
 
-  // Khôi phục trạng thái từ localStorage khi reload
-  useEffect(() => {
-    const savedUser = localStorage.getItem("nekoUser");
-    const splashSeen = localStorage.getItem("nekoSplashSeen") === "true";
+  // ===== LOAD USER FROM BACKEND =====
+  const loadUserFromBackend = async () => {
+    try {
+      const res = await api.get("/user/me");
+      const backendUser = res.data?.data;
 
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("nekoUser");
+      if (!backendUser) throw new Error("No user data");
+
+      const normalizedUser: User = {
+        id: backendUser.id,
+        username: backendUser.username || "",
+        fullName: backendUser.fullName,
+        email: backendUser.email,
+        role: (backendUser.role || "USER").toUpperCase() as "USER" | "ADMIN",
+        avatarUrl: backendUser.avatarUrl || "",
+        level: backendUser.level || 1,
+        points: backendUser.points || 0,
+        streak: backendUser.streak || 0,
+        longestStreak: backendUser.longestStreak || 0,
+        joinDate: backendUser.joinDate,
+        lastLoginDate: backendUser.lastLoginDate,
+        vocabularyProgress: backendUser.vocabularyProgress || 0,
+        kanjiProgress: backendUser.kanjiProgress || 0,
+        grammarProgress: backendUser.grammarProgress || 0,
+        exerciseProgress: backendUser.exerciseProgress || 0,
+      };
+
+      setUser(normalizedUser);
+      localStorage.setItem("nekoUser", JSON.stringify(normalizedUser));
+    } catch (err: any) {
+      const savedUser = localStorage.getItem("nekoUser");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+
+      if (err?.response?.status === 401) {
+        logout();
       }
     }
+  };
 
-    setHasSeenSplash(splashSeen);
-    setLoading(false);
+  // ===== INIT AUTH =====
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("accessToken");
+      const splashSeen = localStorage.getItem("nekoSplashSeen") === "true";
+      setHasSeenSplash(splashSeen);
+
+      if (token) {
+        await loadUserFromBackend();
+      } else {
+        const savedUser = localStorage.getItem("nekoUser");
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch {
+            localStorage.removeItem("nekoUser");
+          }
+        }
+      }
+
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  // LOGIN – đồng bộ 100% với backend
+  // ===== LOGIN =====
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const data = await loginRequest(email, password);
+      if (!data?.token) return false;
 
-      if (!data?.token || !data?.user) return false;
-
-      // Lưu token
       localStorage.setItem("accessToken", data.token);
-      if (data.refreshToken)
+      if (data.refreshToken) {
         localStorage.setItem("refreshToken", data.refreshToken);
+      }
 
-      // Lưu user + chuẩn hóa role (nếu backend trả chữ thường)
-      const normalizedUser: User = {
-        ...data.user,
-        role: (data.user.role || "USER").toUpperCase() as "USER" | "ADMIN",
-        avatarUrl: data.user.avatarUrl || "",
-        fullName: data.user.fullName || data.user.username,
-        streak: data.user.streak || 0,
-        exerciseProgress: data.user.exerciseProgress || 0,
-      };
-
-      localStorage.setItem("nekoUser", JSON.stringify(normalizedUser));
-      setUser(normalizedUser);
+      await loadUserFromBackend();
       setHasSeenSplash(false);
-
-      // Chuyển về trang trung gian để phân quyền
       onNavigate?.("mypage");
 
       return true;
-    } catch (err) {
-      console.error("Login failed:", err);
+    } catch {
       return false;
     }
   };
 
-  // LOGOUT
+  // ===== LOGOUT =====
   const logout = () => {
     setUser(null);
     setHasSeenSplash(false);
@@ -113,7 +159,7 @@ export const AuthProvider = ({
     onNavigate?.("landing");
   };
 
-  // Cập nhật user (avatar, progress, v.v.)
+  // ===== UPDATE USER (LOCAL) =====
   const updateUser = (updates: Partial<User>) => {
     if (!user) return;
 
@@ -122,7 +168,20 @@ export const AuthProvider = ({
     localStorage.setItem("nekoUser", JSON.stringify(updated));
   };
 
-  // Đánh dấu đã xem splash
+  // ===== REFRESH USER =====
+  const refreshUser = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      await loadUserFromBackend();
+      toast.success("Cập nhật thông tin thành công! 😻");
+    } catch {
+      toast.error("Không thể cập nhật thông tin 😿");
+    }
+  };
+
+  // ===== SPLASH =====
   const markSplashAsSeen = () => {
     setHasSeenSplash(true);
     localStorage.setItem("nekoSplashSeen", "true");
@@ -137,6 +196,7 @@ export const AuthProvider = ({
         login,
         logout,
         updateUser,
+        refreshUser,
         markSplashAsSeen,
         onNavigate,
       }}
@@ -148,6 +208,8 @@ export const AuthProvider = ({
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
   return context;
 };

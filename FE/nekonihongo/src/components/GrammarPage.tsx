@@ -51,18 +51,9 @@ export function GrammarPage({
 
   useEffect(() => {
     const fetchGrammarLessons = async () => {
-      console.log("🐱 Bắt đầu tải danh sách bài học ngữ pháp... Meow!");
-
       try {
         const res = await api.get("/grammar/lessons");
         const serverLessons = res.data.data || [];
-
-        console.log(
-          "🎉 Tải ngữ pháp thành công từ server!",
-          serverLessons.length,
-          "bài học"
-        );
-
         await new Promise((resolve) => setTimeout(resolve, 600));
 
         setLessons(serverLessons);

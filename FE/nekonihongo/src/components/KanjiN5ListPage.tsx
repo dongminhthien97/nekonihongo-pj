@@ -30,27 +30,57 @@ export function KanjiN5ListPage({
   const [selectedDay, setSelectedDay] = useState(1);
 
   useEffect(() => {
+    let hasToasted = false;
     const fetchKanjiN5 = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get("/kanji/n5"); // API backend trả list Kanji N5
+        const res = await api.get("/kanji/n5");
+        if (res.data && Array.isArray(res.data)) {
+          if (res.data.length > 0) {
+            setKanjiList(res.data);
 
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setKanjiList(res.data);
-          toast.success(`Tải thành công ${res.data.length} Kanji N5! 🖌️😻`);
+            // Chỉ toast 1 lần duy nhất
+            if (!hasToasted) {
+              hasToasted = true;
+              toast.success(
+                `Tải thành công ${res.data.length} Kanji N5! 🖌️😻`,
+                {
+                  duration: 1000,
+                }
+              );
+            }
+          } else {
+            setKanjiList([]);
+            if (!hasToasted) {
+              hasToasted = true;
+              toast("Chưa có Kanji nào. Mèo sẽ sớm cập nhật nhé! 😺", {
+                icon: "😺",
+                duration: 1000,
+              });
+            }
+          }
         } else {
           setKanjiList([]);
-          toast("Chưa có Kanji nào. Mèo sẽ sớm cập nhật nhé! 😺");
+          if (!hasToasted) {
+            hasToasted = true;
+            toast("Dữ liệu không hợp lệ. Mèo đang kiểm tra lại... 😿", {
+              icon: "😿",
+            });
+          }
         }
       } catch (err: any) {
-        toast.error("Không tải được Kanji N5. Mèo đang sửa đây... 😿");
+        console.error("💥 [KANJI N5] Lỗi API:", err);
+        if (!hasToasted) {
+          hasToasted = true;
+          toast.error("Không tải được Kanji N5. Mèo đang sửa đây... 😿");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchKanjiN5();
-  }, []);
+  }, []); // ← Dependency rỗng → chỉ chạy 1 lần (nhưng StrictMode vẫn mount 2 lần)
 
   // Tìm kiếm
   const searchedKanji = kanjiList.filter((k) =>

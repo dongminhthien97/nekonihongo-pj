@@ -84,7 +84,6 @@ export function FlashcardKanji({
     const cleanupTimer = setTimeout(() => {
       if (dataProcessed) {
         localStorage.removeItem("nekoFlashcardKanjiData");
-        console.log("Đã dọn dẹp nekoFlashcardKanjiData khỏi localStorage");
       }
     }, 1500);
 

@@ -44,16 +44,8 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("Bắt đầu tải từ vựng mèo... Meow!");
-
         const res = await api.get("/vocabulary/lessons");
         const serverLessons = res.data.data || [];
-
-        console.log(
-          "Tải thành công từ server thành công!",
-          serverLessons.length,
-          "bài học"
-        );
 
         // Đảm bảo loading hiện ít nhất 1.5 giây – trải nghiệm mượt mà, sang trọng
         await new Promise((resolve) => setTimeout(resolve, 600));
@@ -63,7 +55,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         console.error("Lỗi khi tải từ vựng:", err);
 
         if (err.response?.status === 401) {
-          console.warn("Token hết hạn – mèo đưa bạn về login...");
           alert("Phiên đăng nhập hết hạn! Mèo đưa bạn về trang đăng nhập nhé");
 
           // Xóa hết dữ liệu đăng nhập
@@ -97,10 +88,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       setShowNoLessonModal(true);
       return;
     }
-
-    console.log("Bắt đầu flashcard từ bài:", selectedLesson.title);
-    console.log("Tổng số từ trong bài:", selectedLesson.words.length);
-
     // === CÓ BÀI HỌC + CÓ TỪ → VÀO FLASHCARD NGAY! ===
     let selectedWords = [...selectedLesson.words];
 
@@ -110,8 +97,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         .sort(() => Math.random() - 0.5)
         .slice(0, 10);
     }
-
-    console.log("Số từ sẽ học flashcard:", selectedWords.length);
 
     // === XÁC ĐỊNH TRANG GỐC ĐỂ QUAY VỀ SAU KHI HỌC XONG ===
     // Thay đổi giá trị này tùy theo trang bạn đang ở:
@@ -139,10 +124,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         originPage: originPage, // ← Cũng thêm để đồng bộ (tùy chọn)
       })
     );
-
-    console.log("Đã lưu flashcard data với originPage:", originPage);
-    console.log("10 từ học:", selectedWords);
-
     requestAnimationFrame(() => onNavigate("flashcard"));
   };
   // TÌM KIẾM THẬT TỪ BACKEND
