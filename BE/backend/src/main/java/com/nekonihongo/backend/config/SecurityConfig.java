@@ -34,7 +34,7 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                                // 401 khi chưa login
+                                // Xử lý lỗi 401 và 403
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint((req, res, authException) -> {
                                                         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -42,39 +42,49 @@ public class SecurityConfig {
                                                         res.getWriter().write(
                                                                         "{\"error\": \"Unauthorized\", \"message\": \"Token không hợp lệ hoặc hết hạn\"}");
                                                 })
-                                                // 403 khi đã login nhưng không đủ quyền
                                                 .accessDeniedHandler((req, res, accessDeniedException) -> {
                                                         res.setStatus(HttpServletResponse.SC_FORBIDDEN);
                                                         res.setContentType("application/json");
-                                                        res.getWriter()
-                                                                        .write("{\"error\": \"Forbidden\", \"message\": \"Bạn không có quyền truy cập\"}");
+                                                        res.getWriter().write(
+                                                                        "{\"error\": \"Forbidden\", \"message\": \"Bạn không có quyền truy cập\"}");
                                                 }))
 
                                 .authorizeHttpRequests(auth -> auth
+                                                // Swagger và tài liệu API
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                                                 "/v3/api-docs/**", "/swagger-resources/**",
                                                                 "/webjars/**")
                                                 .permitAll()
 
-                                                // CÁC API CÔNG KHAI PHẢI ĐẶT TRƯỚC .anyRequest()
+                                                // Các API công khai
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/n5/**").permitAll()
-                                                .requestMatchers("/api/vocabulary/**").permitAll() // nếu có
+                                                .requestMatchers("/api/vocabulary/**").permitAll()
                                                 .requestMatchers("/api/vocabulary/n5/**").permitAll()
                                                 .requestMatchers("/api/kanji/n5/**").permitAll()
-
-                                                // CÁC API CẦN AUTH
+                                                .requestMatchers(HttpMethod.GET, "/api/kanji/lessons").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/exercises/**").permitAll()
+                                                .requestMatchers("/api/exercises/submit").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/admin/users/**").permitAll()
+                                                // Các API cần đăng nhập
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()
 
                                                 // Admin
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                                // .requestMatchers(HttpMethod.PUT,
+                                                // "/api/admin/users/**").hasRole("ADMIN")
 
                                                 // Tất cả còn lại cần đăng nhập
                                                 .anyRequest().authenticated())
+
+                                // Stateless session
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                                // Thêm JWT filter trước UsernamePasswordAuthenticationFilter
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
@@ -84,7 +94,7 @@ public class SecurityConfig {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
                 config.setAllowCredentials(true);
-                // CHO PHÉP CẢ VITE (5173) VÀ REACT (3000)
+                // Cho phép cả Vite (5173) và React (3000)
                 config.setAllowedOrigins(List.of(
                                 "http://localhost:5173",
                                 "http://localhost:3000",
@@ -99,6 +109,8 @@ public class SecurityConfig {
 
         @Bean
         public PasswordEncoder passwordEncoder() {
+                // ⚠️ Chỉ dùng NoOpPasswordEncoder cho dev/test
+                // Trong production nên dùng BCryptPasswordEncoder
                 return NoOpPasswordEncoder.getInstance();
         }
 }

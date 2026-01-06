@@ -1,4 +1,3 @@
-// src/main/java/com/nekonihongo/backend/dto/ApiResponse.java
 package com.nekonihongo.backend.dto;
 
 import lombok.AllArgsConstructor;
@@ -15,8 +14,8 @@ public class ApiResponse<T> {
     private String message;
     private T data;
 
-    // Success
-    public static <T> ApiResponse<T> success(T data, String message) {
+    // Phương thức với thứ tự tham số đúng
+    public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
@@ -24,11 +23,11 @@ public class ApiResponse<T> {
                 .build();
     }
 
+    // Phương thức phụ chỉ có data
     public static <T> ApiResponse<T> success(T data) {
-        return success(data, "Thành công!");
+        return success("Thành công!", data);
     }
 
-    // Error
     public static <T> ApiResponse<T> error(String message) {
         return ApiResponse.<T>builder()
                 .success(false)

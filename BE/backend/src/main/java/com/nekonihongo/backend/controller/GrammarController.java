@@ -71,7 +71,7 @@ public class GrammarController {
                                                                 .toList()))
                                 .toList();
 
-                return ApiResponse.success(dtos, "Lấy danh sách bài học ngữ pháp thành công!");
+                return ApiResponse.success("Lấy danh sách bài học ngữ pháp thành công!", dtos);
         }
 
         @GetMapping("/lessons/{id}")
@@ -116,7 +116,7 @@ public class GrammarController {
                                                                                 .toList()))
                                                 .toList());
 
-                return ApiResponse.success(dto, "Lấy bài học ngữ pháp thành công!");
+                return ApiResponse.success("Lấy bài học ngữ pháp thành công!", dto);
         }
 
         @GetMapping("/n5")

@@ -58,7 +58,7 @@ public class KanjiController {
                                                                 .toList()))
                                 .toList();
 
-                return ApiResponse.success(dtos, "Lấy danh sách bài học Kanji thành công!");
+                return ApiResponse.success("Lấy danh sách bài học Kanji thành công!", dtos);
         }
 
         @GetMapping("/lessons/{id}")
@@ -89,7 +89,7 @@ public class KanjiController {
                                                                                 .toList()))
                                                 .toList());
 
-                return ApiResponse.success(dto, "Lấy bài học Kanji thành công!");
+                return ApiResponse.success("Lấy bài học Kanji thành công!", dto);
         }
 
         @GetMapping("/n5")

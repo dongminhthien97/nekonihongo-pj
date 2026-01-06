@@ -3,11 +3,11 @@ package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.AuthRequest;
 import com.nekonihongo.backend.dto.AuthResponse;
-import com.nekonihongo.backend.dto.UserResponse; // ĐÃ THÊM
+import com.nekonihongo.backend.dto.UserResponse;
 import com.nekonihongo.backend.entity.User;
+import com.nekonihongo.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-
-import org.hibernate.validator.internal.util.logging.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,28 +16,48 @@ import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
-    private final IUserService userService;
+    private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final StreakService streakService;
 
+    /**
+     * Xử lý login:
+     * - Kiểm tra email + password
+     * - Cập nhật streak và lastLoginDate
+     * - Sinh JWT + refresh token
+     * - Trả về AuthResponse chứa thông tin user
+     */
     public AuthResponse login(AuthRequest request) {
-        User user = userService.findByEmail(request.getEmail())
+        // Tìm user theo email
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Email hoặc mật khẩu sai!"));
 
+        // Kiểm tra password
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Email hoặc mật khẩu sai!");
         }
+
+        // ✅ Cập nhật streak khi đăng nhập
+        streakService.updateLoginStreak(user);
+        userRepository.save(user); // ghi xuống DB
+
+        log.info("🔥 User {} đăng nhập → streak = {}, longestStreak = {}, lastLoginDate = {}",
+                user.getId(), user.getStreak(), user.getLongestStreak(), user.getLastLoginDate());
 
         // Claims cho JWT
         var claims = new HashMap<String, Object>();
         claims.put("role", user.getRole().name());
         claims.put("userId", user.getId());
 
+        // Sinh token
         String token = jwtService.generateToken(user.getEmail(), claims);
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
+        // Trả về response
         return AuthResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken)
@@ -51,10 +71,9 @@ public class AuthService {
                                 .role(user.getRole().name().toLowerCase())
                                 .level(user.getLevel())
                                 .points(user.getPoints())
-                                .vocabularyProgress(user.getVocabularyProgress())
-                                .kanjiProgress(user.getKanjiProgress())
-                                .grammarProgress(user.getGrammarProgress())
-                                .exerciseProgress(user.getExerciseProgress())
+                                .streak(user.getStreak())
+                                .longestStreak(user.getLongestStreak())
+                                .lastLoginDate(user.getLastLoginDate())
                                 .joinDate(user.getJoinDate())
                                 .build())
                 .build();

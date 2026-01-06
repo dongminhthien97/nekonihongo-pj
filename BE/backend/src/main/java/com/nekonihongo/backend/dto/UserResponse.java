@@ -1,4 +1,3 @@
-// src/main/java/com/nekonihongo/backend/dto/UserResponse.java
 package com.nekonihongo.backend.dto;
 
 import lombok.AllArgsConstructor;
@@ -7,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -21,9 +21,8 @@ public class UserResponse {
     private String role;
     private int level;
     private int points;
-    private int vocabularyProgress;
-    private int kanjiProgress;
-    private int grammarProgress;
-    private int exerciseProgress;
+    private int streak;
+    private int longestStreak;
     private LocalDate joinDate;
+    private LocalDateTime lastLoginDate;
 }

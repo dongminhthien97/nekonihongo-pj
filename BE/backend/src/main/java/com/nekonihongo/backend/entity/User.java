@@ -2,7 +2,10 @@ package com.nekonihongo.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -10,44 +13,51 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
-@Setter
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 100)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
+    @Column(unique = true, length = 50)
     private String username;
+
+    @Column(name = "full_name", length = 100)
     private String fullName;
+
+    @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role = Role.USER;
 
+    // ⭐ CORE STATS - Chỉ giữ 3 trường chính ⭐
+    @Column(nullable = false)
     private int level = 1;
+
+    @Column(nullable = false)
     private int points = 0;
+
+    @Column(nullable = false)
     private int streak = 0;
 
-    // CÁC CỘT TIẾN ĐỘ
-    @Column(name = "vocabulary_progress", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private int vocabularyProgress = 0;
+    // Thêm 2 trường để tính streak
+    @Column(name = "last_login_date")
+    private LocalDateTime lastLoginDate;
 
-    @Column(name = "kanji_progress", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private int kanjiProgress = 0;
+    @Column(name = "longest_streak", nullable = true)
+    private int longestStreak = 0;
 
-    @Column(name = "grammar_progress", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private int grammarProgress = 0;
-
-    // CỘT MỚI – BẠN MUỐN THÊM
-    @Column(name = "exercise_progress", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private int exerciseProgress = 0;
-
-    private LocalDate joinDate = LocalDate.now();
+    @CreationTimestamp
+    @Column(name = "join_date", nullable = false, updatable = false)
+    private LocalDate joinDate;
 
     public enum Role {
         USER("user"),
