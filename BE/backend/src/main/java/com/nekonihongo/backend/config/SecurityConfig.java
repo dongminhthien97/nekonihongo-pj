@@ -57,7 +57,6 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 // Các API công khai
-                                                .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/n5/**").permitAll()
                                                 .requestMatchers("/api/vocabulary/**").permitAll()
@@ -65,17 +64,16 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/kanji/n5/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/kanji/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/exercises/**").permitAll()
-                                                .requestMatchers("/api/exercises/submit").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
-                                                .requestMatchers(HttpMethod.PUT, "/api/admin/users/**").permitAll()
                                                 // Các API cần đăng nhập
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()
 
-                                                // Admin
+                                                // User APIs
+                                                .requestMatchers("/api/user/**").authenticated()
+
+                                                // Admin APIs (TRỪ activity-logs)
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                                // .requestMatchers(HttpMethod.PUT,
-                                                // "/api/admin/users/**").hasRole("ADMIN")
 
                                                 // Tất cả còn lại cần đăng nhập
                                                 .anyRequest().authenticated())

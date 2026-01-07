@@ -4,7 +4,10 @@ package com.nekonihongo.backend.controller;
 import com.nekonihongo.backend.dto.*;
 import com.nekonihongo.backend.entity.User;
 import com.nekonihongo.backend.repository.UserRepository;
+import com.nekonihongo.backend.service.ActivityLogService;
 import com.nekonihongo.backend.service.IUserService;
+import com.nekonihongo.backend.entity.ActivityLog;
+import com.nekonihongo.backend.service.ActivityLogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,6 +28,7 @@ public class UserController {
 
     private final IUserService userService;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
@@ -92,6 +96,13 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteById(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa user thành công!", null));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/api/admin/activity-logs")
+    public ResponseEntity<ApiResponse<List<ActivityLogResponse>>> getActivityLogs() {
+        List<ActivityLogResponse> logs = activityLogService.getAllLogs();
+        return ResponseEntity.ok(ApiResponse.success("Lấy logs thành công!", logs));
     }
 
     /* ====================== USER ROUTES ====================== */

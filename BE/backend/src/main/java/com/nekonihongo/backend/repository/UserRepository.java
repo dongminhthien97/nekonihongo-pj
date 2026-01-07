@@ -33,4 +33,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE User u SET u.streak = 0 WHERE u.lastLoginDate < :cutoffDate AND u.streak > 0")
     int resetStreaksForInactiveUsers(@Param("cutoffDate") LocalDateTime cutoffDate);
 
+    Optional<User> findByUsername(String username);
+
 }
