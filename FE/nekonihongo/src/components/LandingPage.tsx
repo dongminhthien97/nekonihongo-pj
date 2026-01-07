@@ -5,10 +5,7 @@ import {
   CreditCard,
   ClipboardCheck,
 } from "lucide-react";
-import { Navigation } from "./Navigation";
 import { Footer } from "./Footer";
-import { Background } from "./Background";
-
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
@@ -16,17 +13,13 @@ interface LandingPageProps {
 export function LandingPage({ onNavigate }: LandingPageProps) {
   return (
     <div className="subtle-gradient-background">
-      {/* Navigation */}
-      <Navigation currentPage="landing" onNavigate={onNavigate} />
-      <Background />
-
       {/* Features Section */}
       <section className="container animate-fade-in mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Vocabulary Card */}
           <button
             onClick={() => onNavigate("vocabulary-selector")}
-            className="responsive-hover-card"
+            className="interactive-elevated-card"
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="pulsing-gradient-circle">
@@ -143,9 +136,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           }}
         />
       </div>
-
-      <Footer />
-
       <style>{`
       .triple-gradient-bouncing-circle-v2 {
   /* w-20 h-20 */
@@ -220,13 +210,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 .group:hover .triple-gradient-bouncing-circle {
   animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
 }
-      .interactive-elevated-card {
+
+.interactive-elevated-card {
   /* group */
   /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
-  
-  /* bg-white/80 */
-  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
-  
+
   /* rounded-[32px] */
   border-radius: 2rem; /* 32px */
   
@@ -485,50 +473,15 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     transform: translateY(-5%); /* Nhảy lên 5% */
   }
 }
-
 /* group-hover:animate-bounce-subtle */
 /* Áp dụng animation khi di chuột qua phần tử cha có class 'group' */
 .group:hover .pulsing-gradient-circle {
   animation: bounce-subtle 1.5s infinite; /* Animation chậm 1.5s và lặp lại */
 }
-      .responsive-hover-card {
-  /* group */
-  /* Lớp đánh dấu cho phần tử cha, không có thuộc tính CSS trực tiếp. */
-  
-  /* relative */
-  position: relative;
-  
-  /* bg-white/80 */
-  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ 80% */
-  
-  /* rounded-[32px] */
-  border-radius: 2rem; /* 32px */
-  
-  /* p-8 */
-  padding: 2rem; /* 32px */
-  
-  /* transition-all duration-500 */
-  transition: all 500ms ease-in-out; 
-  
-  /* overflow-hidden */
-  overflow: hidden; 
-}
-
-/* hover:scale-105 */
-.responsive-hover-card:hover {
-  transform: scale(1.05); /* Phóng to 5% khi di chuột */
-}
-      .subtle-gradient-background {
+.subtle-gradient-background {
   /* min-h-screen */
   min-height: 100vh; /* Chiều cao tối thiểu bằng chiều cao của viewport */
-  
-  /* bg-linear-to-br from-[#FFF6E9] via-[#FFC7EA]/20 to-[#C7FFF1]/30 */
-  background-image: linear-gradient(to bottom right, 
-    #FFF6E9, /* Màu Kem nhạt */
-    rgba(255, 199, 234, 0.2), /* Màu Hồng nhạt với độ mờ 20% */
-    rgba(199, 255, 241, 0.3)  /* Màu Xanh ngọc nhạt với độ mờ 30% */
-  );
-  
+
   background-attachment: fixed; /* (Thường được thêm vào để gradient toàn màn hình mượt mà) */
 }
         @keyframes float {

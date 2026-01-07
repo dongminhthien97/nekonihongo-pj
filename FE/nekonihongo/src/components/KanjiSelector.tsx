@@ -67,9 +67,6 @@ export function KanjiSelector({
 
   return (
     <div className="min-h-screen relative">
-      <Navigation currentPage="kanji" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
         <div className="text-center mb-16 md:mb-24">
           <h1 className="hero-section-title hero-text-glow">
@@ -146,8 +143,6 @@ export function KanjiSelector({
           <div className="bouncing-icon">🐾</div>
         </div>
       </main>
-
-      <Footer />
       <style>{`
                     .animate-fade-in {
           animation: fade-in 0.6s ease-out forwards;

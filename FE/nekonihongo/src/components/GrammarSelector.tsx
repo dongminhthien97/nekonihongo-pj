@@ -65,9 +65,6 @@ export function GrammarSelector({
 
   return (
     <div className="min-h-screen relative">
-      <Navigation currentPage="grammar" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
         {/* Tiêu đề */}
         <div className="text-center mb-16 md:mb-24">
@@ -151,9 +148,6 @@ export function GrammarSelector({
           <div className="bouncing-icon">🐾</div>
         </div>
       </main>
-
-      <Footer />
-
       {/* Giữ nguyên toàn bộ CSS đẹp lung linh như VocabularySelector */}
       <style>{`
                     .animate-fade-in {

@@ -251,9 +251,6 @@ export function KanjiPage({
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="kanji" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-12">
         {/* Header + Search */}
         <div className="text-center mb-12">
@@ -576,9 +573,6 @@ export function KanjiPage({
           <div className="circular-gradient-hover-glow"></div>
         </div>
       </div>
-
-      <Footer />
-
       {/* MODAL CHI TIẾT KANJI */}
       {selectedKanji && (
         <KanjiDetailModal
@@ -596,7 +590,6 @@ export function KanjiPage({
             : "Bài này chưa có từ vựng nào cả... Mèo buồn quá!"
         }
       />
-
       <style>{`
       .kanji-simple-card {
   /* Nền trắng có độ trong suốt để tạo hiệu ứng kính */

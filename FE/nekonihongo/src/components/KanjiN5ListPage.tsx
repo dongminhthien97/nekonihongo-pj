@@ -33,22 +33,12 @@ export function KanjiN5ListPage({
     let hasToasted = false;
     const fetchKanjiN5 = async () => {
       try {
-        setIsLoading(true);
         const res = await api.get("/kanji/n5");
         if (res.data && Array.isArray(res.data)) {
           if (res.data.length > 0) {
             setKanjiList(res.data);
-
-            // Chỉ toast 1 lần duy nhất
-            if (!hasToasted) {
-              hasToasted = true;
-              toast.success(
-                `Tải thành công ${res.data.length} Kanji N5! 🖌️😻`,
-                {
-                  duration: 1000,
-                }
-              );
-            }
+            //Loading
+            await new Promise((resolve) => setTimeout(resolve, 600));
           } else {
             setKanjiList([]);
             if (!hasToasted) {
@@ -75,12 +65,14 @@ export function KanjiN5ListPage({
           toast.error("Không tải được Kanji N5. Mèo đang sửa đây... 😿");
         }
       } finally {
-        setIsLoading(false);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 600);
       }
     };
 
     fetchKanjiN5();
-  }, []); // ← Dependency rỗng → chỉ chạy 1 lần (nhưng StrictMode vẫn mount 2 lần)
+  }, []);
 
   // Tìm kiếm
   const searchedKanji = kanjiList.filter((k) =>
@@ -136,9 +128,6 @@ export function KanjiN5ListPage({
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="kanji" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 mb-12 md:mb-16">
         <h1 className="hero-section-title hero-text-glow text-center">
           Kanji JLPT N5 (~{kanjiList.length} chữ)
@@ -241,8 +230,6 @@ export function KanjiN5ListPage({
           </div>
         </div>
       </main>
-
-      <Footer />
       <style>{`
       .flex-center-group {
   /* flex */

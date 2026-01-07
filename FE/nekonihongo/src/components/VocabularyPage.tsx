@@ -190,9 +190,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="vocabulary" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-12">
         {/* Header + Search */}
         <div className="text-center mb-12">
@@ -448,9 +445,6 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
           <div className="circular-gradient-hover-glow"></div>
         </div>
       </div>
-
-      <Footer />
-
       <style>{`
 
       .circular-gradient-hover-glow {

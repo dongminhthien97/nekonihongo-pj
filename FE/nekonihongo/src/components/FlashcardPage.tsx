@@ -245,22 +245,16 @@ export function FlashcardPage({
   }
   return (
     <div className="soft-gradient-background">
-      <Navigation currentPage="flashcard" onNavigate={onNavigate} />
-      <Background />
-
       <main className="container mx-auto px-4 py-12 flex flex-col items-center">
-        <h1 className="text-center text-5xl font-black text-white drop-shadow-2xl mb-10 hero-text-glow">
-          {lessonTitle}
-        </h1>
+        <div className="pt-12 pb-6 px-4 flex flex-col items-center">
+          {/* Tiêu đề với các hiệu ứng mạnh của bạn */}
+          <h1 className="text-center text-5xl md:text-6xl font-black text-white drop-shadow-2xl mb-8 hero-text-glow leading-tight">
+            {lessonTitle}
+          </h1>
+        </div>
 
         {/* Progress Bar */}
         <div className="w-full max-w-2xl mb-8">
-          <div className="metadata-row">
-            <span>Tiến độ</span>
-            <span>
-              {currentIndex + 1} / {words.length}
-            </span>
-          </div>
           <div className="progress-bar-shell">
             <div
               className="progress-bar-fill-animated"
@@ -383,9 +377,6 @@ export function FlashcardPage({
           </div>
         )}
       </main>
-
-      <Footer />
-
       <style>{`
       .gray-cta-button-large {
   /* px-12 py-6 */
@@ -902,8 +893,8 @@ font-size: 1.75rem;
   transition: all 500ms ease-in-out;
   position: relative;
 }
-      .progress-bar-shell {
-  height: 1rem;
+  .progress-bar-shell {
+  height: 2rem;
   background-color: #ffffff;
   border-radius: 9999px;
   overflow: hidden;
@@ -974,9 +965,8 @@ font-size: 1.75rem;
   justify-content: center;
   background-image: linear-gradient(to bottom right, #581c87, #831843);
 }
-      .soft-gradient-background {
+  .soft-gradient-background {
   min-height: 100vh;
-  background-image: linear-gradient(to bottom right, #FFF6E9, rgba(255, 199, 234, 0.2), rgba(216, 200, 255, 0.3));
 }
         .perspective-1000 {
           perspective: 1000px;

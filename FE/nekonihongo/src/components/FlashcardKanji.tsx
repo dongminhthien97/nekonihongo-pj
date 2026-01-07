@@ -95,10 +95,7 @@ export function FlashcardKanji({
 
   if (isLoading) {
     return (
-      <NekoLoading
-        message="Mèo đang chuẩn bị flashcard Kanji siêu dễ thương cho bạn..."
-        duration={0}
-      />
+      <NekoLoading message="Mèo đang chuẩn bị flashcard Kanji cho bạn nhé..." />
     );
   }
 
@@ -194,22 +191,16 @@ export function FlashcardKanji({
 
   return (
     <div className="soft-gradient-background">
-      <Navigation currentPage="flashcard-kanji" onNavigate={onNavigate} />
-      <Background />
-
       <main className="container mx-auto px-4 py-12 flex flex-col items-center">
-        <h1 className="text-center text-5xl font-black text-white drop-shadow-2xl mb-10 hero-text-glow">
-          {lessonTitle}
-        </h1>
+        <div className="pt-12 pb-6 px-4 flex flex-col items-center">
+          {/* Tiêu đề với các hiệu ứng mạnh của bạn */}
+          <h1 className="text-center text-5xl md:text-6xl font-black text-white drop-shadow-2xl mb-8 hero-text-glow leading-tight">
+            {lessonTitle}
+          </h1>
+        </div>
 
         {/* Progress Bar */}
         <div className="w-full max-w-2xl mb-8">
-          <div className="metadata-row">
-            <span>Tiến độ</span>
-            <span>
-              {currentIndex + 1} / {compounds.length}
-            </span>
-          </div>
           <div className="progress-bar-shell">
             <div
               className="progress-bar-fill-animated"
@@ -269,7 +260,7 @@ export function FlashcardKanji({
             onClick={handleNext}
             className="interactive-gradient-cta-card"
           >
-            <div className="glass-blur-effect group:hover glass-blur-effect" />
+            <div className="glass-blur-effect" />
             <div className="hover-gradient-glow-effect group:hover hover-gradient-glow-effect" />
 
             <div className="flex-centered-text-row">
@@ -354,22 +345,11 @@ export function FlashcardKanji({
           />
         )}
       </main>
-
-      <Footer />
-
       {/* Style giống hệt FlashcardPage */}
       <style>{`
-        /* (Paste toàn bộ <style> từ FlashcardPage.tsx vào đây – giữ nguyên 100%) */
-        /* ... (tất cả style từ FlashcardPage) ... */
         /* Ví dụ một phần để minh họa */
         .soft-gradient-background {
           min-height: 100vh;
-          background-image: linear-gradient(
-            to bottom right,
-            #fff6e9,
-            rgba(255, 199, 234, 0.2),
-            rgba(216, 200, 255, 0.3)
-          );
         }
         .perspective-1000 {
           perspective: 1000px;
@@ -607,7 +587,7 @@ export function FlashcardKanji({
 .bouncing-animation {
   animation: bounce 1s infinite;
 }
-      .glass-blur-effect {
+  .glass-blur-effect {
   position: absolute;
   top: 0;
   right: 0;
@@ -887,7 +867,7 @@ export function FlashcardKanji({
   font-weight: 900;
   color: #1f2937;
 }
-      .flashcard-front-face {
+  .flashcard-front-face {
   position: absolute;
   top: 0;
   right: 0;
@@ -906,7 +886,7 @@ export function FlashcardKanji({
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-      @keyframes bounce {
+  @keyframes bounce {
   0%, 100% {
     transform: translateY(-25%);
     animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
@@ -928,27 +908,20 @@ export function FlashcardKanji({
   font-size: 1.5rem;
   animation: bounce 1s infinite;
 }
-      .progress-bar-fill-animated {
+  .progress-bar-fill-animated {
   height: 100%;
   background-image: linear-gradient(to right, #f472b6, #7c3aed);
   transition: all 500ms ease-in-out;
   position: relative;
 }
-      .progress-bar-shell {
-  height: 1rem;
+  .progress-bar-shell {
+  height: 2rem;
   background-color: #ffffff;
   border-radius: 9999px;
   overflow: hidden;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 }
-      .metadata-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  color: #4b5563;
-  margin-bottom: 0.5rem;
-}
-      .glass-button {
+  .glass-button {
   /* px-10 py-5 */
   padding-left: 2.5rem;
   padding-right: 2.5rem;
@@ -1006,9 +979,8 @@ export function FlashcardKanji({
   justify-content: center;
   background-image: linear-gradient(to bottom right, #581c87, #831843);
 }
-      .soft-gradient-background {
+  .soft-gradient-background {
   min-height: 100vh;
-  background-image: linear-gradient(to bottom right, #FFF6E9, rgba(255, 199, 234, 0.2), rgba(216, 200, 255, 0.3));
 }
         .perspective-1000 {
           perspective: 1000px;

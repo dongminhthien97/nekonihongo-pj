@@ -1,8 +1,5 @@
 // src/components/ExercisePage.tsx
 import { useState, useEffect, useRef } from "react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import {
   ArrowLeft,
@@ -44,7 +41,7 @@ interface SubmitExerciseRequest {
   difficultyLevel: number;
   exerciseType: string;
   exerciseId: number;
-  username: string;
+  exerciseTitle?: string;
 }
 
 interface ExerciseResult {
@@ -112,20 +109,13 @@ export function ExercisePage({
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        setIsLoading(true);
         const endpoint = `/exercises/${category}/${level}`;
+
+        //Loading
+        await new Promise((resolve) => setTimeout(resolve, 600));
         const res = await api.get(endpoint);
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           setExercises(res.data);
-          if (!hasShownToast.current) {
-            hasShownToast.current = true;
-            toast.success(
-              `Tải thành công ${
-                res.data.length
-              } bài tập ${level.toUpperCase()}! 😻`,
-              { duration: 1000 }
-            );
-          }
         } else {
           setExercises([]);
           toast(
@@ -145,7 +135,7 @@ export function ExercisePage({
           toast.error("Không tải được bài tập. Mèo đang kiểm tra lại... 😿");
         }
       } finally {
-        setIsLoading(false);
+        setTimeout(() => setIsLoading(false), 600);
       }
     };
 
@@ -160,29 +150,38 @@ export function ExercisePage({
   }, []);
 
   const handleExerciseSelect = async (exerciseId: number) => {
-    const loadingToast = toast.loading("Mèo đang chuẩn bị bài tập... 🐱");
-    try {
-      const res = await api.get(`/exercises/${exerciseId}`);
-      const exercise: Exercise = res.data;
-      if (!exercise.questions || exercise.questions.length === 0) {
-        toast.dismiss(loadingToast);
-        toast.error("Bài tập này chưa có câu hỏi. Mèo sẽ bổ sung sớm nhé! 😿");
-        return;
+    // Sử dụng toast.promise để chỉ có 1 toast duy nhất (loading → success hoặc error)
+    await toast.promise(
+      api.get(`/exercises/${exerciseId}`),
+      {
+        loading: "Mèo đang chuẩn bị bài tập... 🐱",
+        success: (res) => {
+          const exercise: Exercise = res.data;
+          if (!exercise.questions || exercise.questions.length === 0) {
+            throw new Error("no_questions");
+          }
+          const shuffled = [...exercise.questions].sort(
+            () => Math.random() - 0.5
+          );
+          setSelectedExercise(exercise);
+          setShuffledQuestions(shuffled);
+          setUserAnswers(new Array(shuffled.length).fill(null));
+          setShowResult(false);
+          setScore(0);
+          return `Sẵn sàng làm bài "${exercise.title}" rồi! 🎉`;
+        },
+        error: (err: any) => {
+          if (err.message === "no_questions") {
+            return "Bài tập này chưa có câu hỏi. Mèo sẽ bổ sung sớm nhé! 😿";
+          }
+          return "Không tải được bài tập này. Mèo đang kiểm tra lại... 😿";
+        },
+      },
+      {
+        success: { duration: 1000 },
+        error: { duration: 3000 },
       }
-      const shuffled = [...exercise.questions].sort(() => Math.random() - 0.5);
-      setSelectedExercise(exercise);
-      setShuffledQuestions(shuffled);
-      setUserAnswers(new Array(shuffled.length).fill(null));
-      setShowResult(false);
-      setScore(0);
-      toast.dismiss(loadingToast);
-      toast.success(`Sẵn sàng làm bài "${exercise.title}" rồi! 🎉`, {
-        duration: 1000,
-      });
-    } catch (err: any) {
-      toast.dismiss(loadingToast);
-      toast.error("Không tải được bài tập này. Mèo đang kiểm tra lại... 😿");
-    }
+    );
   };
 
   const handleAnswerSelect = (questionIndex: number, answerIndex: number) => {
@@ -290,11 +289,24 @@ export function ExercisePage({
         difficultyLevel: difficultyLevel,
         exerciseType: category.toUpperCase(),
         exerciseId: selectedExercise.id,
-        username: authUser.username,
+        // THÊM exerciseTitle nếu backend cần
+        exerciseTitle: selectedExercise.title || `Bài tập ${category} ${level}`,
       };
+
+      console.log("[DEBUG] Submitting exercise request:", {
+        userId: authUser.id,
+        username: authUser.username,
+        request: request,
+        timestamp: new Date().toISOString(),
+      });
 
       const response = await api.post("/exercises/submit", request);
       const result: ExerciseResult = response.data.data;
+
+      console.log("[DEBUG] Submit response:", {
+        result: result,
+        activityLogged: result ? "Should be logged" : "No result",
+      });
 
       // Toast level up hoặc normal
       if (result.leveledUp) {
@@ -330,11 +342,34 @@ export function ExercisePage({
         streak: result.streak,
       });
 
-      // (Tùy chọn) Refresh full data từ backend để đồng bộ chắc chắn
+      // Thử query logs ngay sau khi submit
+      setTimeout(async () => {
+        try {
+          console.log("[DEBUG] Checking activity logs after 2 seconds...");
+          // Có thể gọi API để lấy logs mới nhất
+          // const logsResponse = await api.get("/admin/activity-logs");
+          // console.log("[DEBUG] Latest logs:", logsResponse.data);
+        } catch (logErr) {
+          console.error("[DEBUG] Error checking logs:", logErr);
+        }
+      }, 2000);
+
+      //Refresh full data từ backend để đồng bộ chắc chắn
       await refreshUser();
       return result;
     } catch (error: any) {
       console.error("❌ Lỗi khi lưu kết quả:", error);
+
+      // DEBUG chi tiết
+      if (error.response) {
+        console.error("[DEBUG] Error response status:", error.response.status);
+        console.error("[DEBUG] Error response data:", error.response.data);
+        console.error(
+          "[DEBUG] Error response headers:",
+          error.response.headers
+        );
+      }
+
       if (error.response?.status === 401) {
         toast.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
         setTimeout(() => onNavigate("login"), 2000);
@@ -354,9 +389,6 @@ export function ExercisePage({
 
   return (
     <div className="min-h-screen relative">
-      <Background />
-      <Navigation currentPage="exercise" onNavigate={onNavigate} />
-
       <main className="container mx-auto px-4 py-12 relative z-10">
         {/* Header động theo category + level */}
         <div className="text-center mb-16 animate-bounce-in">
@@ -737,8 +769,6 @@ export function ExercisePage({
           }}
         />
       </div>
-
-      <Footer />
       {/* CSS giữ nguyên đẹp lung linh */}
       <style>{`
            .circular-icon-button {
@@ -936,7 +966,7 @@ export function ExercisePage({
   /* text-4xl (36px) */
   font-size: 2.25rem;
   font-weight: 900;
-  color: #ffffff;
+  color:#8034eb;
 
   /* Thay hero-text-glow bằng drop-shadow đa lớp để chữ nổi bật trên nền kính */
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)) 

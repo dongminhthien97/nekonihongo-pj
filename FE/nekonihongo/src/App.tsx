@@ -21,6 +21,10 @@ import { GrammarN5ListPage } from "./components/GrammarN5ListPage";
 import { GrammarSelector } from "./components/GrammarSelector";
 import { KanjiSelector } from "./components/KanjiSelector";
 import { KanjiN5ListPage } from "./components/KanjiN5ListPage";
+import { Background } from "./components/Background";
+import { Navigation } from "./components/Navigation";
+import { Footer } from "./components/Footer";
+import { HistoryTracking } from "./pages/admin/HistoryTracking";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -89,105 +93,120 @@ function AppContent() {
   if (!hasSeenSplash) {
     return <SplashScreen onComplete={markSplashAsSeen} />;
   }
-
+  const isMyPage = currentPage === "mypage" || currentPage === "admin";
   // 4. Đã thấy splash → vào app chính
   return (
     <div className="min-h-screen page-transition">
-      {/* Các trang */}
-      {currentPage === "landing" && <LandingPage onNavigate={handleNavigate} />}
-      {currentPage === "vocabulary" && (
-        <VocabularyPage onNavigate={handleNavigate} />
-      )}
-      {currentPage === "grammar" && <GrammarPage onNavigate={handleNavigate} />}
-      {currentPage === "kanji" && <KanjiPage onNavigate={handleNavigate} />}
-      {currentPage === "flashcard" && (
-        <FlashcardPage onNavigate={handleNavigate} />
-      )}
-      {currentPage === "flashcard-kanji" && (
-        <FlashcardKanji onNavigate={handleNavigate} />
-      )}
-      {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
-      {currentPage === "admin" && (
-        <DashboardAdmin onNavigate={handleNavigate} />
-      )}
-      {currentPage === "user" && <MyPageUser onNavigate={handleNavigate} />}
-      {currentPage === "vocabulary-selector" && (
-        <VocabularySelector onNavigate={handleNavigate} />
-      )}
-      {currentPage === "grammar-selector" && (
-        <GrammarSelector onNavigate={handleNavigate} />
-      )}
-      {currentPage === "vocabulary-n5" && (
-        <VocabularyN5 onNavigate={handleNavigate} />
-      )}
-      {currentPage === "grammar-n5" && (
-        <GrammarN5ListPage onNavigate={handleNavigate} />
-      )}
+      {!isMyPage && <Background />}
 
-      {/* Trang chọn loại bài tập */}
-      {currentPage === "exercise-selector" && (
-        <ExerciseSelector onNavigate={handleNavigate} />
-      )}
+      <div className="relative z-10 min-h-screen">
+        {!isMyPage && (
+          <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
+        )}
+        {/* Các trang */}
+        {currentPage === "landing" && (
+          <LandingPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "vocabulary" && (
+          <VocabularyPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar" && (
+          <GrammarPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "kanji" && <KanjiPage onNavigate={handleNavigate} />}
+        {currentPage === "flashcard" && (
+          <FlashcardPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "flashcard-kanji" && (
+          <FlashcardKanji onNavigate={handleNavigate} />
+        )}
+        {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
+        {currentPage === "admin" && (
+          <DashboardAdmin onNavigate={handleNavigate} />
+        )}
+        {currentPage === "user" && <MyPageUser onNavigate={handleNavigate} />}
+        {currentPage === "vocabulary-selector" && (
+          <VocabularySelector onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-selector" && (
+          <GrammarSelector onNavigate={handleNavigate} />
+        )}
+        {currentPage === "vocabulary-n5" && (
+          <VocabularyN5 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-n5" && (
+          <GrammarN5ListPage onNavigate={handleNavigate} />
+        )}
 
-      {/* ExercisePage dùng chung cho tất cả loại + level */}
-      {currentPage === "exercise" && (
-        <ExercisePage
-          onNavigate={handleNavigate}
-          category={pageParams?.category || "vocabulary"}
-          level={pageParams?.level || "n5"}
+        {/* Trang chọn loại bài tập */}
+        {currentPage === "exercise-selector" && (
+          <ExerciseSelector onNavigate={handleNavigate} />
+        )}
+
+        {/* ExercisePage dùng chung cho tất cả loại + level */}
+        {currentPage === "exercise" && (
+          <ExercisePage
+            onNavigate={handleNavigate}
+            category={pageParams?.category || "vocabulary"}
+            level={pageParams?.level || "n5"}
+          />
+        )}
+
+        {/* Giữ route cũ nếu cần tương thích ngược */}
+        {(currentPage === "exercise-n5" ||
+          currentPage === "exercise-grammar-n5" ||
+          currentPage === "exercise-kanji-n5") && (
+          <ExercisePage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "kanji-selector" && (
+          <KanjiSelector onNavigate={handleNavigate} />
+        )}
+        {currentPage === "kanji-n5" && (
+          <KanjiN5ListPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "historytracking" && (
+          <HistoryTracking onNavigate={handleNavigate} />
+        )}
+
+        {/* Toaster – toast dễ thương toàn app */}
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={12}
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+              borderRadius: "24px",
+              padding: "16px 24px",
+              boxShadow: "0 10px 30px rgba(255, 182, 233, 0.4)",
+              backdropFilter: "blur(10px)",
+              border: "2px solid rgba(255, 199, 234, 0.5)",
+              fontSize: "18px",
+              fontWeight: "600",
+            },
+            success: {
+              icon: "😻",
+              style: {
+                borderColor: "#77FFD9",
+                boxShadow: "0 10px 30px rgba(119, 255, 217, 0.4)",
+              },
+            },
+            error: {
+              icon: "😿",
+              style: {
+                borderColor: "#FF77C2",
+                boxShadow: "0 10px 30px rgba(255, 119, 194, 0.4)",
+              },
+            },
+            loading: {
+              icon: "🐱",
+            },
+          }}
         />
-      )}
-
-      {/* Giữ route cũ nếu cần tương thích ngược */}
-      {(currentPage === "exercise-n5" ||
-        currentPage === "exercise-grammar-n5" ||
-        currentPage === "exercise-kanji-n5") && (
-        <ExercisePage onNavigate={handleNavigate} />
-      )}
-      {currentPage === "kanji-selector" && (
-        <KanjiSelector onNavigate={handleNavigate} />
-      )}
-      {currentPage === "kanji-n5" && (
-        <KanjiN5ListPage onNavigate={handleNavigate} />
-      )}
-
-      {/* Toaster – toast dễ thương toàn app */}
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        gutter={12}
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: "rgba(255, 255, 255, 0.9)",
-            color: "#000",
-            borderRadius: "24px",
-            padding: "16px 24px",
-            boxShadow: "0 10px 30px rgba(255, 182, 233, 0.4)",
-            backdropFilter: "blur(10px)",
-            border: "2px solid rgba(255, 199, 234, 0.5)",
-            fontSize: "18px",
-            fontWeight: "600",
-          },
-          success: {
-            icon: "😻",
-            style: {
-              borderColor: "#77FFD9",
-              boxShadow: "0 10px 30px rgba(119, 255, 217, 0.4)",
-            },
-          },
-          error: {
-            icon: "😿",
-            style: {
-              borderColor: "#FF77C2",
-              boxShadow: "0 10px 30px rgba(255, 119, 194, 0.4)",
-            },
-          },
-          loading: {
-            icon: "🐱",
-          },
-        }}
-      />
+        <Footer />
+      </div>
     </div>
   );
 }

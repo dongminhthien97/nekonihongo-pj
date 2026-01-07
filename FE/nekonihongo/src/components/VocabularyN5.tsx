@@ -131,9 +131,6 @@ export function VocabularyN5({
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="vocabulary" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 mb-12 md:mb-16">
         <h1 className="hero-section-title hero-text-glow">
           Từ Vựng JLPT N5 (~{words.length} từ)
@@ -266,8 +263,6 @@ export function VocabularyN5({
           </div>
         </div>
       </main>
-
-      <Footer />
       <style>{`
       .flex-center-group {
   /* flex */

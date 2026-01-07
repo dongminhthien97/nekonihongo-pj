@@ -1,16 +1,31 @@
 // src/pages/User/MyPageUser.tsx
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Footer } from "../../components/Footer";
 import api from "../../api/auth";
 import toast from "react-hot-toast";
+import { NekoLoading } from "../../components/NekoLoading";
 
 interface MyPageUserProps {
   onNavigate: (page: string) => void;
 }
 export function MyPageUser({ onNavigate }: MyPageUserProps) {
-  const { user: authUser, updateUser, refreshUser } = useAuth();
+  const {
+    user: authUser,
+    updateUser,
+    refreshUser,
+    loading: authLoading,
+  } = useAuth();
+  // Thêm loading local để delay 600ms khi vào page (tạo cảm giác mượt + đẹp)
+  const [localLoading, setLocalLoading] = useState(true);
 
+  useEffect(() => {
+    // Delay 600ms rồi mới tắt loading (cho animation NekoLoading đẹp)
+    const timer = setTimeout(() => {
+      setLocalLoading(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, []);
   const PLACEHOLDER_AVATAR_128 =
     "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='%23f3e8ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='16' fill='%236b21a8' font-family='Arial, sans-serif'>Avatar</text></svg>";
 
@@ -48,7 +63,9 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
       </div>
     );
   }
-
+  if (authLoading || localLoading || !authUser) {
+    return <NekoLoading message="Mèo đang chuẩn bị MyPage cho bạn... 😻" />;
+  }
   // Tính level từ points
   const userLevel = calculateLevel(authUser.points);
   const nextLevelPoints = getNextLevelPoints(userLevel);
@@ -90,7 +107,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
       await refreshUser(); // Đồng bộ full data từ backend
 
       setIsEditingAvatar(false);
-      toast.success("Cập nhật avatar thành công! 😻");
+      toast.success("Cập nhật avatar thành công! 😻", { duration: 1500 });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 403) {
@@ -222,9 +239,6 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                   <div>
                     <div className="stats-label">TRÌNH ĐỘ</div>
                     <div className="stats-value">Level {userLevel}</div>
-                    <div className="text-sm text-purple-600 mt-1">
-                      Điểm trong level: {pointsInCurrentLevel}
-                    </div>
                   </div>
                   <div className="text-4xl">⭐</div>
                 </div>
@@ -309,7 +323,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           </div>
 
           {/* Level Info Table */}
-          <div className="mt-8 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
+          {/* <div className="mt-8 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
             <h3 className="text-lg font-semibold text-purple-800 mb-3">
               Thông tin Level
             </h3>
@@ -341,11 +355,9 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
-
-      <Footer />
       <style>{`
         /* === STYLE GIỮ NGUYÊN ĐẸP LUNG LINH === */
         .btn-red { 

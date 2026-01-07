@@ -275,6 +275,13 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
             >
               <span className="text-lg">+</span> Thêm User
             </button>
+            <button
+              onClick={() => onNavigate("historytracking")}
+              className="btn-primary-gradient"
+            >
+              📊 <span className="truncate">Lịch sử hoạt động</span>
+            </button>
+
             <button onClick={handleBack} className="danger-button">
               Quay lại
             </button>
@@ -877,6 +884,25 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
         )}
       </div>
       <style>{`
+      .btn-primary-gradient {
+  flex: 1 1 0%; /* flex-1 */
+  padding: 0.5rem 0.5rem; /* px-2 py-2 */
+  background: linear-gradient(to right, #9333ea, #4f46e5); /* purple-600 to indigo-600 */
+  color: #ffffff;
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* gap-2 */
+  font-size: 0.875rem; /* text-sm */
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary-gradient:hover {
+  background: linear-gradient(to right, #7e22ce, #4338ca);
+}
       .btn-secondary-flex {
   /* flex-1: Co giãn tương đương với nút chính để tạo sự cân bằng */
   flex: 1 1 0%;

@@ -30,7 +30,6 @@ export function LoginPage() {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <Background />
-
       {/* Gradient Overlay */}
       <div className="absolute inset-0" />
 
@@ -147,7 +146,6 @@ export function LoginPage() {
           </div>
         </div>
       </div>
-
       {/* Giữ nguyên toàn bộ style đẹp lung linh của bạn */}
       <style>{`
       .full-hover-gradient-overlay {

@@ -8,9 +8,6 @@ import {
   Sparkles,
   BookOpen,
 } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 
@@ -146,9 +143,6 @@ export function GrammarPage({
 
   return (
     <div className="subtle-gradient-background-relative">
-      <Background />
-      <Navigation currentPage="grammar" onNavigate={onNavigate} />
-
       <main className="container mx-auto px-4 py-12 relative z-10">
         <div className="text-center mb-12">
           <h1 className="hero-title-style hero-text-glow">
@@ -397,9 +391,6 @@ export function GrammarPage({
           }}
         />
       </div>
-
-      <Footer />
-
       <style>{`
 
       .icon-yellow-highlight {
@@ -437,7 +428,7 @@ export function GrammarPage({
 .icon-purple-transition:hover {
   transform: scale(1.1); /* Ví dụ: phóng lớn nhẹ khi di chuột */
 }
-      .interactive-gradient-row-spaced {
+  .interactive-gradient-row-spaced {
   /* w-full */
   width: 100%;
   
@@ -558,7 +549,7 @@ export function GrammarPage({
   /* shadow-lg */
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); 
 }
-      .gradient-interactive-row {
+  .gradient-interactive-row {
   /* w-full */
   width: 100%;
   
@@ -830,12 +821,6 @@ export function GrammarPage({
         .subtle-gradient-background-relative {
           min-height: 100vh;
           position: relative;
-          background-image: linear-gradient(
-            to bottom right,
-            #fff6e9,
-            rgba(216, 200, 255, 0.2),
-            rgba(199, 255, 241, 0.3)
-          );
           background-attachment: fixed;
         }
         @keyframes pulse-soft {

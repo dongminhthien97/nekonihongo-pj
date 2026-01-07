@@ -60,7 +60,7 @@ export function Navigation({
             style={{ cursor: "pointer" }}
           >
             <ImageWithFallback
-              src="https://ih1.redbubble.net/image.5481873298.3314/st,small,507x507-pad,600x600,f8f8f8.jpg"
+              src="https://i.ibb.co/1fK2RY6J/icon.jpg"
               alt="Neko Nihongo"
               style={{
                 width: "56px",
@@ -633,6 +633,28 @@ span:where(.text-red-600) {
       0 45px 90px -20px rgba(168, 85, 247, 0.35);
     transition: all 0.5s ease;
   }
+    .grid-layout-2 {
+  /* Thiết lập Grid */
+  display: grid;
+  
+  /* grid-cols-2: Chia làm 2 cột bằng nhau */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  
+  /* gap-5: Khoảng cách giữa các ô là 1.25rem (20px) */
+  gap: 1.25rem;
+  
+  /* Căn chỉnh mặc định */
+  width: 100%;
+  margin-bottom: 1.25rem;
+}
+
+/* Responsive: Trên màn hình điện thoại rất nhỏ (dưới 480px) 
+   nên cân nhắc chuyển về 1 cột nếu nội dung bên trong quá dài */
+@media (max-width: 480px) {
+  .grid-layout-2-mobile-friendly {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
       `}</style>
       {/* MODAL LOGOUT – ĐÃ FIX HOÀN HẢO, LUÔN Ở GIỮA MÀN HÌNH 100% */}
       {isLogoutModalOpen && (
@@ -657,19 +679,19 @@ span:where(.text-red-600) {
                   Are you sure??
                 </p>
 
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid-layout-2">
                   <button
                     onClick={() => setIsLogoutModalOpen(false)}
                     className="btn-stay-neko"
                   >
-                    Học thêm tí nữa
+                    Học tiếp
                   </button>
 
                   <button
                     onClick={confirmLogout}
                     className="btn-logout-danger-neko"
                   >
-                    Mệt qué nghỉ thoai
+                    Thoát
                   </button>
                 </div>
 

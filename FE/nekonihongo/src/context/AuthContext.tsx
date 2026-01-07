@@ -175,7 +175,6 @@ export const AuthProvider = ({
 
     try {
       await loadUserFromBackend();
-      toast.success("Cập nhật thông tin thành công! 😻");
     } catch {
       toast.error("Không thể cập nhật thông tin 😿");
     }

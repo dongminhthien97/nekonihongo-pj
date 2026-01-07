@@ -31,17 +31,13 @@ export function GrammarN5ListPage({
   useEffect(() => {
     const fetchGrammarN5 = async () => {
       try {
-        setIsLoading(true);
-
         const res = await api.get("/grammar/n5");
+
+        await new Promise((resolve) => setTimeout(resolve, 600));
 
         if (res.data && Array.isArray(res.data)) {
           if (res.data.length > 0) {
             setPatterns(res.data);
-            toast.success(
-              `Tải thành công ${res.data.length} cấu trúc ngữ pháp N5! 😻`,
-              { duration: 1000 }
-            );
           } else {
             setPatterns([]);
             toast(
@@ -84,7 +80,9 @@ export function GrammarN5ListPage({
           );
         }
       } finally {
-        setIsLoading(false);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 600);
       }
     };
 
@@ -169,9 +167,6 @@ export function GrammarN5ListPage({
 
   return (
     <div className="min-h-screen">
-      <Navigation currentPage="grammar" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 mb-12 md:mb-16">
         <h1 className="hero-section-title hero-text-glow text-center">
           Ngữ pháp JLPT N5 (~{patterns.length} cấu trúc)
@@ -286,9 +281,6 @@ export function GrammarN5ListPage({
           </div>
         </div>
       </main>
-
-      <Footer />
-
       {/* Giữ nguyên toàn bộ CSS từ VocabularyN5 */}
       <style>{`
             .flex-center-group {

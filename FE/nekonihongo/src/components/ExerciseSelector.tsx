@@ -32,14 +32,11 @@ export function ExerciseSelector({
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(true);
-
   // Lấy data từ DB
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-
+        // BỎ setIsLoading(true) → không cần loading nữa
         const [catRes, levelRes] = await Promise.all([
           api.get("/categories"),
           api.get("/levels"),
@@ -53,15 +50,9 @@ export function ExerciseSelector({
             b.level.localeCompare(a.level)
           )
         );
-
-        toast.success("Mèo đã chuẩn bị sẵn các loại bài tập cho bạn rồi! 😻", {
-          duration: 1000,
-        });
       } catch (err) {
         toast.error("Không tải được dữ liệu. Mèo đang sửa đây... 😿");
         console.error(err);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -96,25 +87,8 @@ export function ExerciseSelector({
   const handleBack = () => {
     setSelectedCategory(null);
   };
-
-  if (isLoading) {
-    return (
-      <div className="main-viewport">
-        <div className="text-center">
-          <div className="text-8xl mb-8 animate-bounce">🐱</div>
-          <p className="text-4xl text-white animate-pulse">
-            Mèo đang chuẩn bị...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen relative">
-      <Navigation currentPage="exercise" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
         {/* Tiêu đề */}
         <div className="text-center mb-16 md:mb-24">
@@ -257,8 +231,6 @@ export function ExerciseSelector({
           <div className="bouncing-icon">🐾</div>
         </div>
       </main>
-
-      <Footer />
 
       {/* Giữ nguyên CSS đẹp lung linh như cũ */}
       <style>{`
@@ -593,7 +565,7 @@ export function ExerciseSelector({
     line-height: 1;
   }
 }
-      .hero-text {
+  .hero-text {
   /* text-8xl */
   font-size: 6rem; /* 96px */
   line-height: 1;
@@ -834,7 +806,7 @@ export function ExerciseSelector({
 .circular-shadow-button:disabled {
   opacity: 0.5;
 }
-             .hero-text-glow {
+    .hero-text-glow {
     text-shadow: 
       0 0 20px #FF69B4,
       0 0 40px #A020F0,

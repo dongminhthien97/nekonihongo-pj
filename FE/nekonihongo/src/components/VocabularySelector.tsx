@@ -43,9 +43,6 @@ export function VocabularySelector({
 
   return (
     <div className="min-h-screen relative">
-      <Navigation currentPage="vocabulary" onNavigate={onNavigate} />
-      <Background />
-
       <main className="relative z-10 container mx-auto px-4 py-16 md:py-24 animate-fade-in">
         {/* Tiêu đề fade in đầu tiên */}
         <div className="text-center mb-16 md:mb-24">
@@ -93,7 +90,6 @@ export function VocabularySelector({
             </button>
           ))}
         </div>
-
         {/* Footer text – fade in cuối cùng */}
         <div
           className="footer-container text-center"
@@ -106,9 +102,6 @@ export function VocabularySelector({
           <div className="bouncing-icon">🐾</div>
         </div>
       </main>
-
-      <Footer />
-
       {/* CSS cho fade-in animation */}
       <style>{`
                     .animate-fade-in {
