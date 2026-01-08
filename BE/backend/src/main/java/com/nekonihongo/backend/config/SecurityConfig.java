@@ -57,6 +57,7 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 // Các API công khai
+                                                .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/n5/**").permitAll()
                                                 .requestMatchers("/api/vocabulary/**").permitAll()
@@ -65,6 +66,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/kanji/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/exercises/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
+                                                .requestMatchers("/api/hiragana/**").permitAll()
+                                                .requestMatchers("/api/katakana/**").permitAll()
                                                 // Các API cần đăng nhập
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()

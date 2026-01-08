@@ -6,12 +6,8 @@ import com.nekonihongo.backend.entity.User;
 import com.nekonihongo.backend.repository.UserRepository;
 import com.nekonihongo.backend.service.ActivityLogService;
 import com.nekonihongo.backend.service.IUserService;
-import com.nekonihongo.backend.entity.ActivityLog;
-import com.nekonihongo.backend.service.ActivityLogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -29,8 +25,6 @@ public class UserController {
     private final IUserService userService;
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
-
-    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     /* ====================== ADMIN ROUTES ====================== */
     @PreAuthorize("hasRole('ADMIN')")
@@ -63,6 +57,7 @@ public class UserController {
                 .points(request.getPoints() != null ? request.getPoints() : 0)
                 .streak(request.getStreak() != null ? request.getStreak() : 0)
                 .longestStreak(request.getLongestStreak() != null ? request.getLongestStreak() : 0)
+                .status(request.getStatus() != null ? request.getStatus() : User.Status.ACTIVE)
                 .build();
 
         User created = userService.createUser(user,
@@ -75,19 +70,39 @@ public class UserController {
     @PutMapping("/api/admin/users/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody UserRequest request) {
-        User user = User.builder()
+            @Valid @RequestBody UserRequest request,
+            Authentication authentication) { // ← Thêm Authentication để lấy current admin
+
+        // Lấy current admin username từ token
+        String currentUsername = authentication.getName();
+
+        // Load user cần update để check self-update
+        User existingUser = userService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
+
+        // NGĂN ADMIN TỰ KHÓA CHÍNH MÌNH (tránh bug không login được)
+        if (existingUser.getUsername().equals(currentUsername)
+                && request.getStatus() != null
+                && request.getStatus() != User.Status.ACTIVE) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Admin không thể tự khóa hoặc cấm tài khoản của mình!"));
+        }
+
+        User userToUpdate = User.builder()
                 .username(request.getUsername())
                 .fullName(request.getFullName())
                 .avatarUrl(request.getAvatarUrl())
                 .role(request.getRole())
-                .level(request.getLevel() != null ? request.getLevel() : 1)
-                .points(request.getPoints() != null ? request.getPoints() : 0)
-                .streak(request.getStreak() != null ? request.getStreak() : 0)
-                .longestStreak(request.getLongestStreak() != null ? request.getLongestStreak() : 0)
+                .level(request.getLevel() != null ? request.getLevel() : existingUser.getLevel())
+                .points(request.getPoints() != null ? request.getPoints() : existingUser.getPoints())
+                .streak(request.getStreak() != null ? request.getStreak() : existingUser.getStreak())
+                .longestStreak(request.getLongestStreak() != null ? request.getLongestStreak()
+                        : existingUser.getLongestStreak())
+                // THÊM STATUS
+                .status(request.getStatus() != null ? request.getStatus() : existingUser.getStatus())
                 .build();
 
-        User updated = userService.updateUser(id, user);
+        User updated = userService.updateUser(id, userToUpdate);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công!", toResponse(updated)));
     }
 
@@ -105,6 +120,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Lấy logs thành công!", logs));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/api/admin/activity-logs/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteActivityLog(@PathVariable Long id) {
+        activityLogService.deleteLog(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa log hoạt động thành công!", null));
+    }
+
     /* ====================== USER ROUTES ====================== */
     @PatchMapping("/api/user/me/avatar")
     public ResponseEntity<ApiResponse<UserResponse>> updateAvatar(
@@ -117,6 +139,9 @@ public class UserController {
 
         String avatarUrl = body.get("avatarUrl");
         if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+            if (!avatarUrl.matches(".*\\.(jpg|jpeg|png|gif|webp|svg)(\\?.*)?$")) {
+                throw new RuntimeException("URL avatar phải là ảnh (jpg, png, webp, gif, svg)");
+            }
             currentUser.setAvatarUrl(avatarUrl.trim());
             userRepository.save(currentUser);
         }
@@ -149,6 +174,7 @@ public class UserController {
                 .longestStreak(user.getLongestStreak())
                 .joinDate(user.getJoinDate())
                 .lastLoginDate(user.getLastLoginDate())
+                .status(user.getStatus().name())
                 .build();
     }
 }

@@ -25,4 +25,5 @@ public class UserResponse {
     private int longestStreak;
     private LocalDate joinDate;
     private LocalDateTime lastLoginDate;
+    private String status;
 }

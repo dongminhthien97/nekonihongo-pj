@@ -186,4 +186,11 @@ public class ActivityLogService {
 
         return stats;
     }
+
+    public void deleteLog(Long id) {
+        if (!activityLogRepository.existsById(id)) {
+            throw new RuntimeException("ActivityLog not found with id: " + id);
+        }
+        activityLogRepository.deleteById(id);
+    }
 }

@@ -59,6 +59,11 @@ public class User {
     @Column(name = "join_date", nullable = false, updatable = false)
     private LocalDate joinDate;
 
+    // ⭐ THÊM TRƯỜNG STATUS ⭐
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
+
     public enum Role {
         USER("user"),
         ADMIN("admin");
@@ -72,5 +77,12 @@ public class User {
         public String getValue() {
             return value;
         }
+    }
+
+    // Enum cho status tài khoản
+    public enum Status {
+        ACTIVE, // Bình thường
+        INACTIVE, // Bị khóa tạm thời
+        BANNED // Bị cấm vĩnh viễn
     }
 }

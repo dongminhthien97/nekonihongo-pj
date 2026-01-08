@@ -82,6 +82,10 @@ public class UserService implements IUserService {
             existing.setRole(updatedUser.getRole());
         existing.setLevel(updatedUser.getLevel());
         existing.setPoints(updatedUser.getPoints());
+        existing.setStreak(updatedUser.getStreak());
+        existing.setLongestStreak(updatedUser.getLongestStreak());
+        if (updatedUser.getStatus() != null)
+            existing.setStatus(updatedUser.getStatus());
 
         return userRepository.save(existing);
     }
@@ -105,7 +109,6 @@ public class UserService implements IUserService {
     }
 
     public String extractUsernameFromToken(String token) {
-        // TODO: implement proper JWT parsing
         return token;
     }
 }

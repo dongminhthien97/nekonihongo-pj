@@ -28,4 +28,5 @@ public class UserRequest {
     private Integer points = 0;
     private Integer streak = 0;
     private Integer longestStreak = 0;
+    private User.Status status;
 }
