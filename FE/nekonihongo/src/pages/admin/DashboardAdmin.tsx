@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Footer } from "../../components/Footer";
 import api from "../../api/auth";
+import toast from "react-hot-toast";
 
 interface User {
   id: number;
@@ -14,7 +14,7 @@ interface User {
   joinDate: string;
   avatarUrl?: string;
   password?: string;
-  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  status?: "ACTIVE" | "INACTIVE" | "BANNED";
 }
 
 interface DashboardAdminProps {
@@ -43,7 +43,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | "USER" | "ADMIN">("ALL");
   const [statusFilter, setStatusFilter] = useState<
-    "ALL" | "ACTIVE" | "INACTIVE" | "SUSPENDED"
+    "ALL" | "ACTIVE" | "INACTIVE" | "BANNED"
   >("ALL");
   const [sortBy, setSortBy] = useState<
     "level" | "points" | "joinDate" | "username"
@@ -61,11 +61,20 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
     try {
       setLoading(true);
       const res = await api.get("/admin/users");
-      const userList: User[] = res.data?.data || res.data || [];
+      let userList: User[] = res.data?.data || res.data || [];
+
+      userList = userList.map((user: any) => ({
+        ...user,
+        status: user.status || "ACTIVE", // ← Default ACTIVE
+      }));
+
       setUsers(userList);
-      setSelectedUser(userList[0] || null);
+      if (userList.length > 0 && !selectedUser) {
+        setSelectedUser(userList[0]);
+      }
     } catch (err: any) {
       console.error("Lỗi tải user:", err);
+      toast.error("Không tải được danh sách user 😿");
     } finally {
       setLoading(false);
     }
@@ -119,15 +128,17 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
         level: formData.level || 1,
         points: formData.points || 0,
         streak: formData.streak || 0,
-        status: formData.status || "ACTIVE",
+        status: formData.status || "ACTIVE", // ← Gửi status rõ ràng
       };
 
       await api.put(`/admin/users/${formData.id}`, payload);
-      alert("✅ Cập nhật thành công!");
+      toast.success("✅ Cập nhật thành công!");
       handleCloseModal();
-      fetchUsers();
+
+      // FIX: Refresh list ngay để hiển thị status mới
+      await fetchUsers();
     } catch (err: any) {
-      alert(`❌ ${err.response?.data?.message || "Cập nhật thất bại"}`);
+      toast.error(`❌ ${err.response?.data?.message || "Cập nhật thất bại"}`);
     }
   };
 
@@ -186,7 +197,27 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
       password: "123456",
     });
   };
-
+  const getStatusDisplay = (status: string = "ACTIVE") => {
+    switch (status) {
+      case "ACTIVE":
+        return {
+          text: "Đang hoạt động",
+          className: "badge-success",
+        };
+      case "INACTIVE":
+        return {
+          text: "Không hoạt động",
+          className: "badge-inactive",
+        };
+      case "BANNED":
+        return { text: "Đã khóa", className: "badge-danger" };
+      default:
+        return {
+          text: "Đang hoạt động",
+          className: "badge-success",
+        };
+    }
+  };
   // Xử lý filter và sort
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -351,7 +382,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                   <option value="ALL">Tất cả trạng thái</option>
                   <option value="ACTIVE">Đang hoạt động</option>
                   <option value="INACTIVE">Không hoạt động</option>
-                  <option value="SUSPENDED">Đã khóa</option>
+                  <option value="BANNED">Đã khóa</option>
                 </select>
                 <select
                   value={sortBy}
@@ -388,113 +419,107 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {paginatedUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className={`hover:bg-indigo-50 transition-colors cursor-pointer ${
-                      selectedUser?.id === user.id ? "bg-indigo-50" : ""
-                    }`}
-                    onClick={() => setSelectedUser(user)}
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            user.avatarUrl ||
-                            `${PLACEHOLDER_AVATAR}${user.username}`
-                          }
-                          alt={user.username}
-                          className="avatar-style"
-                          onError={(e) => {
-                            e.currentTarget.src = `${PLACEHOLDER_AVATAR}${user.username}`;
-                          }}
-                        />
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {user.username}
-                          </div>
-                          {user.fullName && (
-                            <div className="text-sm text-gray-500">
-                              {user.fullName}
+                {paginatedUsers.map((user) => {
+                  const statusDisplay = getStatusDisplay(user.status);
+
+                  return (
+                    <tr
+                      key={user.id}
+                      className={`hover:bg-indigo-50 transition-colors cursor-pointer ${
+                        selectedUser?.id === user.id ? "bg-indigo-50" : ""
+                      }`}
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={
+                              user.avatarUrl ||
+                              `${PLACEHOLDER_AVATAR}${user.username}`
+                            }
+                            alt={user.username}
+                            className="avatar-style"
+                            onError={(e) => {
+                              e.currentTarget.src = `${PLACEHOLDER_AVATAR}${user.username}`;
+                            }}
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {user.username}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="text-sm">
-                        <div className="text-gray-900">{user.email}</div>
-                        <div className="text-gray-500 capitalize">
-                          {user.role.toLowerCase()}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <div className="font-bold text-indigo-600">
-                            {user.level}
+                            {user.fullName && (
+                              <div className="text-sm text-gray-500">
+                                {user.fullName}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-xs text-gray-500">Level</div>
                         </div>
-                        <div className="text-center">
-                          <div className="font-bold text-purple-600">
-                            {user.points}
+                      </td>
+                      <td className="p-4">
+                        <div className="text-sm">
+                          <div className="text-gray-900">{user.email}</div>
+                          <div className="text-gray-500 capitalize">
+                            {user.role.toLowerCase()}
                           </div>
-                          <div className="text-xs text-gray-500">Điểm</div>
                         </div>
-                        <div className="text-center">
-                          <div className="font-bold text-orange-600">
-                            {user.streak || 0}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className="font-bold text-indigo-600">
+                              {user.level}
+                            </div>
+                            <div className="text-xs text-gray-500">Level</div>
                           </div>
-                          <div className="text-xs text-gray-500">Streak</div>
+                          <div className="text-center">
+                            <div className="font-bold text-purple-600">
+                              {user.points}
+                            </div>
+                            <div className="text-xs text-gray-500">Điểm</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-orange-600">
+                              {user.streak || 0}
+                            </div>
+                            <div className="text-xs text-gray-500">Streak</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`badge-base ${
-                          user.status === "ACTIVE"
-                            ? "bg-green-100 text-green-800"
-                            : user.status === "SUSPENDED"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {user.status === "ACTIVE"
-                          ? "Đang hoạt động"
-                          : user.status === "SUSPENDED"
-                          ? "Đã khóa"
-                          : "Không hoạt động"}
-                      </span>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(user.joinDate).toLocaleDateString("vi-VN")}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openModal("edit", user);
-                          }}
-                          className="chip-button"
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={`badge-base ${statusDisplay.className}`}
                         >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteUser(user.id);
-                          }}
-                          className="chip-button"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {statusDisplay.text}
+                        </span>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(user.joinDate).toLocaleDateString("vi-VN")}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openModal("edit", user);
+                            }}
+                            className="chip-button"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteUser(user.id);
+                            }}
+                            className="chip-button"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -594,18 +619,10 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                     <div className="font-medium">
                       <span
                         className={`tag-flat ${
-                          selectedUser.status === "ACTIVE"
-                            ? "status-success"
-                            : selectedUser.status === "SUSPENDED"
-                            ? "status-error"
-                            : "status-neutral"
+                          getStatusDisplay(selectedUser.status).className
                         }`}
                       >
-                        {selectedUser.status === "ACTIVE"
-                          ? "Đang hoạt động"
-                          : selectedUser.status === "SUSPENDED"
-                          ? "Đã khóa"
-                          : "Không hoạt động"}
+                        {getStatusDisplay(selectedUser.status).text}
                       </span>
                     </div>
                   </div>
@@ -816,14 +833,17 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          status: e.target.value as any,
+                          status: e.target.value as
+                            | "ACTIVE"
+                            | "INACTIVE"
+                            | "BANNED",
                         })
                       }
                       className="input-smart"
                     >
                       <option value="ACTIVE">Đang hoạt động</option>
                       <option value="INACTIVE">Không hoạt động</option>
-                      <option value="SUSPENDED">Đã khóa</option>
+                      <option value="BANNED">Đã khóa</option>{" "}
                     </select>
                   </div>
 
@@ -884,6 +904,37 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
         )}
       </div>
       <style>{`
+      .badge-inactive {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #1f2937; /* gray-800 */
+  padding: 0.125rem 0.625rem; /* py-0.5 px-2.5 */
+  border-radius: 9999px; /* rounded-full */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+      .badge-danger {
+  background-color: #fee2e2; /* red-100 */
+  color: #991b1b; /* red-800 */
+  padding: 2px 10px;
+  border-radius: 9999px; /* rounded-full */
+  font-size: 12px; /* text-xs */
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+      .badge-success {
+  background-color: #dcfce7; /* green-100 */
+  color: #166534; /* green-800 */
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  border-radius: 9999px; /* rounded-full */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 500;
+}
       .btn-primary-gradient {
   flex: 1 1 0%; /* flex-1 */
   padding: 0.5rem 0.5rem; /* px-2 py-2 */
@@ -1097,61 +1148,8 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
   /* Đảm bảo thanh bắt đầu từ bên trái */
   width: 0%; 
 }
-      .status-neutral {
-  /* bg-gray-100: Màu xám rất nhạt, gần như trắng nhưng đủ để tạo khối */
-  background-color: #f3f4f6;
 
-  /* text-gray-800: Màu xám than (Charcoal), dễ đọc và chuyên nghiệp */
-  color: #1f2937;
-
-  /* Giữ nguyên cấu trúc nhãn tinh tế */
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-      .status-error {
-  /* bg-red-100: Màu hồng nhạt, không gây chói mắt */
-  background-color: #fee2e2;
-
-  /* text-red-800: Màu đỏ đậm, uy tín và dễ đọc */
-  color: #991b1b;
-
-  /* Cấu trúc nhãn tiêu chuẩn */
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  
-  /* Hiệu ứng rung nhẹ khi xuất hiện để gây chú ý (tùy chọn) */
-  animation: shake 0.2s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
-}
-      .status-success {
-  /* bg-green-100: Màu nền xanh lá nhạt dịu mắt */
-  background-color: #dcfce7;
-
-  /* text-green-800: Chữ xanh lá đậm để đảm bảo đọc rõ (Accessibility) */
-  color: #166534;
-
-  /* Thường đi kèm với các thuộc tính nhãn đã xây dựng trước đó */
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-      .tag-flat {
+  .tag-flat {
   /* inline-flex items-center: Căn chỉnh icon (nếu có) và chữ */
   display: inline-flex;
   align-items: center;

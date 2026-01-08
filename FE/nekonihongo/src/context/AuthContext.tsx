@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx
 import {
   createContext,
   useContext,
@@ -23,6 +22,7 @@ export interface User {
   longestStreak?: number;
   joinDate: string;
   lastLoginDate?: string;
+  status?: "ACTIVE" | "INACTIVE" | "BANNED";
   vocabularyProgress?: number;
   kanjiProgress?: number;
   grammarProgress?: number;
@@ -54,7 +54,6 @@ export const AuthProvider = ({
   const [loading, setLoading] = useState(true);
   const [hasSeenSplash, setHasSeenSplash] = useState(false);
 
-  // ===== LOAD USER FROM BACKEND =====
   const loadUserFromBackend = async () => {
     try {
       const res = await api.get("/user/me");
@@ -75,6 +74,7 @@ export const AuthProvider = ({
         longestStreak: backendUser.longestStreak || 0,
         joinDate: backendUser.joinDate,
         lastLoginDate: backendUser.lastLoginDate,
+        status: backendUser.status,
         vocabularyProgress: backendUser.vocabularyProgress || 0,
         kanjiProgress: backendUser.kanjiProgress || 0,
         grammarProgress: backendUser.grammarProgress || 0,
@@ -101,7 +101,6 @@ export const AuthProvider = ({
     }
   };
 
-  // ===== INIT AUTH =====
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("accessToken");
@@ -120,18 +119,20 @@ export const AuthProvider = ({
           }
         }
       }
-
       setLoading(false);
     };
 
     initAuth();
   }, []);
 
-  // ===== LOGIN =====
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const data = await loginRequest(email, password);
-      if (!data?.token) return false;
+
+      if (!data?.token) {
+        toast.error("Đăng nhập thất bại! Kiểm tra email/mật khẩu 😿");
+        return false;
+      }
 
       localStorage.setItem("accessToken", data.token);
       if (data.refreshToken) {
@@ -141,14 +142,19 @@ export const AuthProvider = ({
       await loadUserFromBackend();
       setHasSeenSplash(false);
       onNavigate?.("mypage");
+      toast.success("Đăng nhập thành công! Chào mừng trở lại 😻");
 
       return true;
-    } catch {
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        toast.error("Email hoặc mật khẩu sai! 😿");
+      } else {
+        toast.error("Lỗi đăng nhập. Mèo đang kiểm tra... 😿");
+      }
       return false;
     }
   };
 
-  // ===== LOGOUT =====
   const logout = () => {
     setUser(null);
     setHasSeenSplash(false);
@@ -159,16 +165,13 @@ export const AuthProvider = ({
     onNavigate?.("landing");
   };
 
-  // ===== UPDATE USER (LOCAL) =====
   const updateUser = (updates: Partial<User>) => {
     if (!user) return;
-
     const updated = { ...user, ...updates };
     setUser(updated);
     localStorage.setItem("nekoUser", JSON.stringify(updated));
   };
 
-  // ===== REFRESH USER =====
   const refreshUser = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
@@ -180,7 +183,6 @@ export const AuthProvider = ({
     }
   };
 
-  // ===== SPLASH =====
   const markSplashAsSeen = () => {
     setHasSeenSplash(true);
     localStorage.setItem("nekoSplashSeen", "true");

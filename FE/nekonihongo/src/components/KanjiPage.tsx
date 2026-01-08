@@ -1,9 +1,6 @@
 // src/pages/KanjiPage.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Search, ChevronLeft, ChevronRight, Cat } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import { KanjiDetailModal } from "../components/KanjiDetailModal";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";

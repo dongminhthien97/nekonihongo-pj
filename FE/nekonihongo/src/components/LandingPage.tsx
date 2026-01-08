@@ -4,8 +4,8 @@ import {
   Languages,
   CreditCard,
   ClipboardCheck,
+  Type,
 } from "lucide-react";
-import { Footer } from "./Footer";
 interface LandingPageProps {
   onNavigate: (page: string) => void;
 }
@@ -16,6 +16,26 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       {/* Features Section */}
       <section className="container animate-fade-in mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Hiragana/Katakana Card */}
+          <button
+            onClick={() => onNavigate("hirakata-selector")}
+            className="interactive-elevated-card"
+          >
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="triple-gradient-bouncing-circle">
+                <Type className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="responsive-gray-text">Bảng Chữ Cái</h3>
+              <p className="responsive-text-caption">
+                Học Hiragana & Katakana - Nền tảng tiếng Nhật
+              </p>
+              <div className="flex gap-2 pt-2">
+                <span className="text-2xl animate-wiggle delay-3">🃏</span>
+                <span className="text-2xl">✨</span>
+              </div>
+            </div>
+          </button>
+
           {/* Vocabulary Card */}
           <button
             onClick={() => onNavigate("vocabulary-selector")}
@@ -75,26 +95,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
             </div>
           </button>
-
-          {/* Flashcard Card */}
-          {/* <button
-            onClick={() => onNavigate("flashcard")}
-            className="interactive-elevated-card"
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="triple-gradient-bouncing-circle">
-                <CreditCard className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="responsive-gray-text">Flashcard</h3>
-              <p className="responsive-text-caption">
-                Luyện tập và ghi nhớ từ vựng, Kanji với thẻ flashcard
-              </p>
-              <div className="flex gap-2 pt-2">
-                <span className="text-2xl animate-wiggle delay-3">🃏</span>
-                <span className="text-2xl">✨</span>
-              </div>
-            </div>
-          </button> */}
 
           {/* Exercise Card */}
           <button

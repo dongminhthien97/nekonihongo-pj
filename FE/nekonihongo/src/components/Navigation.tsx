@@ -21,6 +21,7 @@ export function Navigation({
 }) {
   const navItems = [
     { id: "landing", label: "Trang chủ", icon: Home },
+    { id: "hirakata-selector", label: "Bảng chữ cái", icon: BookOpen },
     { id: "vocabulary-selector", label: "Từ vựng", icon: Languages },
     { id: "grammar-selector", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji-selector", label: "Kanji", icon: FileText },

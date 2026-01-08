@@ -146,7 +146,6 @@ export function LoginPage() {
           </div>
         </div>
       </div>
-      {/* Giữ nguyên toàn bộ style đẹp lung linh của bạn */}
       <style>{`
       .full-hover-gradient-overlay {
   /* absolute */

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import api from "../../api/auth";
 
 interface ActivityLog {
   id: number;
@@ -219,6 +220,18 @@ export function HistoryTracking({ onNavigate }: HistoryTrackingProps) {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
+  // Thêm hàm delete
+  const handleDeleteLog = async (id: number) => {
+    try {
+      await api.delete(`/admin/activity-logs/${id}`);
+      toast.success("Xóa log thành công! 😻");
+      // Refresh list
+      const updatedActivities = activities.filter((log) => log.id !== id);
+      setActivities(updatedActivities);
+    } catch (err) {
+      toast.error("Xóa log thất bại 😿");
+    }
+  };
   return (
     <div className="app-container">
       {/* Main Container */}
@@ -371,6 +384,24 @@ export function HistoryTracking({ onNavigate }: HistoryTrackingProps) {
                           </td>
                           <td className="table-cell text-gray-700">
                             {log.action}
+                          </td>
+
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (
+                                  window.confirm(
+                                    "Bạn có chắc chắn muốn xóa log này?"
+                                  )
+                                ) {
+                                  handleDeleteLog(log.id);
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-800 font-medium text-sm"
+                            >
+                              Xóa
+                            </button>
                           </td>
                         </tr>
                       ))}

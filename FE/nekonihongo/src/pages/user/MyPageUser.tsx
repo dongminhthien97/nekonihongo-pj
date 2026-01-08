@@ -31,6 +31,13 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
 
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(authUser?.avatarUrl || "");
+  //Debug avatar URL
+  useEffect(() => {
+    console.log(
+      "[DEBUG MyPageUser] Current authUser.avatarUrl:",
+      authUser?.avatarUrl
+    );
+  }, [authUser?.avatarUrl]);
 
   // THUẬT TOÁN TÍNH LEVEL (Hybrid - giữ nguyên như bạn có)
   const calculateLevel = (points: number = 0): number => {
@@ -91,7 +98,16 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
 
   const handleAvatarUpdate = async () => {
     if (!avatarUrl.trim()) {
-      alert("Vui lòng nhập URL hợp lệ!");
+      toast.error("Vui lòng nhập URL hợp lệ! 😿");
+      return;
+    }
+
+    // VALIDATE LÀ IMAGE URL (kiểm tra extension phổ biến)
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i;
+    if (!imageExtensions.test(avatarUrl.trim())) {
+      toast.error(
+        "URL phải là link ảnh trực tiếp (jpg, png, webp, gif, svg)! 😿"
+      );
       return;
     }
 
@@ -99,24 +115,17 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
       const res = await api.patch("/user/me/avatar", {
         avatarUrl: avatarUrl.trim(),
       });
+
       const newAvatar =
         res.data?.data?.avatarUrl || res.data?.avatarUrl || avatarUrl.trim();
 
       updateUser({ avatarUrl: newAvatar });
+      await refreshUser();
 
-      await refreshUser(); // Đồng bộ full data từ backend
-
+      toast.success("Cập nhật avatar thành công! 😻");
       setIsEditingAvatar(false);
-      toast.success("Cập nhật avatar thành công! 😻", { duration: 1500 });
     } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 403) {
-        alert("Bạn không có quyền cập nhật avatar. Liên hệ quản trị viên.");
-      } else if (status === 400) {
-        alert("Avatar không hợp lệ. Vui lòng kiểm tra URL.");
-      } else {
-        alert("Không thể cập nhật avatar. Vui lòng thử lại sau.");
-      }
+      toast.error("Không thể cập nhật avatar 😿");
     }
   };
 
@@ -149,8 +158,9 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
                 alt="Avatar"
                 className="avatar-circle mx-auto"
                 onError={(e) => {
-                  e.currentTarget.src =
-                    "https://wiki.leagueoflegends.com/en-us/images/Chibi_Yuumi_Yuubee_Tier_1.png?9a5ec";
+                  // FIX: Khi URL từ DB invalid → fallback về placeholder SVG (local, không load external)
+                  e.currentTarget.src = PLACEHOLDER_AVATAR_128;
+                  e.currentTarget.onerror = null; // Ngăn loop onError nếu placeholder cũng lỗi (hiếm)
                 }}
               />
               <button

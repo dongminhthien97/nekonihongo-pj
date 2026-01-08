@@ -1,4 +1,4 @@
-// src/App.tsx – FULL CODE ĐÃ FIX HOÀN HẢO
+// src/App.tsx – ĐÃ THÊM HIRAGANA/KATAKANA
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SplashScreen } from "./components/SplashScreen";
@@ -25,6 +25,12 @@ import { Background } from "./components/Background";
 import { Navigation } from "./components/Navigation";
 import { Footer } from "./components/Footer";
 import { HistoryTracking } from "./pages/admin/HistoryTracking";
+
+// THÊM IMPORT CÁC TRANG HIRAGANA/KATAKANA
+import { HiraganaPage } from "./components/HiraganaPage";
+import { KatakanaPage } from "./components/KatakanaPage";
+import { FlashcardHiraKataPage } from "./components/FlashcardHiraKataPage";
+import { HiraKataSelector } from "./components/HiraKataSelector";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -107,6 +113,18 @@ function AppContent() {
         {currentPage === "landing" && (
           <LandingPage onNavigate={handleNavigate} />
         )}
+
+        {/* CÁC TRANG HIRAGANA/KATAKANA MỚI */}
+        {currentPage === "hiragana" && (
+          <HiraganaPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "katakana" && (
+          <KatakanaPage onNavigate={handleNavigate} />
+        )}
+        {currentPage === "flashcard-hirakata" && (
+          <FlashcardHiraKataPage onNavigate={handleNavigate} />
+        )}
+
         {currentPage === "vocabulary" && (
           <VocabularyPage onNavigate={handleNavigate} />
         )}
@@ -166,6 +184,9 @@ function AppContent() {
         )}
         {currentPage === "historytracking" && (
           <HistoryTracking onNavigate={handleNavigate} />
+        )}
+        {currentPage === "hirakata-selector" && (
+          <HiraKataSelector onNavigate={handleNavigate} />
         )}
 
         {/* Toaster – toast dễ thương toàn app */}
