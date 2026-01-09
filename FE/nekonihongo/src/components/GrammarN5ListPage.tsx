@@ -16,7 +16,7 @@ interface GrammarPattern {
   exampleMeaning: string;
 }
 
-const PATTERNS_PER_DAY = 10;
+const PATTERNS_PER_DAY = 5;
 
 export function GrammarN5ListPage({
   onNavigate,
@@ -132,7 +132,7 @@ export function GrammarN5ListPage({
     // === XÁC ĐỊNH TRANG GỐC ĐỂ QUAY VỀ SAU KHI HỌC XONG ===
     const originPage = "grammar-n5"; // ← Đây là trang hiện tại: GrammarN5ListPage
 
-    // Lưu data flashcard chính (10 cấu trúc)
+    // Lưu data flashcard chính (5 cấu trúc)
     localStorage.setItem(
       "nekoFlashcardData",
       JSON.stringify({
@@ -174,7 +174,7 @@ export function GrammarN5ListPage({
         {/* Chọn ngày */}
         <div className="text-center mb-10">
           <p className="text-white text-3xl mb-4">
-            Học theo ngày – 25 cấu trúc mỗi ngày
+            Học theo ngày – 5 cấu trúc mỗi ngày
           </p>
           <div className="flex-center-group">
             <button
@@ -260,7 +260,7 @@ export function GrammarN5ListPage({
             <div className="tooltip-slide-out">
               <div className="colored-border-label">
                 <p className="text-xl font-bold drop-shadow-md">
-                  Học flashcard 10 cấu trúc ngày {selectedDay} nào mèo ơi! 🐾
+                  Học flashcard 5 cấu trúc ngày {selectedDay} nào mèo ơi! 🐾
                 </p>
                 <div className="absolute bottom-0 right-8 translate-y-full">
                   <div className="triangle-down-pink"></div>

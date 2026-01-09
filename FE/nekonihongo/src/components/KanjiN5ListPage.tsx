@@ -1,9 +1,5 @@
 // src/components/KanjiN5ListPage.tsx
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 import toast from "react-hot-toast";
@@ -17,7 +13,7 @@ interface KanjiItem {
   kunYomi: string;
 }
 
-const KANJI_PER_DAY = 25;
+const KANJI_PER_DAY = 10;
 
 export function KanjiN5ListPage({
   onNavigate,
@@ -26,7 +22,7 @@ export function KanjiN5ListPage({
 }) {
   const [kanjiList, setKanjiList] = useState<KanjiItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const [selectedDay, setSelectedDay] = useState(1);
 
   useEffect(() => {
@@ -135,7 +131,7 @@ export function KanjiN5ListPage({
 
         <div className="text-center mb-10">
           <p className="text-white text-3xl mb-4">
-            Học theo ngày – 25 Kanji mỗi ngày
+            Học theo ngày – 10 Kanji mỗi ngày
           </p>
           <div className="flex-center-group">
             <button

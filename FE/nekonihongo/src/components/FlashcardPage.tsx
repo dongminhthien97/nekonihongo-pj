@@ -356,15 +356,13 @@ export function FlashcardPage({
             <div className="modal-card-large">
               <Cat className="bouncing-pink-icon-large" />
               <h2 className="section-title-xl-bold">Siêu giỏi!</h2>
-              <p className="paragraph-large-spaced">
-                Bạn đã học xong 10 từ! Mèo tự hào về bạn lắm!
-              </p>
+              <p className="paragraph-large-spaced">Mèo tự hào về bạn lắm!</p>
               <div className="flex gap-8 justify-center">
                 <button
                   onClick={handleContinue}
                   className="gradient-cta-button-large gradient-cta-button-large:hover"
                 >
-                  Học tiếp 10 từ nữa!
+                  Học tiếp!
                 </button>
                 <button
                   onClick={handleReturnToOrigin}
@@ -781,7 +779,7 @@ font-size: 1.75rem;
   text-align: center;
 }
       .centered-hero-text {
-  font-size: 5.00rem;
+  font-size: 4.00rem;
   font-weight: 900;
   color: #ffffff;
   text-align: center;

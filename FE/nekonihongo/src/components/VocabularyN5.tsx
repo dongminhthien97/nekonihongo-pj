@@ -1,9 +1,6 @@
 // src/components/VocabularyN5.tsx
 import { useState, useEffect } from "react";
-import { Search, Sparkles } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
+import { Search } from "lucide-react";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 import toast from "react-hot-toast";
@@ -16,7 +13,7 @@ interface N5Word {
   tiengViet: string;
 }
 
-const WORDS_PER_DAY = 25; // Mỗi ngày học đúng 25 từ
+const WORDS_PER_DAY = 10;
 
 export function VocabularyN5({
   onNavigate,
@@ -77,7 +74,7 @@ export function VocabularyN5({
       return;
     }
 
-    // Random 10 từ từ 25 từ ngày hiện tại
+    // Random 10 từ từ 10 từ ngày hiện tại
     let selectedWords = [...currentDayWords];
     if (selectedWords.length > 10) {
       selectedWords = selectedWords
@@ -110,7 +107,7 @@ export function VocabularyN5({
 
     localStorage.setItem("nekoFlashcardData", JSON.stringify(flashcardData));
 
-    // Lưu tất cả từ trong ngày (25 từ) để học tiếp
+    // Lưu tất cả từ trong ngày (10 từ) để học tiếp
     localStorage.setItem(
       "nekoFlashcardAllWords",
       JSON.stringify({
@@ -158,7 +155,7 @@ export function VocabularyN5({
         {/* Chọn ngày học – chỉ hiển thị 25 từ/ngày */}
         <div className="text-center mb-10">
           <p className="text-white text-3xl mb-4">
-            Học theo ngày – 25 từ mỗi ngày
+            Học theo ngày – 10 từ mỗi ngày
           </p>
           <div className="flex-center-group">
             <button

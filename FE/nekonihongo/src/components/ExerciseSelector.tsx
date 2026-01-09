@@ -1,8 +1,5 @@
 // src/components/ExerciseSelector.tsx
 import { useState, useEffect } from "react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import api from "../api/auth";
 import toast from "react-hot-toast";
 

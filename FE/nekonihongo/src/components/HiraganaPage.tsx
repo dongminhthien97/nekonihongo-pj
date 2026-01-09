@@ -1,10 +1,10 @@
-// pages/HiraganaPage.tsx
-import { useState, useEffect, useMemo } from "react";
-import { Search, ChevronLeft, ChevronRight, Sparkles, Cat } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Cat } from "lucide-react";
 import { HiraKataDetailModal } from "../components/HiraKataDetailModal";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 import { NekoAlertModal } from "../components/NekoAlertModal";
+import { LessonSelectModal } from "./LessonSelectModal";
 
 interface Hiragana {
   id: number;
@@ -28,7 +28,6 @@ interface HiraganaPageProps {
 
 const LESSONS_PER_PAGE = 12;
 const CHARACTERS_PER_PAGE = 12;
-const CHARACTERS_PER_LESSON = 5;
 
 export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
   const [hiraganaList, setHiraganaList] = useState<Hiragana[]>([]);
@@ -43,7 +42,13 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
   );
   const [showNoLessonModal, setShowNoLessonModal] = useState(false);
 
-  // 1. FETCH & NORMALIZE DATA (Sync with Vocabulary Loading Style)
+  // NEW: Modal chọn nhiều lesson cho flashcard
+  const [showLessonSelectModal, setShowLessonSelectModal] = useState(false);
+  const [selectedLessonIds, setSelectedLessonIds] = useState<Set<number>>(
+    new Set()
+  );
+
+  // FETCH & NORMALIZE DATA
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -61,7 +66,7 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
             stroke_order: item.stroke_order || 0,
           }));
 
-          await new Promise((resolve) => setTimeout(resolve, 600)); // Mượt mà
+          await new Promise((resolve) => setTimeout(resolve, 600));
           setHiraganaList(normalizedData);
           setLessons(createLessons(normalizedData));
         } else {
@@ -88,36 +93,91 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
       "Hàng YA",
       "Hàng RA",
       "Hàng WA",
+      "Hàng GA (゛)",
+      "Hàng ZA (゛)",
+      "Hàng DA (゛)",
+      "Hàng BA (゛)",
+      "Hàng PA (゜)",
+      "Âm ghép (Yoon)",
     ];
-    const result: Lesson[] = [];
-    for (let i = 0; i < Math.ceil(data.length / CHARACTERS_PER_LESSON); i++) {
-      const slice = data.slice(
-        i * CHARACTERS_PER_LESSON,
-        (i + 1) * CHARACTERS_PER_LESSON
-      );
-      result.push({
-        id: i + 1,
-        title: lessonTitles[i] || `Nhóm phụ ${i + 1}`,
-        description: `Học các ký tự nhóm ${i + 1}`,
-        total_characters: slice.length,
-        characters: slice,
-      });
-    }
-    return result;
+
+    const groups = [
+      data.slice(0, 5),
+      data.slice(5, 10),
+      data.slice(10, 15),
+      data.slice(15, 20),
+      data.slice(20, 25),
+      data.slice(25, 30),
+      data.slice(30, 35),
+      data.slice(35, 38),
+      data.slice(38, 43),
+      data.slice(43, 46),
+      data.slice(46, 51),
+      data.slice(51, 56),
+      data.slice(56, 61),
+      data.slice(61, 66),
+      data.slice(66, 71),
+      data.slice(71, data.length),
+    ];
+
+    return groups.map((chars, index) => ({
+      id: index + 1,
+      title: lessonTitles[index] || `Nhóm ${index + 1}`,
+      description: `Học các ký tự ${lessonTitles[index] || "nhóm"}`,
+      total_characters: chars.length,
+      characters: chars,
+    }));
   };
+
+  // NEW: Handle start flashcard with multi-lesson selection
   const handleStartFlashcard = () => {
-    if (!selectedLesson) return setShowNoLessonModal(true);
+    setShowLessonSelectModal(true);
+    // Pre-select lesson hiện tại nếu đang xem detail
+    if (selectedLesson) {
+      setSelectedLessonIds(new Set([selectedLesson.id]));
+    } else {
+      setSelectedLessonIds(new Set());
+    }
+  };
+
+  const handleConfirmFlashcard = () => {
+    if (selectedLessonIds.size === 0) {
+      setShowNoLessonModal(true);
+      return;
+    }
+
+    // 1. Lấy danh sách các bài học đã chọn
+    const selectedLessons = lessons.filter((l) => selectedLessonIds.has(l.id));
+
+    // 2. Gom tất cả ký tự lại
+    const rawCharacters = selectedLessons.flatMap((l) => l.characters);
+
+    // 3. FIX TRIỆT ĐỂ: Lọc dựa trên mặt chữ (char.character)
+    // Thay vì dùng char.id, dùng char.character sẽ loại bỏ chữ "あ" trùng lặp
+    // kể cả khi chúng có ID khác nhau trong database.
+    const uniqueCharacters = Array.from(
+      new Map(rawCharacters.map((char) => [char.character, char])).values()
+    );
+
+    // 4. Trộn ngẫu nhiên (Dùng spread để đảm bảo tạo mảng mới)
+    const shuffled = [...uniqueCharacters].sort(() => Math.random() - 0.5);
+
+    // 5. Chuẩn bị dữ liệu lưu trữ
     const flashcardData = {
       type: "hiragana",
-      lessonId: selectedLesson.id,
-      lessonTitle: selectedLesson.title,
-      characters: selectedLesson.characters,
-      originPage: "hiragana",
+      // Hiển thị tiêu đề chính xác số lượng thực tế sau khi lọc
+      lessonTitle: `Ôn ${selectedLessonIds.size} bài (${uniqueCharacters.length} ký tự)`,
+      characters: shuffled,
     };
+
+    // 6. Lưu vào LocalStorage
     localStorage.setItem(
       "nekoFlashcardHiraKata",
       JSON.stringify(flashcardData)
     );
+
+    // 7. Điều hướng
+    setShowLessonSelectModal(false);
     onNavigate("flashcard-hirakata");
   };
 
@@ -141,17 +201,13 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
   return (
     <div className="min-h-screen">
       <main className="relative z-10 container mx-auto px-4 py-12">
-        {/* HEADER & SEARCH (Y hệt VocabularyPage) */}
+        {/* HEADER */}
         <div className="text-center mb-12">
           <h1 className="relative z-10 mb-12 md:mb-16">
             <span className="hero-section-title hero-text-glow">
               Học Hiragana
             </span>
           </h1>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="relative group"></div>
-          </div>
         </div>
 
         {/* DANH SÁCH BÀI HỌC HOẶC CHI TIẾT */}
@@ -182,7 +238,6 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
               ))}
             </div>
 
-            {/* PHÂN TRANG BÀI HỌC */}
             {totalLessonPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-12">
                 <button
@@ -220,7 +275,6 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
             )}
           </div>
         ) : (
-          /* TRONG CHI TIẾT BÀI HỌC */
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col items-center mb-12">
               <div className="lesson-header-container">
@@ -238,7 +292,7 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-8">
+            <div className="grid-container">
               {currentCharacters.map((char) => (
                 <div
                   key={char.id}
@@ -246,7 +300,13 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
                   onClick={() => setSelectedCharacter(char)}
                 >
                   <div className="text-center space-y-4">
-                    <p className="text-7xl font-black text-black group-hover:scale-110 transition-transform">
+                    <p
+                      className="text-7xl font-light text-black group-hover:scale-110 transition-transform"
+                      style={{
+                        fontFamily:
+                          "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
+                      }}
+                    >
                       {char.character}
                     </p>
                   </div>
@@ -278,7 +338,7 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
         )}
       </main>
 
-      {/* MÈO BAY FLASHCARD (Y hệt VocabularyPage) */}
+      {/* MÈO BAY – BẤM MỞ MODAL CHỌN LESSON */}
       <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
         <div
           className="relative group cursor-pointer"
@@ -286,7 +346,7 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
         >
           <div className="tooltip-slide-out">
             <div className="colored-border-label">
-              <p className="text-xl font-bold">Học Flashcard bài này! 🐾</p>
+              <p className="text-xl font-bold">Chọn bài để ôn Flashcard! 🐾</p>
               <div className="absolute bottom-0 right-8 translate-y-full">
                 <div className="triangle-down-pink"></div>
               </div>
@@ -300,8 +360,17 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
           <div className="circular-gradient-hover-glow"></div>
         </div>
       </div>
-
-      {/* MODALS */}
+      {/* MODAL CHỌN LESSON FLASHCARD */}
+      <LessonSelectModal
+        isOpen={showLessonSelectModal}
+        onClose={() => setShowLessonSelectModal(false)}
+        lessons={lessons}
+        selectedIds={selectedLessonIds}
+        onSelectedChange={setSelectedLessonIds}
+        onConfirm={handleConfirmFlashcard}
+        type="hiragana"
+      />
+      {/* MODALS KHÁC */}
       {selectedCharacter && (
         <HiraKataDetailModal
           character={{
@@ -316,11 +385,30 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
         isOpen={showNoLessonModal}
         onClose={() => setShowNoLessonModal(false)}
         title="Meow meow..."
-        message="Hãy chọn bài học trước khi vào Flashcard nhé!"
+        message="Hãy chọn ít nhất 1 bài để ôn flashcard nhé!"
       />
-
       {/* STYLE COPIED FROM VOCABULARYPAGE */}
       <style>{`
+      /* Mặc định cho thiết bị di động (grid-cols-2) */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem; /* Tương đương gap-6 (6 * 0.25rem) */
+}
+
+/* Cho màn hình Medium - Tablet (md:grid-cols-5) */
+@media (min-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Cho màn hình Large - Desktop (lg:grid-cols-5) */
+@media (min-width: 1024px) {
+  .grid-container {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
       .lesson-header-container {
   width: 100%;
   display: flex;
@@ -1278,8 +1366,7 @@ export function HiraganaPage({ onNavigate }: HiraganaPageProps) {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-        
+        }   
   `}</style>
     </div>
   );

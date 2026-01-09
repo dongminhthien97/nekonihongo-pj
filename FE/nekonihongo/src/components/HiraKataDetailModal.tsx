@@ -263,7 +263,7 @@ export function HiraKataDetailModal({
   flex: 0 1 auto; 
   align-self: flex-end; 
   margin-bottom: 12%; 
-  margin-left: -1.5rem; /* Kéo chữ phụ đè nhẹ lên không gian chữ chính */
+  margin-left: -1.5rem;
 }
           .svg-composite-wrapper { display: flex; align-items: center; justify-content: center; width: 90%; height: 90%; }
           .main-svg { flex: 0.7; height: 85%; width: auto; }
@@ -283,21 +283,4 @@ export function HiraKataDetailModal({
       </div>
     </div>
   );
-}
-
-// Helper functions (Giữ nguyên)
-function getExampleWord(char: string, type: string): string {
-  const examples: any = {
-    あ: { hiragana: "ありがとう", katakana: "アイス" },
-    にゃ: { hiragana: "にゃんこ", katakana: "ニャー" },
-  };
-  return examples[char]?.[type] || `${char}んご`;
-}
-
-function getExampleTranslation(char: string, type: string): string {
-  const trans: any = {
-    あ: { hiragana: "Cảm ơn", katakana: "Kem" },
-    にゃ: { hiragana: "Chú mèo", katakana: "Tiếng mèo kêu" },
-  };
-  return trans[char]?.[type] || "Từ vựng ví dụ";
 }
