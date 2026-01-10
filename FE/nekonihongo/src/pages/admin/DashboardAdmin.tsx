@@ -52,9 +52,13 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // NEW: Số mini test chưa feedback
+  const [unreadTestsCount, setUnreadTestsCount] = useState(0);
+
   // Lấy danh sách user
   useEffect(() => {
     fetchUsers();
+    fetchUnreadTestsCount(); // ← Fetch số test chưa duyệt
   }, []);
 
   const fetchUsers = async () => {
@@ -65,7 +69,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
 
       userList = userList.map((user: any) => ({
         ...user,
-        status: user.status || "ACTIVE", // ← Default ACTIVE
+        status: user.status || "ACTIVE",
       }));
 
       setUsers(userList);
@@ -77,6 +81,17 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
       toast.error("Không tải được danh sách user 😿");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Fetch số mini test chưa feedback
+  const fetchUnreadTestsCount = async () => {
+    try {
+      const res = await api.get("/admin/mini-test/pending-count"); // ← API BE trả { count: number }
+      setUnreadTestsCount(res.data.count || 0);
+    } catch (err: any) {
+      // Nếu 401 → không làm gì (để tránh redirect)
+      console.error("Lỗi lấy số test chưa duyệt:", err);
     }
   };
 
@@ -128,14 +143,13 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
         level: formData.level || 1,
         points: formData.points || 0,
         streak: formData.streak || 0,
-        status: formData.status || "ACTIVE", // ← Gửi status rõ ràng
+        status: formData.status || "ACTIVE",
       };
 
       await api.put(`/admin/users/${formData.id}`, payload);
       toast.success("✅ Cập nhật thành công!");
       handleCloseModal();
 
-      // FIX: Refresh list ngay để hiển thị status mới
       await fetchUsers();
     } catch (err: any) {
       toast.error(`❌ ${err.response?.data?.message || "Cập nhật thất bại"}`);
@@ -164,7 +178,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
     if (type === "edit" && user) {
       setFormData({
         ...user,
-        password: "", // Không hiển thị password khi edit
+        password: "",
       });
     } else {
       setFormData({
@@ -197,6 +211,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
       password: "123456",
     });
   };
+
   const getStatusDisplay = (status: string = "ACTIVE") => {
     switch (status) {
       case "ACTIVE":
@@ -218,6 +233,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
         };
     }
   };
+
   // Xử lý filter và sort
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -270,7 +286,6 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
     startIndex + itemsPerPage
   );
 
-  // Reset form khi chuyển trang
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -311,6 +326,19 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
               className="btn-primary-gradient"
             >
               📊 <span className="truncate">Lịch sử hoạt động</span>
+            </button>
+
+            {/* BUTTON QUẢN LÝ MINI TEST VỚI BADGE */}
+            <button
+              onClick={() => onNavigate("test-management")}
+              className="btn-secondary-gradient relative"
+            >
+              📝 <span className="truncate">Quản lý Mini Test</span>
+              {unreadTestsCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                  {unreadTestsCount > 9 ? "9+" : unreadTestsCount}
+                </span>
+              )}
             </button>
 
             <button onClick={handleBack} className="danger-button">
@@ -843,7 +871,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                     >
                       <option value="ACTIVE">Đang hoạt động</option>
                       <option value="INACTIVE">Không hoạt động</option>
-                      <option value="BANNED">Đã khóa</option>{" "}
+                      <option value="BANNED">Đã khóa</option>
                     </select>
                   </div>
 

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
+import { MiniTestModal } from "./MiniTestModal";
 
 const LESSONS_PER_PAGE = 12;
 const GRAMMAR_PER_PAGE = 3;
@@ -45,7 +46,26 @@ export function GrammarPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedExamples, setExpandedExamples] = useState<number[]>([]); // index của point đang mở ví dụ
+  const [showMiniTestModal, setShowMiniTestModal] = useState(false);
+  const [completedMiniTests, setCompletedMiniTests] = useState<Set<number>>(
+    new Set()
+  );
+  useEffect(() => {
+    const saved = localStorage.getItem("completedMiniTests");
+    if (saved) setCompletedMiniTests(new Set(JSON.parse(saved)));
+  }, []);
 
+  // const handleMiniTestSubmitted = () => {
+  //   if (selectedLesson) {
+  //     const newSet = new Set(completedMiniTests);
+  //     newSet.add(selectedLesson.id);
+  //     setCompletedMiniTests(newSet);
+  //     localStorage.setItem(
+  //       "completedMiniTests",
+  //       JSON.stringify(Array.from(newSet))
+  //     );
+  //   }
+  // };
   useEffect(() => {
     const fetchGrammarLessons = async () => {
       try {
@@ -390,6 +410,12 @@ export function GrammarPage({
             filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.4))",
           }}
         />
+        {/* <MiniTestModal
+          isOpen={showMiniTestModal}
+          onClose={() => setShowMiniTestModal(false)}s
+          lessonId={selectedLesson?.id || 1}
+          onSubmitted={handleMiniTestSubmitted}
+        /> */}
       </div>
       <style>{`
 

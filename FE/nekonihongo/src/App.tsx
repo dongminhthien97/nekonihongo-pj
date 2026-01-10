@@ -31,6 +31,7 @@ import { HiraganaPage } from "./components/HiraganaPage";
 import { KatakanaPage } from "./components/KatakanaPage";
 import { FlashcardHiraKataPage } from "./components/FlashcardHiraKataPage";
 import { HiraKataSelector } from "./components/HiraKataSelector";
+import { TestManagementPage } from "./pages/admin/TestManagementPage";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -141,6 +142,9 @@ function AppContent() {
         {currentPage === "mypage" && <MyPage onNavigate={handleNavigate} />}
         {currentPage === "admin" && (
           <DashboardAdmin onNavigate={handleNavigate} />
+        )}
+        {currentPage === "test-management" && (
+          <TestManagementPage onNavigate={handleNavigate} />
         )}
         {currentPage === "user" && <MyPageUser onNavigate={handleNavigate} />}
         {currentPage === "vocabulary-selector" && (

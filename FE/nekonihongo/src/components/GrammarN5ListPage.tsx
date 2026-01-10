@@ -1,9 +1,4 @@
-// src/components/GrammarN5ListPage.tsx
 import { useState, useEffect } from "react";
-import { Search, Sparkles } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import { NekoLoading } from "../components/NekoLoading";
 import api from "../api/auth";
 import toast from "react-hot-toast";
@@ -56,12 +51,10 @@ export function GrammarN5ListPage({
         }
       } catch (err: any) {
         if (err.response?.status === 401) {
-          // ALERT ĐỂ NGƯỜI DÙNG BIẾT (và dev thấy rõ)
           alert(
             "Phiên đăng nhập của bạn đã hết hạn!\nMèo sẽ đưa bạn về trang đăng nhập ngay đây 😿"
           );
 
-          // TOAST DỄ THƯƠNG
           toast.error(
             "Phiên đăng nhập hết hạn rồi... Mèo đưa bạn về đăng nhập nhé 😿",
             {
@@ -69,12 +62,10 @@ export function GrammarN5ListPage({
             }
           );
 
-          // CHUYỂN TRANG SAU KHI ALERT ĐÓNG
           setTimeout(() => {
             onNavigate("login");
-          }, 1000); // tăng lên 4 giây để kịp đọc alert + log
+          }, 1000);
         } else {
-          // Các lỗi khác
           toast.error(
             "Không tải được dữ liệu ngữ pháp. Mèo đang sửa đây... 😿"
           );
@@ -88,9 +79,6 @@ export function GrammarN5ListPage({
 
     fetchGrammarN5();
   }, [onNavigate]);
-
-  // Log khi search hoặc đổi ngày
-  useEffect(() => {}, [searchQuery, selectedDay]);
 
   // Tìm kiếm
   const searchedPatterns = patterns.filter((p) =>
@@ -107,60 +95,6 @@ export function GrammarN5ListPage({
     (selectedDay - 1) * PATTERNS_PER_DAY,
     selectedDay * PATTERNS_PER_DAY
   );
-
-  const handleStartFlashcardDay = () => {
-    if (currentDayPatterns.length === 0) {
-      toast("Ngày này chưa có cấu trúc để học flashcard! 😿", { icon: "😿" });
-      return;
-    }
-
-    // Random 10 cấu trúc từ ngày hiện tại
-    let selected = [...currentDayPatterns];
-    if (selected.length > 10) {
-      selected = selected.sort(() => Math.random() - 0.5).slice(0, 10);
-    }
-
-    // Map đúng field cho FlashcardPage
-    const flashcardData = selected.map((p) => ({
-      japanese: p.pattern,
-      kanji: p.pattern, // fallback, vì ngữ pháp không có kanji riêng
-      vietnamese: p.meaning,
-      example: p.example,
-      exampleMeaning: p.exampleMeaning,
-    }));
-
-    // === XÁC ĐỊNH TRANG GỐC ĐỂ QUAY VỀ SAU KHI HỌC XONG ===
-    const originPage = "grammar-n5"; // ← Đây là trang hiện tại: GrammarN5ListPage
-
-    // Lưu data flashcard chính (5 cấu trúc)
-    localStorage.setItem(
-      "nekoFlashcardData",
-      JSON.stringify({
-        lessonId: `GrammarN5-Day${selectedDay}`,
-        lessonTitle: `Ngữ pháp N5 - Ngày ${selectedDay}`,
-        words: flashcardData,
-        originPage: originPage, // ← THÊM ĐỂ FLASHCARDPAGE BIẾT QUAY VỀ ĐÂU
-      })
-    );
-
-    // Lưu tất cả cấu trúc trong ngày (để học tiếp nếu cần)
-    const allDayData = currentDayPatterns.map((p) => ({
-      japanese: p.pattern,
-      kanji: p.pattern,
-      vietnamese: p.meaning,
-      example: p.example,
-      exampleMeaning: p.exampleMeaning,
-    }));
-
-    localStorage.setItem(
-      "nekoFlashcardAllWords",
-      JSON.stringify({
-        words: allDayData,
-        originPage: originPage,
-      })
-    );
-    requestAnimationFrame(() => onNavigate("flashcard"));
-  };
 
   if (isLoading)
     return <NekoLoading message="Mèo đang chuẩn bị ngữ pháp N5..." />;
@@ -249,36 +183,6 @@ export function GrammarN5ListPage({
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* MÈO BAY FLASHCARD */}
-        <div className="fixed bottom-10 right-10 z-50 hidden lg:block">
-          <div
-            className="relative group cursor-pointer"
-            onClick={handleStartFlashcardDay}
-          >
-            <div className="tooltip-slide-out">
-              <div className="colored-border-label">
-                <p className="text-xl font-bold drop-shadow-md">
-                  Học flashcard 5 cấu trúc ngày {selectedDay} nào mèo ơi! 🐾
-                </p>
-                <div className="absolute bottom-0 right-8 translate-y-full">
-                  <div className="triangle-down-pink"></div>
-                </div>
-              </div>
-            </div>
-
-            <img
-              src="https://i.pinimg.com/1200x/8c/98/00/8c9800bb4841e7daa0a3db5f7db8a4b7.jpg"
-              alt="Flying Neko"
-              className="responsive-circular-image-hover"
-              style={{
-                filter: "drop-shadow(0 10px 20px rgba(255, 182, 233, 0.6))",
-              }}
-            />
-
-            <div className="circular-gradient-hover-glow"></div>
-          </div>
         </div>
       </main>
       {/* Giữ nguyên toàn bộ CSS từ VocabularyN5 */}
