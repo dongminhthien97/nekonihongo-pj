@@ -68,6 +68,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
                                                 .requestMatchers("/api/hiragana/**").permitAll()
                                                 .requestMatchers("/api/katakana/**").permitAll()
+                                                .requestMatchers("/api/admin/mini-test/**").permitAll()
                                                 // Các API cần đăng nhập
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()
