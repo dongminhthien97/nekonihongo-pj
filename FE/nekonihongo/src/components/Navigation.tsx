@@ -6,11 +6,13 @@ import {
   CreditCard,
   Dumbbell,
   LogOut,
+  Bell,
+  User,
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
-import { useState } from "react";
-import { User } from "lucide-react";
+import { useState, useEffect } from "react";
+import api from "../api/auth";
 
 export function Navigation({
   currentPage,
@@ -25,7 +27,6 @@ export function Navigation({
     { id: "vocabulary-selector", label: "Từ vựng", icon: Languages },
     { id: "grammar-selector", label: "Ngữ pháp", icon: BookOpen },
     { id: "kanji-selector", label: "Kanji", icon: FileText },
-    // { id: "flashcard", label: "Flashcard", icon: CreditCard },
     { id: "exercise-selector", label: "Bài tập", icon: Dumbbell },
     { id: "mypage", label: "MyPage", icon: User },
     {
@@ -36,9 +37,26 @@ export function Navigation({
       isLogout: true,
     },
   ];
+
   const { user, logout } = useAuth();
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [feedbackCount, setFeedbackCount] = useState(0);
+
+  // Fetch số bài mini test đã feedback khi user đăng nhập
+  useEffect(() => {
+    if (user?.role === "USER") {
+      const fetchFeedbackCount = async () => {
+        try {
+          const res = await api.get("/user/mini-test/feedback-count");
+          setFeedbackCount(res.data.count || 0);
+        } catch (err) {
+          console.error("Lỗi lấy số feedback:", err);
+        }
+      };
+      fetchFeedbackCount();
+    }
+  }, [user]);
 
   const handleLogout = () => {
     setIsLogoutModalOpen(true);
@@ -46,10 +64,11 @@ export function Navigation({
 
   const confirmLogout = () => {
     setIsLogoutModalOpen(false);
-    logout(); // → hàm logout thật của bạn (xóa token, redirect về login, v.v.)
+    logout();
   };
 
   if (!user) return null;
+
   return (
     <nav className="header-sticky-blur">
       <div className="container mx-auto px-4 sm:px-6">
@@ -89,7 +108,7 @@ export function Navigation({
             </span>
           </button>
 
-          {/* Desktop Navigation – ĐÃ THÊM NÚT THOÁT */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -127,9 +146,26 @@ export function Navigation({
                 </button>
               );
             })}
+
+            {/* BELL NOTIFICATION CHO USER (chỉ hiện khi là USER và có feedback mới) */}
+            {user.role === "USER" && (
+              <div className="relative ml-4">
+                <button
+                  onClick={() => onNavigate("user-mini-test-submissions")}
+                  className="p-3 rounded-full bg-white/20 hover:bg-white/40 transition-all"
+                >
+                  <Bell className="w-6 h-6 text-white" />
+                  {feedbackCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {feedbackCount > 9 ? "9+" : feedbackCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Navigation – ĐÃ THÊM NÚT THOÁT */}
+          {/* Mobile Navigation */}
           <div className="flex md:hidden items-center gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -159,9 +195,68 @@ export function Navigation({
                 </button>
               );
             })}
+
+            {/* BELL MOBILE */}
+            {user.role === "USER" && (
+              <div className="relative">
+                <button
+                  onClick={() => onNavigate("user-mini-test-submissions")}
+                  className="p-2 rounded-full bg-white/20 hover:bg-white/40 transition-all"
+                >
+                  <Bell className="w-6 h-6 text-white" />
+                  {feedbackCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {feedbackCount > 9 ? "9+" : feedbackCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* MODAL LOGOUT – GIỮ NGUYÊN 100% TỪ CODE GỐC */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex min-h-screen items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            onClick={() => setIsLogoutModalOpen(false)}
+          />
+
+          <div className="relative w-full max-w-md">
+            <div className="my-20 sm:my-0">
+              <div className="modal-card-neko">
+                <div className="text-9xl text-center mb-6 drop-shadow-lg"></div>
+
+                <h3 className="title-logout-neko">Thoát hả em?</h3>
+
+                <p className="text-center text-red-600 mb-10 text-lg font-medium leading-relaxed">
+                  Are you sure??
+                </p>
+
+                <div className="grid-layout-2">
+                  <button
+                    onClick={() => setIsLogoutModalOpen(false)}
+                    className="btn-stay-neko"
+                  >
+                    Học tiếp
+                  </button>
+
+                  <button
+                    onClick={confirmLogout}
+                    className="btn-logout-danger-neko"
+                  >
+                    Thoát
+                  </button>
+                </div>
+
+                <div className="absolute -top-10 -right-10 text-8xl animate-wiggle-1 opacity-90"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
       .group-hover-rotate {
   /* transition duration-500 */

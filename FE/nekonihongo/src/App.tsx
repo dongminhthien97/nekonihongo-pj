@@ -1,4 +1,4 @@
-// src/App.tsx – ĐÃ THÊM HIRAGANA/KATAKANA
+// src/App.tsx – ĐÃ THÊM TRANG USER MINI TEST SUBMISSIONS
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SplashScreen } from "./components/SplashScreen";
@@ -32,6 +32,9 @@ import { KatakanaPage } from "./components/KatakanaPage";
 import { FlashcardHiraKataPage } from "./components/FlashcardHiraKataPage";
 import { HiraKataSelector } from "./components/HiraKataSelector";
 import { TestManagementPage } from "./pages/admin/TestManagementPage";
+
+// NEW: IMPORT TRANG LƯU TRỮ MINI TEST CỦA USER
+import { UserMiniTestSubmissions } from "./pages/user/UserMiniTestSubmissions";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -159,7 +162,6 @@ function AppContent() {
         {currentPage === "grammar-n5" && (
           <GrammarN5ListPage onNavigate={handleNavigate} />
         )}
-
         {/* Trang chọn loại bài tập */}
         {currentPage === "exercise-selector" && (
           <ExerciseSelector onNavigate={handleNavigate} />
@@ -191,6 +193,11 @@ function AppContent() {
         )}
         {currentPage === "hirakata-selector" && (
           <HiraKataSelector onNavigate={handleNavigate} />
+        )}
+
+        {/* NEW: TRANG LƯU TRỮ MINI TEST CỦA USER */}
+        {currentPage === "user-mini-test-submissions" && (
+          <UserMiniTestSubmissions onNavigate={handleNavigate} />
         )}
 
         {/* Toaster – toast dễ thương toàn app */}

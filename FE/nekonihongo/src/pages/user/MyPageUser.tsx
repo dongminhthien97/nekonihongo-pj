@@ -8,6 +8,7 @@ import { NekoLoading } from "../../components/NekoLoading";
 interface MyPageUserProps {
   onNavigate: (page: string) => void;
 }
+
 export function MyPageUser({ onNavigate }: MyPageUserProps) {
   const {
     user: authUser,
@@ -15,23 +16,31 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     refreshUser,
     loading: authLoading,
   } = useAuth();
-  // Thêm loading local để delay 600ms khi vào page (tạo cảm giác mượt + đẹp)
+
+  // ✅ TẤT CẢ HOOKS PHẢI Ở ĐÂY - TRƯỚC MỌI ĐIỀU KIỆN
   const [localLoading, setLocalLoading] = useState(true);
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [feedbackCount, setFeedbackCount] = useState(0);
 
-  useEffect(() => {
-    // Delay 600ms rồi mới tắt loading (cho animation NekoLoading đẹp)
-    const timer = setTimeout(() => {
-      setLocalLoading(false);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, []);
   const PLACEHOLDER_AVATAR_128 =
     "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='%23f3e8ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='16' fill='%236b21a8' font-family='Arial, sans-serif'>Avatar</text></svg>";
 
-  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(authUser?.avatarUrl || "");
-  //Debug avatar URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLocalLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ Khởi tạo avatarUrl từ authUser
+  useEffect(() => {
+    if (authUser) {
+      setAvatarUrl(authUser.avatarUrl || "");
+    }
+  }, [authUser]);
+
+  // Debug avatar URL
   useEffect(() => {
     console.log(
       "[DEBUG MyPageUser] Current authUser.avatarUrl:",
@@ -39,7 +48,33 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     );
   }, [authUser?.avatarUrl]);
 
-  // THUẬT TOÁN TÍNH LEVEL (Hybrid - giữ nguyên như bạn có)
+  // Fetch feedback count
+  useEffect(() => {
+    const fetchFeedbackCount = async () => {
+      try {
+        const res = await api.get("/user/mini-test/feedback-count");
+        setFeedbackCount(res.data.count || 0);
+      } catch (err) {
+        console.error("Lỗi lấy số feedback:", err);
+      }
+    };
+    fetchFeedbackCount();
+  }, []);
+
+  // ✅ ĐIỀU KIỆN RETURN SAU CÙNG
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+        <p className="text-3xl text-purple-700">Đang tải thông tin mèo...</p>
+      </div>
+    );
+  }
+
+  if (authLoading || localLoading) {
+    return <NekoLoading message="Mèo đang chuẩn bị MyPage cho bạn... 😻" />;
+  }
+
+  // THUẬT TOÁN TÍNH LEVEL
   const calculateLevel = (points: number = 0): number => {
     if (points < 30) return 1;
     if (points < 70) return 2;
@@ -63,33 +98,25 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     return 630 + (currentLevel - 9) * 150;
   };
 
-  if (!authUser) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-        <p className="text-3xl text-purple-700">Đang tải thông tin mèo...</p>
-      </div>
-    );
-  }
-  if (authLoading || localLoading || !authUser) {
-    return <NekoLoading message="Mèo đang chuẩn bị MyPage cho bạn... 😻" />;
-  }
   // Tính level từ points
   const userLevel = calculateLevel(authUser.points);
   const nextLevelPoints = getNextLevelPoints(userLevel);
   const currentLevelPoints = getNextLevelPoints(userLevel - 1) || 0;
   const pointsInCurrentLevel = authUser.points - currentLevelPoints;
   const pointsNeededForNextLevel = nextLevelPoints - authUser.points;
+
   const progressToNextLevel = Math.min(
     (authUser.points / nextLevelPoints) * 100,
     100
   );
+
   const exercisesToNextLevel = Math.ceil(pointsNeededForNextLevel / 10);
   const joinDateFormatted = authUser.joinDate
     ? new Date(authUser.joinDate).toLocaleDateString("vi-VN")
     : "Chưa có";
 
   const displayName = authUser.fullName || authUser.username || "Neko Chan";
-  // Thêm hàm hiển thị streak status
+
   const getStreakStatus = (streak: number) => {
     if (streak === 0) return "Bắt đầu chuỗi ngay hôm nay!";
     if (streak === 1) return "Chuỗi mới bắt đầu 🔥";
@@ -102,7 +129,6 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
       return;
     }
 
-    // VALIDATE LÀ IMAGE URL (kiểm tra extension phổ biến)
     const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i;
     if (!imageExtensions.test(avatarUrl.trim())) {
       toast.error(
@@ -132,7 +158,6 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
   const handleBack = () => {
     onNavigate("landing");
   };
-
   return (
     <div className="min-h-screen bg-soft-gradient p-6">
       <div className="max-w-4xl mx-auto">
@@ -140,45 +165,19 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-4xl text-purple-800">マイページ 🌸</h1>
           <button
-            onClick={() => onNavigate("mytests")}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold"
+            onClick={() => onNavigate("user-mini-test-submissions")}
+            className="px-12 py-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-2xl hover:scale-105 transition-all shadow-2xl"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Bài test của tôi
+            🐾 Xem bài Mini Test đã nộp (
+            {feedbackCount > 0 && (
+              <span className="ml-2 bg-red-500 text-white rounded-full px-3 py-1 text-lg">
+                {feedbackCount}
+              </span>
+            )}
+            )
           </button>
           <button onClick={handleBack} className="btn-red">
             Quay lại
-          </button>
-          <button
-            onClick={() => onNavigate("mytests")}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Bài test của tôi
           </button>
         </div>
 
