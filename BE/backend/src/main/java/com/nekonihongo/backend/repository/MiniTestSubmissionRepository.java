@@ -1,6 +1,6 @@
-package com.nekonihongo.backend.repository;
+// src/main/java/com/nekonihongo/backend/repository/MiniTestSubmissionRepository.java (FULL CODE REPOSITORY HOÀN CHỈNH VỚI STATUS)
 
-// src/main/java/com/nekonihongo/backend/repository/MiniTestSubmissionRepository.java (update với method cần thiết)
+package com.nekonihongo.backend.repository;
 
 import com.nekonihongo.backend.entity.MiniTestSubmission;
 import com.nekonihongo.backend.entity.MiniTestSubmission.Status;
@@ -13,13 +13,19 @@ import java.util.List;
 @Repository
 public interface MiniTestSubmissionRepository extends JpaRepository<MiniTestSubmission, Long> {
 
-    // Đếm bài chưa feedback
-    long countByFeedbackIsNull();
-
-    // Lấy danh sách pending, sắp xếp mới nhất trước
-    List<MiniTestSubmission> findByFeedbackIsNullOrderBySubmittedAtDesc();
-
-    // Nếu dùng status
+    // ADMIN: Đếm số bài pending (toàn hệ thống)
     long countByStatus(Status status);
-    // List<MiniTestSubmission> findByStatusOrderBySubmittedAtDesc(String status);
+
+    // ADMIN: Lấy danh sách bài pending, sort mới nhất trước
+    List<MiniTestSubmission> findByStatusOrderBySubmittedAtDesc(Status status);
+
+    // USER: Lấy submissions của user hiện tại, sort mới nhất trước
+    List<MiniTestSubmission> findByUserIdOrderBySubmittedAtDesc(Long userId);
+
+    // USER: Đếm số bài đã feedback của user (cho bell badge)
+    long countByUserIdAndStatus(Long userId, Status status);
+
+    // Optional: Lấy submissions của user với status cụ thể (nếu cần filter
+    // pending/feedbacked)
+    List<MiniTestSubmission> findByUserIdAndStatusOrderBySubmittedAtDesc(Long userId, Status status);
 }
