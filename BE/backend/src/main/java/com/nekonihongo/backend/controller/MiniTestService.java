@@ -1,3 +1,5 @@
+// src/main/java/com/nekonihongo/backend/service/MiniTestService.java (FULL CODE SERVICE HOÀN CHỈNH VỚI CÁC METHOD LESSON STATS MỚI)
+
 package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.*;
@@ -7,11 +9,14 @@ import com.nekonihongo.backend.entity.User;
 import com.nekonihongo.backend.repository.MiniTestSubmissionRepository;
 import com.nekonihongo.backend.repository.UserRepository;
 import com.nekonihongo.backend.security.UserPrincipal;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,9 +41,6 @@ public class MiniTestService {
 
     // =========== FRONTEND API METHODS ===========
 
-    /**
-     * Kiểm tra user đã submit bài test cho lesson chưa
-     */
     public CheckTestResponseDTO checkUserTestStatus(Long userId, Integer lessonId) {
         Optional<MiniTestSubmission> submission = submissionRepository.findByUserIdAndLessonId(userId, lessonId);
         boolean hasSubmitted = submission.isPresent();
@@ -50,12 +52,8 @@ public class MiniTestService {
                 .build();
     }
 
-    /**
-     * Submit bài test mới
-     */
     @Transactional
     public SubmitTestResponseDTO submitTest(SubmitTestRequestDTO request) {
-        // Kiểm tra user đã nộp bài chưa
         boolean alreadySubmitted = submissionRepository
                 .existsByUserIdAndLessonId(request.getUserId(), request.getLessonId());
 
@@ -66,7 +64,6 @@ public class MiniTestService {
                     .build();
         }
 
-        // Chuyển đổi answers từ Map sang JSON string
         String answersJson;
         try {
             answersJson = objectMapper.writeValueAsString(request.getAnswers());
@@ -74,20 +71,18 @@ public class MiniTestService {
             throw new RuntimeException("Lỗi khi chuyển đổi answers sang JSON", e);
         }
 
-        // Tạo submission mới với builder pattern
         MiniTestSubmission submission = MiniTestSubmission.builder()
                 .userId(request.getUserId())
                 .lessonId(request.getLessonId())
-                .answers(answersJson) // Đây là String JSON
+                .answers(answersJson)
                 .timeSpent(request.getTimeSpent())
                 .submittedAt(request.getSubmittedAt() != null ? request.getSubmittedAt() : LocalDateTime.now())
-                .status(MiniTestSubmission.Status.pending)
+                .status(Status.pending)
                 .build();
 
         MiniTestSubmission savedSubmission = submissionRepository.save(submission);
 
-        log.info("Test submitted by user {} for lesson {}",
-                request.getUserId(), request.getLessonId());
+        log.info("Test submitted by user {} for lesson {}", request.getUserId(), request.getLessonId());
 
         return SubmitTestResponseDTO.builder()
                 .success(true)
@@ -97,9 +92,6 @@ public class MiniTestService {
                 .build();
     }
 
-    /**
-     * Admin thêm feedback cho bài test
-     */
     @Transactional
     public SubmitTestResponseDTO provideFeedback(Long submissionId, String feedback) {
         Optional<MiniTestSubmission> submissionOpt = submissionRepository.findById(submissionId);
@@ -114,7 +106,7 @@ public class MiniTestService {
         MiniTestSubmission submission = submissionOpt.get();
         submission.setFeedback(feedback);
         submission.setFeedbackAt(LocalDateTime.now());
-        submission.setStatus(MiniTestSubmission.Status.feedbacked);
+        submission.setStatus(Status.feedbacked);
 
         submissionRepository.save(submission);
 
@@ -129,9 +121,6 @@ public class MiniTestService {
 
     // =========== USER METHODS ===========
 
-    /**
-     * Lấy danh sách submissions của user hiện tại
-     */
     public List<MiniTestSubmissionDTO> getUserSubmissions() {
         Long userId = getCurrentUserId();
         List<MiniTestSubmission> entities = submissionRepository.findByUserIdOrderBySubmittedAtDesc(userId);
@@ -139,18 +128,11 @@ public class MiniTestService {
         return entities.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
-    /**
-     * Đếm số bài đã feedback của user hiện tại
-     */
     public int getUserFeedbackCount() {
         Long userId = getCurrentUserId();
-        return (int) submissionRepository.countByUserIdAndStatus(userId,
-                Status.feedbacked);
+        return (int) submissionRepository.countByUserIdAndStatus(userId, Status.feedbacked);
     }
 
-    /**
-     * Xóa submission của user hiện tại
-     */
     @Transactional
     public void deleteUserSubmission(Long submissionId) {
         Long userId = getCurrentUserId();
@@ -167,42 +149,34 @@ public class MiniTestService {
 
     // =========== ADMIN METHODS ===========
 
-    /**
-     * Đếm số bài pending toàn hệ thống
-     */
     public long getPendingCount() {
         return submissionRepository.countByStatus(Status.pending);
     }
 
-    /**
-     * Lấy danh sách bài pending (admin)
-     */
     public List<MiniTestSubmissionDTO> getPendingSubmissions() {
         List<MiniTestSubmission> submissions = submissionRepository.findByStatusOrderBySubmittedAtDesc(Status.pending);
         return submissions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
-    /**
-     * Lấy bài nộp theo ID
-     */
     public Optional<MiniTestSubmission> getSubmissionById(Long submissionId) {
         return submissionRepository.findById(submissionId);
     }
 
-    /**
-     * Lấy tất cả submissions của user cho lesson
-     */
-    public List<MiniTestSubmission> getUserSubmissionsForLesson(Long userId,
-            Integer lessonId) {
-        return submissionRepository.findByUserIdAndLessonIdOrderBySubmittedAtDesc(userId,
-                lessonId);
+    // NEW: Thống kê theo lesson cho admin
+    public long countPendingByLesson(Integer lessonId) {
+        return submissionRepository.countPendingByLessonId(lessonId);
+    }
+
+    public long countFeedbackedByLesson(Integer lessonId) {
+        return submissionRepository.countFeedbackedByLessonId(lessonId);
+    }
+
+    public List<MiniTestSubmission> getSubmissionsByLesson(Integer lessonId) {
+        return submissionRepository.findByLessonId(lessonId);
     }
 
     // =========== HELPER METHODS ===========
 
-    /**
-     * Convert entity to DTO
-     */
     private MiniTestSubmissionDTO convertToDto(MiniTestSubmission entity) {
         MiniTestSubmissionDTO dto = MiniTestSubmissionDTO.builder()
                 .id(entity.getId())
@@ -212,9 +186,9 @@ public class MiniTestService {
                 .feedback(entity.getFeedback())
                 .feedbackAt(entity.getFeedbackAt())
                 .status(entity.getStatus().name())
+                .timeSpent(entity.getTimeSpent()) // Nếu entity có timeSpent
                 .build();
 
-        // Parse answers từ JSON string sang List<AnswerDTO>
         try {
             if (entity.getAnswers() != null && !entity.getAnswers().isEmpty()) {
                 List<MiniTestSubmissionDTO.AnswerDTO> answers = objectMapper.readValue(
@@ -233,82 +207,61 @@ public class MiniTestService {
         return dto;
     }
 
-    /**
-     * Lấy userId từ authentication
-     */
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated() ||
-                "anonymousUser".equals(auth.getPrincipal())) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new RuntimeException("Không xác thực được user");
         }
 
         Object principal = auth.getPrincipal();
 
-        // Case 1: Custom UserPrincipal
         if (principal instanceof UserPrincipal userPrincipal) {
             return userPrincipal.getId();
         }
 
-        // Case 2: Default Spring Security UserDetails
         if (principal instanceof UserDetails userDetails) {
             String username = userDetails.getUsername();
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " +
-                            username));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
-        // Case 3: Principal là String (username)
         if (principal instanceof String username) {
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " +
-                            username));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
-        throw new RuntimeException("Loại principal không hỗ trợ: " +
-                principal.getClass().getName());
+        throw new RuntimeException("Loại principal không hỗ trợ: " + principal.getClass().getName());
     }
 
     // =========== UTILITY METHODS ===========
 
-    /**
-     * Parse answers từ JSON string sang Map
-     */
     public Map<String, Object> parseAnswersFromJson(String answersJson) {
         try {
             if (answersJson == null || answersJson.isEmpty()) {
                 return Map.of();
             }
-            return objectMapper.readValue(answersJson,
-                    new TypeReference<Map<String, Object>>() {
-                    });
+            return objectMapper.readValue(answersJson, new TypeReference<Map<String, Object>>() {
+            });
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Lỗi khi parse answers JSON", e);
         }
     }
 
-    /**
-     * Parse answers từ JSON string sang List<AnswerDTO>
-     */
     public List<MiniTestSubmissionDTO.AnswerDTO> parseAnswersToDtoList(String answersJson) {
         try {
             if (answersJson == null || answersJson.isEmpty()) {
                 return List.of();
             }
-            return objectMapper.readValue(answersJson,
-                    new TypeReference<List<MiniTestSubmissionDTO.AnswerDTO>>() {
-                    });
+            return objectMapper.readValue(answersJson, new TypeReference<List<MiniTestSubmissionDTO.AnswerDTO>>() {
+            });
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Lỗi khi parse answers JSON", e);
         }
     }
 
-    /**
-     * Convert Map to JSON String
-     */
     public String convertMapToJson(Map<String, Object> map) {
         try {
             return objectMapper.writeValueAsString(map);
@@ -317,9 +270,6 @@ public class MiniTestService {
         }
     }
 
-    /**
-     * Convert JSON String to Map
-     */
     public Map<String, Object> convertJsonToMap(String json) {
         try {
             if (json == null || json.isEmpty()) {

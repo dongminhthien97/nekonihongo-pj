@@ -1,3 +1,5 @@
+// src/main/java/com/nekonihongo/backend/service/MiniTestService.java (FULL CODE SERVICE HOÀN CHỈNH VỚI CÁC METHOD MỚI CHO ADMIN LESSON STATS)
+
 package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.*;
@@ -144,8 +146,7 @@ public class MiniTestService {
      */
     public int getUserFeedbackCount() {
         Long userId = getCurrentUserId();
-        return (int) submissionRepository.countByUserIdAndStatus(userId,
-                Status.feedbacked);
+        return (int) submissionRepository.countByUserIdAndStatus(userId, Status.feedbacked);
     }
 
     /**
@@ -189,13 +190,17 @@ public class MiniTestService {
         return submissionRepository.findById(submissionId);
     }
 
-    /**
-     * Lấy tất cả submissions của user cho lesson
-     */
-    public List<MiniTestSubmission> getUserSubmissionsForLesson(Long userId,
-            Integer lessonId) {
-        return submissionRepository.findByUserIdAndLessonIdOrderBySubmittedAtDesc(userId,
-                lessonId);
+    // NEW: Thống kê bài nộp theo lesson (cho admin)
+    public long countPendingByLesson(Integer lessonId) {
+        return submissionRepository.countPendingByLessonId(lessonId);
+    }
+
+    public long countFeedbackedByLesson(Integer lessonId) {
+        return submissionRepository.countFeedbackedByLessonId(lessonId);
+    }
+
+    public List<MiniTestSubmission> getSubmissionsByLesson(Integer lessonId) {
+        return submissionRepository.findByLessonId(lessonId);
     }
 
     // =========== HELPER METHODS ===========
@@ -239,8 +244,7 @@ public class MiniTestService {
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated() ||
-                "anonymousUser".equals(auth.getPrincipal())) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new RuntimeException("Không xác thực được user");
         }
 
@@ -255,21 +259,18 @@ public class MiniTestService {
         if (principal instanceof UserDetails userDetails) {
             String username = userDetails.getUsername();
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " +
-                            username));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
         // Case 3: Principal là String (username)
         if (principal instanceof String username) {
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " +
-                            username));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
-        throw new RuntimeException("Loại principal không hỗ trợ: " +
-                principal.getClass().getName());
+        throw new RuntimeException("Loại principal không hỗ trợ: " + principal.getClass().getName());
     }
 
     // =========== UTILITY METHODS ===========

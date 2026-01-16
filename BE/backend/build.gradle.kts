@@ -26,6 +26,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+    // OpenAPI/Swagger cho Spring Boot 4.0.0
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 

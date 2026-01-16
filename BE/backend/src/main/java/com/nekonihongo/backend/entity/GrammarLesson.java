@@ -34,4 +34,8 @@ public class GrammarLesson {
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GrammarPoint> points;
+
+    // Thêm relation với questions
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GrammarQuestion> questions;
 }
