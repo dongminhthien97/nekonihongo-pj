@@ -1,3 +1,5 @@
+// src/main/java/com/nekonihongo/backend/controller/UserMiniTestController.java (UPDATED – CHỈ CÒN ENDPOINT USER)
+
 package com.nekonihongo.backend.controller;
 
 import com.nekonihongo.backend.dto.MiniTestSubmissionDTO;
@@ -7,36 +9,38 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user/mini-test")
-@RequiredArgsConstructor // Thay @Autowired
-@PreAuthorize("hasRole('USER') or hasRole('ADMIN')") // Cho phép cả USER và ADMIN
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 public class UserMiniTestController {
 
-    private final MiniTestService miniTestService; // Đổi tên service
+    private final MiniTestService miniTestService;
 
     /**
      * GET /api/user/mini-test/submissions
-     * Lấy danh sách bài nộp mini test của user hiện tại
+     * User: Lấy danh sách bài nộp của chính mình
      */
     @GetMapping("/submissions")
     public ResponseEntity<?> getUserSubmissions() {
         try {
             List<MiniTestSubmissionDTO> submissions = miniTestService.getUserSubmissions();
-            return ResponseEntity.ok(submissions);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", submissions));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi khi lấy danh sách bài nộp: " + e.getMessage()));
         }
     }
 
     /**
      * DELETE /api/user/mini-test/submission/{id}
-     * Xóa bài nộp (chỉ của chính user)
+     * User: Xóa bài nộp của chính mình
      */
     @DeleteMapping("/submission/{id}")
     public ResponseEntity<?> deleteUserSubmission(@PathVariable Long id) {
@@ -46,14 +50,15 @@ public class UserMiniTestController {
                     "success", true,
                     "message", "Xóa bài nộp thành công"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi khi xóa bài nộp: " + e.getMessage()));
         }
     }
 
     /**
      * GET /api/user/mini-test/feedback-count
-     * Đếm số bài đã được admin feedback (cho bell badge đỏ)
+     * User: Đếm số bài đã feedback (cho bell badge)
      */
     @GetMapping("/feedback-count")
     public ResponseEntity<?> getFeedbackCount() {
@@ -63,45 +68,9 @@ public class UserMiniTestController {
                     "success", true,
                     "count", count));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * GET /api/user/mini-test/pending-count
-     * Admin: Đếm số bài pending toàn hệ thống
-     */
-    @GetMapping("/pending-count")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ admin
-    public ResponseEntity<?> getPendingCount() {
-        try {
-            long count = miniTestService.getPendingCount();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "count", count));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * GET /api/user/mini-test/pending
-     * Admin: Lấy danh sách bài pending
-     */
-    @GetMapping("/pending")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ admin
-    public ResponseEntity<?> getPendingSubmissions() {
-        try {
-            List<MiniTestSubmissionDTO> submissions = miniTestService.getPendingSubmissions();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "data", submissions,
-                    "count", submissions.size()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi khi lấy số feedback: " + e.getMessage()));
         }
     }
 }

@@ -241,7 +241,7 @@ public class MiniTestService {
     /**
      * Lấy userId từ authentication
      */
-    private Long getCurrentUserId() {
+    public Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
