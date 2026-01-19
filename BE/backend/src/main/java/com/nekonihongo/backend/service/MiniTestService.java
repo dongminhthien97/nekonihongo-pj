@@ -37,6 +37,11 @@ public class MiniTestService {
     private final UserRepository userRepository;
 
     // =========== FRONTEND API METHODS ===========
+    // NEW: Lấy tất cả submissions (cho filter=all)
+    public List<MiniTestSubmissionDTO> getAllSubmissions() {
+        List<MiniTestSubmission> all = submissionRepository.findAllByOrderBySubmittedAtDesc();
+        return all.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
 
     /**
      * Kiểm tra user đã submit bài test cho lesson chưa

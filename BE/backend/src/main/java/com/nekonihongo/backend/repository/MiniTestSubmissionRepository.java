@@ -61,4 +61,5 @@ public interface MiniTestSubmissionRepository extends JpaRepository<MiniTestSubm
     @Query("SELECT COUNT(s) FROM MiniTestSubmission s WHERE s.lessonId = :lessonId AND s.status = 'feedbacked'")
     long countFeedbackedByLessonId(@Param("lessonId") Integer lessonId);
 
+    List<MiniTestSubmission> findAllByOrderBySubmittedAtDesc();
 }

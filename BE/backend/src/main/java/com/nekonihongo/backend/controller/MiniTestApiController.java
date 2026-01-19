@@ -1,5 +1,3 @@
-// src/main/java/com/nekonihongo/backend/controller/MiniTestApiController.java (FULL CODE HOÀN CHỈNH VỚI FIX SECURITY + CURRENT USER + CONSISTENT)
-
 package com.nekonihongo.backend.controller;
 
 import com.nekonihongo.backend.dto.CheckTestResponseDTO;
@@ -11,11 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/grammar-tests") // Giữ path grammar-tests nếu frontend đang dùng, hoặc đổi thành /api/mini-test
-                                      // nếu muốn consistent
+@RequestMapping("/api/grammar-tests")
 @RequiredArgsConstructor
 public class MiniTestApiController {
 
@@ -30,18 +28,39 @@ public class MiniTestApiController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> checkTestStatus(@RequestParam("lesson_id") Integer lessonId) {
         try {
-            // Lấy current userId từ service (an toàn, không cần param user_id)
-            Long userId = miniTestService.getCurrentUserId(); // Đảm bảo service có method này
+            System.out.println("🔍 [MiniTestApiController] Checking test status for lesson: " + lessonId);
+
+            // Lấy current userId từ service
+            Long userId = miniTestService.getCurrentUserId();
+
+            System.out.println("🔍 [MiniTestApiController] User ID: " + userId);
+
             CheckTestResponseDTO result = miniTestService.checkUserTestStatus(userId, lessonId);
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "hasSubmitted", result.isHasSubmitted(),
-                    "submissionId", result.getSubmissionId() != null ? result.getSubmissionId() : null));
+            System.out.println("✅ [MiniTestApiController] Check result: hasSubmitted=" + result.isHasSubmitted() +
+                    ", submissionId=" + result.getSubmissionId());
+
+            // SỬA: Dùng HashMap thay vì Map.of() để tránh null
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("hasSubmitted", result.isHasSubmitted());
+
+            if (result.getSubmissionId() != null) {
+                response.put("submissionId", result.getSubmissionId());
+            }
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Lỗi khi kiểm tra trạng thái: " + e.getMessage()));
+            System.out.println("❌ [MiniTestApiController] Error: " + e.getMessage());
+            e.printStackTrace();
+
+            // SỬA: Dùng HashMap cho error response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi kiểm tra trạng thái: " +
+                    (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -53,21 +72,44 @@ public class MiniTestApiController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> submitTest(@RequestBody SubmitTestRequestDTO request) {
         try {
+            System.out.println("🔍 [MiniTestApiController] Submitting test for lesson: " + request.getLessonId());
+
             // Set userId từ current user (an toàn, frontend không gửi userId)
             Long userId = miniTestService.getCurrentUserId();
             request.setUserId(userId);
 
+            System.out.println("🔍 [MiniTestApiController] User ID: " + userId);
+            System.out.println("🔍 [MiniTestApiController] Answers: " + request.getAnswers());
+
             SubmitTestResponseDTO result = miniTestService.submitTest(request);
 
-            return ResponseEntity.ok(Map.of(
-                    "success", result.isSuccess(),
-                    "message", result.getMessage(),
-                    "testId", result.getTestId(),
-                    "submissionId", result.getSubmissionId()));
+            System.out.println("✅ [MiniTestApiController] Submit result: success=" + result.isSuccess() +
+                    ", testId=" + result.getTestId());
+
+            // SỬA: Dùng HashMap
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", result.isSuccess());
+            response.put("message", result.getMessage());
+
+            if (result.getTestId() != null) {
+                response.put("testId", result.getTestId());
+            }
+
+            if (result.getSubmissionId() != null) {
+                response.put("submissionId", result.getSubmissionId());
+            }
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Lỗi khi nộp bài: " + e.getMessage()));
+            System.out.println("❌ [MiniTestApiController] Error: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi nộp bài: " +
+                    (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -84,21 +126,33 @@ public class MiniTestApiController {
         try {
             String feedback = feedbackRequest.get("feedback");
             if (feedback == null || feedback.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Feedback không được để trống"));
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Feedback không được để trống");
+                return ResponseEntity.badRequest().body(response);
             }
 
             SubmitTestResponseDTO result = miniTestService.provideFeedback(submissionId, feedback.trim());
 
-            return ResponseEntity.ok(Map.of(
-                    "success", result.isSuccess(),
-                    "message", result.getMessage(),
-                    "submissionId", result.getSubmissionId()));
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", result.isSuccess());
+            response.put("message", result.getMessage());
+
+            if (result.getSubmissionId() != null) {
+                response.put("submissionId", result.getSubmissionId());
+            }
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Lỗi server: " + e.getMessage()));
+            System.out.println("❌ [MiniTestApiController] Error in feedback: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi server: " +
+                    (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }

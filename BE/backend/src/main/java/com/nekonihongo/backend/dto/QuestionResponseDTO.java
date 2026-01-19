@@ -15,6 +15,7 @@ import java.util.List;
 public class QuestionResponseDTO {
     private Long id;
     private Integer lessonId;
+    private String example; // 例 grouping
     private String type; // Khớp với entity: getType()
     private String text; // Khớp với entity: getText()
     private List<String> options;
@@ -28,6 +29,7 @@ public class QuestionResponseDTO {
         return QuestionResponseDTO.builder()
                 .id(question.getId())
                 .lessonId(question.getLessonId())
+                .example(question.getExample())
                 .type(question.getType() != null ? question.getType().name() : null)
                 .text(question.getText())
                 .options(question.getOptions())

@@ -16,8 +16,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
-@Setter
 @ToString
 public class GrammarQuestion {
 
@@ -37,6 +35,10 @@ public class GrammarQuestion {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuestionType type;
+
+    // example (例) để nhóm các câu theo 例
+    @Column(columnDefinition = "TEXT")
+    private String example;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String text;

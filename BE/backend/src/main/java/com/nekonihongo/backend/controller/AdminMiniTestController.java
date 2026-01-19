@@ -23,6 +23,40 @@ public class AdminMiniTestController {
     private final MiniTestService miniTestService;
 
     /**
+     * GET /api/admin/mini-test (root path)
+     * Admin: Lấy danh sách bài nộp (all hoặc pending dựa trên param filter)
+     * filter=pending → pending
+     * filter=all hoặc default → all submissions
+     */
+    /**
+     * GET /api/admin/mini-test?filter=pending|all
+     * Admin: Lấy danh sách bài nộp theo filter
+     */
+    @GetMapping("")
+    public ResponseEntity<?> getSubmissions(
+            @RequestParam(name = "filter", required = false, defaultValue = "all") String filter) {
+
+        try {
+            List<MiniTestSubmissionDTO> submissions;
+
+            if ("pending".equalsIgnoreCase(filter)) {
+                submissions = miniTestService.getPendingSubmissions();
+            } else {
+                submissions = miniTestService.getAllSubmissions(); // hoặc getPending nếu chưa implement all
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", submissions,
+                    "total", submissions.size()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    /**
      * GET /api/admin/mini-test/pending-count
      * Admin: Đếm số bài pending toàn hệ thống
      */
