@@ -177,23 +177,15 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
   };
 
-  const markAllAsRead = async () => {
-    try {
-      await api.post("/admin/notifications/mark-all-read");
-      setUnreadCount(0);
-      toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
-    } catch (error: any) {
-      console.error("Error marking as read:", error);
-      toast.error("Có lỗi xảy ra khi đánh dấu đã đọc 😿");
-    }
+  const markAllAsRead = () => {
+    setUnreadCount(0);
+    toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
   };
 
   // Nếu không phải admin hoặc chưa load → không render gì (guard đã redirect)
   if (!user || user.role !== "ADMIN") {
     return null;
   }
-
-  if (loading) return <NekoLoading message="Đang tải bài test..." />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
