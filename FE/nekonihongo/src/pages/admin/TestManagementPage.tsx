@@ -1,4 +1,3 @@
-// pages/admin/TestManagementPage.tsx
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -17,7 +16,6 @@ import { NekoLoading } from "../../components/NekoLoading";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
-// Định nghĩa interface UserTest
 interface UserTest {
   id: number;
   user_id: number;
@@ -45,45 +43,68 @@ interface TestManagementPageProps {
 }
 
 export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
-  const { user } = useAuth(); // Lấy user từ context
+  const { user } = useAuth();
+
   const [tests, setTests] = useState<UserTest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTest, setSelectedTest] = useState<UserTest | null>(null);
   const [feedback, setFeedback] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "reviewed">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "reviewed">(
+    "pending"
+  ); // Default pending để khớp endpoint
   const [search, setSearch] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      // Không đăng nhập → về login
       onNavigate("login");
       return;
     }
     if (user.role !== "ADMIN") {
-      // Đăng nhập nhưng không phải admin → về landing hoặc dashboard user
       toast.error("Bạn không có quyền truy cập trang quản trị 😿");
-      onNavigate("landing"); // hoặc "mypage" nếu là user
+      onNavigate("landing");
       return;
     }
-    // Nếu là admin → tiếp tục fetch data
     fetchTests();
     fetchUnreadCount();
-  }, [user, onNavigate]);
+  }, [user, onNavigate, filter, search]); // Re-fetch khi filter/search thay đổi
 
   const fetchTests = async () => {
+    console.log(
+      "[TestManagement] Fetching tests with filter:",
+      filter,
+      "search:",
+      search
+    );
     try {
       setLoading(true);
-      const response = await api.get(
-        `/admin/grammar-tests?filter=${filter}&search=${search}`
-      );
-      setTests(response.data.data || []);
+      // UNIFIED PATH: Gọi /api/admin/mini-test/pending (hoặc /all nếu có)
+      // Hiện tại dùng /pending để khớp AdminMiniTestController
+      let url = "/admin/mini-test/pending";
+      if (filter === "all") {
+        // Nếu muốn all, backend cần endpoint /api/admin/mini-test hoặc /all
+        url = "/admin/mini-test"; // Placeholder – backend cần implement
+      } else if (filter === "reviewed") {
+        // Placeholder – backend cần implement reviewed
+        url = "/admin/mini-test";
+      }
+
+      // Thêm search nếu backend hỗ trợ
+      if (search) {
+        url += `?search=${encodeURIComponent(search)}`;
+      }
+
+      const response = await api.get(url);
+      console.log("[TestManagement] Tests fetched:", response.data);
+      setTests(response.data.data || response.data || []);
     } catch (error: any) {
+      console.error("[TestManagement] Error fetching tests:", error);
       if (error.response?.status === 401) {
-        // Session hết hạn → về login
         toast.error("Phiên đăng nhập hết hạn 😿");
         onNavigate("login");
+      } else if (error.response?.status === 404) {
+        toast.error("Endpoint không tồn tại – kiểm tra path 😿");
       } else {
         toast.error("Không tải được danh sách bài test 😿");
       }
@@ -94,7 +115,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await api.get("/admin/notifications/unread-count");
+      const response = await api.get("/admin/mini-test/pending-count"); // Unified path
       setUnreadCount(response.data.count || 0);
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -169,7 +190,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
 
   // Nếu không phải admin hoặc chưa load → không render gì (guard đã redirect)
   if (!user || user.role !== "ADMIN") {
-    return null; // hoặc return <NekoLoading /> trong lúc redirect
+    return null;
   }
 
   if (loading) return <NekoLoading message="Đang tải bài test..." />;

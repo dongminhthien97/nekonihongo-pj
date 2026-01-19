@@ -1,3 +1,5 @@
+// src/context/AuthContext.tsx (FULL CODE HOÀN CHỈNH – FIX BUG REPEATED LOGIN/LOGOUT REDIRECT LOGIN, THÊM RELOAD SAU LOGIN/LOGOUT ĐỂ AUTH LOAD USER MỚI, LOADING UX MƯỢT)
+
 import {
   createContext,
   useContext,
@@ -84,6 +86,7 @@ export const AuthProvider = ({
       setUser(normalizedUser);
       localStorage.setItem("nekoUser", JSON.stringify(normalizedUser));
     } catch (err: any) {
+      console.error("Load user failed:", err);
       const savedUser = localStorage.getItem("nekoUser");
       if (savedUser) {
         try {
@@ -140,9 +143,15 @@ export const AuthProvider = ({
       }
 
       await loadUserFromBackend();
-      setHasSeenSplash(false);
-      onNavigate?.("mypage");
+
+      // Không set hasSeenSplash = false nếu muốn giữ splash chỉ lần đầu
+      // setHasSeenSplash(false); // Comment nếu không muốn splash mỗi lần login
+
       toast.success("Đăng nhập thành công! Chào mừng trở lại 😻");
+
+      // FORCE RELOAD ĐỂ AUTH CONTEXT + INTERCEPTOR LOAD TOKEN MỚI HOÀN TOÀN
+      // FIX BUG REPEATED LOGIN REDIRECT LOGIN
+      window.location.reload();
 
       return true;
     } catch (err: any) {
@@ -162,7 +171,13 @@ export const AuthProvider = ({
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("nekoSplashSeen");
+
+    toast.success("Đăng xuất thành công! Hẹn gặp lại nhé 👋");
+
     onNavigate?.("landing");
+
+    // FORCE RELOAD ĐỂ CLEAN STATE HOÀN TOÀN
+    window.location.reload();
   };
 
   const updateUser = (updates: Partial<User>) => {
