@@ -156,114 +156,13 @@ export function GrammarPage({
 
   // Hàm xử lý click vào hình con mèo
   const handleNekoClick = () => {
-    console.group("🔍 DEBUG AUTH - handleNekoClick");
-
-    console.log("📅 Timestamp:", new Date().toISOString());
-    console.log("👤 User Authentication State:", {
-      userId: userId,
-      userIdType: typeof userId,
-      isUserIdTruthy: !!userId,
-      userIdValue: userId || "(empty/falsy)",
-      // userIdLength: userId?.length || "N/A",
-    });
-
-    console.log("📚 Lesson Selection State:", {
-      selectedLesson: selectedLesson,
-      selectedLessonType: typeof selectedLesson,
-      isLessonSelected: !!selectedLesson,
-    });
-
-    console.log("📖 Lesson Data State:", {
-      currentLessonData: currentLessonData,
-      hasLessonData: !!currentLessonData,
-      lessonDataKeys: currentLessonData
-        ? Object.keys(currentLessonData)
-        : "No data",
-      lessonIdInData: currentLessonData?.id || "N/A",
-    });
-
-    // Kiểm tra tất cả điều kiện
-    const authCheck = {
-      hasUserId: !!userId,
-      hasSelectedLesson: !!selectedLesson,
-      hasLessonData: !!currentLessonData,
-      allConditions: !!userId && !!selectedLesson && !!currentLessonData,
-    };
-
-    console.log("✅ Condition Check:", authCheck);
-
-    if (authCheck.allConditions) {
-      console.log("🎯 SUCCESS: All conditions met - Opening test modal");
-      console.log("📝 Test Details:", {
-        lessonId: selectedLesson,
-        userId: userId,
-        userSession:
-          localStorage.getItem("userSession") || "No session in localStorage",
-        authToken:
-          localStorage.getItem("authToken") || "No token in localStorage",
-      });
-
-      // Log thêm để debug authentication flow
-      console.log("🔐 Auth Context Check:", {
-        isAuthenticated: localStorage.getItem("isAuthenticated"),
-        authTimestamp: localStorage.getItem("authTimestamp"),
-        userRole: localStorage.getItem("userRole"),
-      });
-
+    if (selectedLesson && currentLessonData && userId) {
       setShowMiniTestModal(true);
-      console.log("🚪 Modal state changed: showMiniTestModal = true");
-    } else if (!authCheck.hasSelectedLesson) {
-      console.error("❌ FAIL: No lesson selected");
-      console.warn("💡 User action required: Select a lesson first");
+    } else if (!selectedLesson) {
       alert("Vui lòng chọn bài học để làm bài test!");
-    } else if (!authCheck.hasUserId) {
-      console.error("❌ FAIL: User not authenticated");
-
-      // Debug chi tiết authentication
-      console.group("🔐 AUTH DEBUG DETAILS:");
-      console.log("1. localStorage items:", {
-        userId: localStorage.getItem("userId"),
-        token:
-          localStorage.getItem("token")?.substring(0, 20) + "..." || "No token",
-        session: localStorage.getItem("session"),
-      });
-
-      console.log("2. Cookies check:", {
-        hasAuthCookie:
-          document.cookie.includes("auth") || document.cookie.includes("token"),
-        cookieLength: document.cookie.length,
-      });
-
-      console.log("3. Session storage:", {
-        sessionUserId: sessionStorage.getItem("userId"),
-        sessionAuth: sessionStorage.getItem("auth"),
-      });
-
-      console.log("4. Context/State issues:", {
-        isStateLoaded: userId !== undefined,
-        possibleRaceCondition:
-          userId === null ? "Race condition possible" : "OK",
-      });
-      console.groupEnd();
-
-      console.warn("💡 Solution: User needs to login or refresh auth state");
+    } else if (!userId) {
       alert("Vui lòng đăng nhập để làm bài test!");
-    } else if (!authCheck.hasLessonData) {
-      console.error("❌ FAIL: Lesson data not loaded");
-      console.warn("💡 Possible issues:", {
-        apiCallFailed: "Check network for lesson data fetch",
-        dataLoading: "Lesson data might still be loading",
-        wrongLessonId: `Selected: ${selectedLesson} but data doesn't match`,
-      });
-      alert("Dữ liệu bài học chưa được tải. Vui lòng thử lại!");
     }
-
-    console.groupEnd();
-    console.log(
-      "🏁 handleNekoClick execution completed at:",
-      performance.now().toFixed(2),
-      "ms",
-    );
   };
 
   if (isLoading) {
