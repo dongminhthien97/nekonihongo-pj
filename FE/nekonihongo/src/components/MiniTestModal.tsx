@@ -1,12 +1,6 @@
+// src/pages/MiniTestModal.tsx
 import { useState, useEffect, useRef } from "react";
-import {
-  X,
-  Send,
-  Clock,
-  Sparkles,
-  HelpCircle,
-  CheckCircle2,
-} from "lucide-react";
+import { X, Send, Clock, Sparkles, HelpCircle } from "lucide-react";
 import api from "../api/auth";
 
 // --- INTERFACES ---
@@ -25,6 +19,16 @@ interface MiniTestModalProps {
   lessonId: number;
   lessonTitle: string;
   userId: number;
+  onSuccess?: (data: {
+    lessonId: number;
+    lessonTitle: string;
+    timeSpent: number;
+    questionCount: number;
+  }) => void;
+  onError?: (
+    message: string,
+    type: "validation" | "server" | "timeout",
+  ) => void;
 }
 
 // --- HELPER: Parse Furigana ---
@@ -54,6 +58,8 @@ export function MiniTestModal({
   lessonId,
   lessonTitle,
   userId,
+  onSuccess,
+  onError,
 }: MiniTestModalProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,57 +69,98 @@ export function MiniTestModal({
   >({});
   const [timeLeft, setTimeLeft] = useState(600);
   const [testSubmitted, setTestSubmitted] = useState(false);
-  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+
+  const [hasPriorHistory, setHasPriorHistory] = useState(false);
+  const [isClosingModal, setIsClosingModal] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reset states khi modal đóng
+  useEffect(() => {
+    if (!isOpen) {
+      setQuestions([]);
+      setLoading(true);
+      setSubmitting(false);
+      setAnswers({});
+      setTimeLeft(600);
+      setTestSubmitted(false);
+      setHasPriorHistory(false);
+      setIsClosingModal(false);
+    }
+  }, [isOpen]);
 
   // --- FETCH DATA ---
   useEffect(() => {
-    if (!isOpen || !lessonId) return;
+    if (!isOpen || testSubmitted) return;
+
+    if (!lessonId || lessonId <= 0 || !userId || userId <= 0) {
+      if (onError) {
+        onError("ID bài học hoặc người dùng không hợp lệ", "validation");
+      }
+      return;
+    }
 
     const initData = async () => {
       try {
         setLoading(true);
-        const checkRes = await api.get(
-          `/grammar-tests/check?lesson_id=${lessonId}`,
-        );
-        if (checkRes.data.hasSubmitted) {
-          setAlreadySubmitted(true);
-          return;
-        }
+
+        try {
+          const checkRes = await api.get(
+            `/grammar-tests/check?lesson_id=${lessonId}`,
+          );
+          if (checkRes.data.hasSubmitted) {
+            setHasPriorHistory(true);
+          }
+        } catch (checkErr) {}
 
         const qRes = await api.get(
           `/grammar/mini-test/questions?lesson_id=${lessonId}`,
         );
+
         if (qRes.data.success && Array.isArray(qRes.data.data)) {
-          const formatted = qRes.data.data.map((item: any) => ({
-            id: item.id,
-            lesson_id: item.lesson_id || item.lessonId || lessonId,
+          const formatted = qRes.data.data.map((item: any, index: number) => ({
+            id: item.id || index + 1,
+            lesson_id: item.lessonId || lessonId,
             example: item.example || "",
-            question_type: item.type || item.question_type || "fill_blank",
-            raw_text: (item.text || item.raw_text || "")
-              .replace(item.example || "", "")
-              .trim(),
+            question_type: item.type || "fill_blank",
+            raw_text: (item.text || "").replace(item.example || "", "").trim(),
             points: item.points || 10,
           }));
           setQuestions(formatted);
         } else {
-          alert("Không thể tải câu hỏi. Vui lòng thử lại!");
+          if (onError) {
+            onError(
+              "Không thể tải câu hỏi. Dữ liệu không đúng định dạng.",
+              "server",
+            );
+          }
         }
       } catch (err: any) {
-        alert("Lỗi khi tải câu hỏi. Vui lòng thử lại!");
+        if (onError) {
+          onError("Không thể tải câu hỏi. Vui lòng thử lại sau.", "server");
+        }
       } finally {
         setLoading(false);
       }
     };
     initData();
-  }, [isOpen, lessonId]);
+  }, [isOpen, lessonId, userId, testSubmitted, onError]);
 
   // --- TIMER ---
   useEffect(() => {
-    if (!isOpen || timeLeft <= 0 || testSubmitted || alreadySubmitted) return;
+    if (!isOpen || timeLeft <= 0 || testSubmitted || isClosingModal) {
+      return;
+    }
+
     const timer = setInterval(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, isOpen, testSubmitted, alreadySubmitted]);
+  }, [timeLeft, isOpen, testSubmitted, isClosingModal]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && isOpen && !testSubmitted && !isClosingModal) {
+      handleAutoSubmit();
+    }
+  }, [timeLeft, isOpen, testSubmitted, isClosingModal]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -121,6 +168,30 @@ export function MiniTestModal({
       .padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
+  };
+
+  // --- VALIDATION ---
+  const validateAnswers = () => {
+    const emptyAnswers: number[] = [];
+
+    questions.forEach((q) => {
+      const qAnsObj = answers[q.id] || {};
+      const blankCount = countBlanks(q.raw_text);
+
+      for (let i = 0; i < blankCount; i++) {
+        if (!qAnsObj[i] || qAnsObj[i].trim() === "") {
+          emptyAnswers.push(q.id);
+          break;
+        }
+      }
+    });
+
+    return emptyAnswers;
+  };
+
+  const countBlanks = (text: string) => {
+    const blankMatches = text.match(/（　　）|＿{3,}/g);
+    return blankMatches ? blankMatches.length : 0;
   };
 
   // --- HANDLERS ---
@@ -131,55 +202,156 @@ export function MiniTestModal({
     }));
   };
 
+  const handleAutoSubmit = async () => {
+    await handleSubmitInternal(true);
+  };
+
   const handleSubmit = async () => {
+    await handleSubmitInternal(false);
+  };
+
+  const handleSubmitInternal = async (isAutoSubmit: boolean) => {
     try {
       setSubmitting(true);
 
-      if (questions.length === 0) {
-        alert("Không có câu hỏi để nộp!");
-        return;
+      if (!isAutoSubmit) {
+        const emptyQuestions = validateAnswers();
+        if (emptyQuestions.length > 0) {
+          const questionNumbers = emptyQuestions.map((id) => {
+            const index = questions.findIndex((q) => q.id === id);
+            return index !== -1 ? index + 1 : "Unknown";
+          });
+
+          if (onError) {
+            onError(
+              `Vui lòng điền đầy đủ các ô trống trong nhóm câu hỏi: ${questionNumbers.join(", ")}`,
+              "validation",
+            );
+          }
+
+          setSubmitting(false);
+
+          const firstEmptyQuestion = document.querySelector(
+            `[data-question-id="${emptyQuestions[0]}"]`,
+          );
+          if (firstEmptyQuestion) {
+            firstEmptyQuestion.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+            firstEmptyQuestion.classList.add("highlight-empty");
+            setTimeout(() => {
+              firstEmptyQuestion.classList.remove("highlight-empty");
+            }, 3000);
+          }
+          return;
+        }
       }
 
-      // Format answers: Map<String, Object> (String keys)
       const formattedAnswers: Record<string, string[]> = {};
-
       questions.forEach((q) => {
         const qAnsObj = answers[q.id] || {};
-        const keys = Object.keys(qAnsObj)
-          .map((k) => Number(k))
-          .sort((a, b) => a - b);
-        const qAnsArr = keys.map((k) => (qAnsObj[k] || "").trim());
-
-        // Key là String (q.id.toString()), Value là array
+        const qAnsArr = Object.keys(qAnsObj)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((k) => qAnsObj[Number(k)]);
         formattedAnswers[q.id.toString()] = qAnsArr;
       });
 
-      // Tạo payload đúng với DTO
       const payload = {
-        userId: Number(userId), // Long
-        lessonId: Number(lessonId), // Integer
-        answers: formattedAnswers, // Map<String, Object> - OBJECT không stringify
-        timeSpent: Math.max(1, 600 - timeLeft), // Integer
-        submittedAt: new Date().toISOString(), // String -> LocalDateTime
+        userId: Number(userId),
+        lessonId: Number(lessonId),
+        answers: formattedAnswers,
+        timeSpent: isAutoSubmit ? 600 : Math.max(0, 600 - timeLeft),
+        submittedAt: new Date().toISOString(),
       };
 
       const res = await api.post("/grammar-tests/submit", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
+        timeout: 10000,
       });
 
       if (res.data.success) {
         setTestSubmitted(true);
+        if (onSuccess) {
+          onSuccess({
+            lessonId,
+            lessonTitle,
+            timeSpent: isAutoSubmit ? 600 : Math.max(0, 600 - timeLeft),
+            questionCount: questions.length,
+          });
+        }
+        setIsClosingModal(true);
+        setTimeout(() => {
+          onClose();
+        }, 300);
       } else {
-        alert(res.data.message || "Nộp bài không thành công!");
+        if (
+          res.data.message?.includes("đã nộp bài") ||
+          res.data.message?.includes("nộp bài này rồi")
+        ) {
+          setTestSubmitted(true);
+          if (onSuccess) {
+            onSuccess({
+              lessonId,
+              lessonTitle,
+              timeSpent: isAutoSubmit ? 600 : Math.max(0, 600 - timeLeft),
+              questionCount: questions.length,
+            });
+          }
+          setIsClosingModal(true);
+          setTimeout(() => {
+            onClose();
+          }, 300);
+        } else {
+          if (onError) {
+            onError(res.data.message || "Nộp bài không thành công!", "server");
+          }
+        }
       }
     } catch (e: any) {
-      if (e.response?.data?.message) {
-        alert(`Lỗi: ${e.response.data.message}`);
-      } else {
-        alert("Lỗi khi nộp bài. Vui lòng thử lại!");
+      let errorMsg = "Có lỗi xảy ra khi nộp bài!";
+      let errorTyp: "validation" | "server" | "timeout" = "server";
+
+      if (e.code === "ECONNABORTED" || e.message.includes("timeout")) {
+        errorMsg = "Request timeout. Vui lòng thử lại.";
+        errorTyp = "timeout";
+      } else if (e.code === "ERR_NETWORK" || e.message.includes("Network")) {
+        errorMsg = "Mất kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.";
+        errorTyp = "server";
+      } else if (e.response?.status === 400) {
+        const errorData = e.response.data;
+        if (
+          errorData.message?.includes("đã nộp bài") ||
+          errorData.message?.includes("nộp bài này rồi")
+        ) {
+          setTestSubmitted(true);
+          if (onSuccess) {
+            onSuccess({
+              lessonId,
+              lessonTitle,
+              timeSpent: isAutoSubmit ? 600 : Math.max(0, 600 - timeLeft),
+              questionCount: questions.length,
+            });
+          }
+          setIsClosingModal(true);
+          setTimeout(() => {
+            onClose();
+          }, 300);
+          return;
+        } else {
+          errorMsg =
+            errorData.message || "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
+          errorTyp = "validation";
+        }
+      } else if (e.response?.status === 401) {
+        errorMsg = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+        errorTyp = "server";
+      } else if (e.response?.status === 500) {
+        errorMsg = "Lỗi máy chủ. Vui lòng thử lại sau.";
+        errorTyp = "server";
+      }
+
+      if (onError) {
+        onError(errorMsg, errorTyp);
       }
     } finally {
       setSubmitting(false);
@@ -196,7 +368,6 @@ export function MiniTestModal({
         {lines.map((line, lineIdx) => {
           if (question.question_type === "fill_blank" || !line.includes("［")) {
             const parts = line.split(/(（　　）|＿{3,})/g);
-
             return (
               <div key={lineIdx} className="fill-blank-line">
                 {parts.map((part, pIdx) => {
@@ -204,11 +375,14 @@ export function MiniTestModal({
 
                   if (isBlank) {
                     const currentIndex = globalInputIndex++;
+                    const currentValue =
+                      answers[question.id]?.[currentIndex] || "";
+
                     return (
                       <input
                         key={`input-${currentIndex}`}
                         type="text"
-                        value={answers[question.id]?.[currentIndex] || ""}
+                        value={currentValue}
                         onChange={(e) =>
                           handleAnswerChange(
                             question.id,
@@ -233,7 +407,6 @@ export function MiniTestModal({
             line.includes("［")
           ) {
             const parts = line.split(/［(.*?)］/g);
-
             return (
               <div key={lineIdx} className="multiple-choice-line">
                 {parts.map((part, pIdx) => {
@@ -279,36 +452,13 @@ export function MiniTestModal({
     );
   };
 
-  // --- UI RENDER ---
-  if (!isOpen) return null;
-
-  if (alreadySubmitted || testSubmitted) {
-    return (
-      <div className="modal-overlay">
-        <div className="submission-success-modal">
-          <div className="success-icon-container">
-            <CheckCircle2 className="success-icon" />
-          </div>
-          <h2 className="success-title">
-            {alreadySubmitted
-              ? "Bạn đã làm bài này rồi!"
-              : "Nộp bài thành công!"}
-          </h2>
-          <p className="success-message">
-            {alreadySubmitted
-              ? "Hãy xem lại kết quả trong phần lịch sử nhé."
-              : "Mèo sẽ chấm điểm ngay. Hãy kiểm tra kết quả nhé!"}
-          </p>
-          <button onClick={onClose} className="close-success-button">
-            Đóng
-          </button>
-        </div>
-      </div>
-    );
+  // --- RENDER LOGIC ---
+  if (!isOpen) {
+    return null;
   }
 
   return (
-    <div className="test-modal-container">
+    <div className={`test-modal-container ${isClosingModal ? "fade-out" : ""}`}>
       <div className="test-modal">
         {/* HEADER */}
         <div className="modal-header">
@@ -318,13 +468,16 @@ export function MiniTestModal({
             </div>
             <div>
               <h2 className="modal-title">Mini Test</h2>
-              <p className="lesson-title">{lessonTitle}</p>
+              <p className="lesson-title">
+                {lessonTitle}{" "}
+                <span className="lesson-id-badge">ID: {lessonId}</span>
+              </p>
             </div>
           </div>
 
           <div className="header-right">
             <div
-              className={`timer-display ${timeLeft < 60 ? "timer-warning" : ""}`}
+              className={`timer-display ${timeLeft < 60 ? "timer-warning" : ""} ${timeLeft < 300 ? "timer-low" : ""}`}
             >
               <Clock className="timer-icon" />
               <span className="timer-value">{formatTime(timeLeft)}</span>
@@ -341,62 +494,90 @@ export function MiniTestModal({
             <div className="loading-container">
               <div className="loading-spinner"></div>
               <p>Đang tải câu hỏi...</p>
-            </div>
-          ) : questions.length === 0 ? (
-            <div className="no-questions-container">
-              <p className="no-questions-text">
-                Không có câu hỏi cho bài học này.
+              <p className="debug-info">
+                Lesson ID: {lessonId} | User ID: {userId}
               </p>
-              <button onClick={onClose} className="close-modal-btn">
-                Quay lại
-              </button>
             </div>
           ) : (
             <div className="questions-container">
-              {questions.map((q, idx) => (
-                <div key={q.id} className="question-card">
-                  <div className="question-badge">Nhóm câu {idx + 1}</div>
+              {questions.length === 0 ? (
+                <div className="no-questions-message">
+                  <p>Không tìm thấy câu hỏi cho bài học này.</p>
+                  <div className="debug-info">
+                    <p>Lesson ID: {lessonId}</p>
+                    <p>User ID: {userId}</p>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="close-no-questions-button"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="questions-stats">
+                    <span className="stat-badge">
+                      Tổng: {questions.length} nhóm câu
+                    </span>
+                    <span className="stat-badge">
+                      Thời gian: {formatTime(timeLeft)}
+                    </span>
+                    <span className="stat-badge">Lesson ID: {lessonId}</span>
+                  </div>
+                  {questions.map((q, idx) => (
+                    <div
+                      key={q.id}
+                      className="question-card"
+                      data-question-id={q.id}
+                    >
+                      <div className="question-badge">Nhóm câu {idx + 1}</div>
 
-                  <div className="question-content">
-                    {/* Instruction Hint */}
-                    <div className="instruction-hint">
-                      <HelpCircle className="hint-icon" />
-                      <div>
-                        <p className="hint-title">Hướng dẫn:</p>
-                        <p>
-                          {q.question_type === "fill_blank"
-                            ? "Điền từ thích hợp vào ô trống."
-                            : "Chọn đáp án đúng trong các ngoặc vuông ［...］."}
-                        </p>
-                        <p className="hint-points">
-                          (Tổng cộng: {q.points} điểm)
-                        </p>
-                      </div>
-                    </div>
+                      <div className="question-content">
+                        <div className="instruction-hint">
+                          <HelpCircle className="hint-icon" />
+                          <div>
+                            <p className="hint-title">Hướng dẫn:</p>
+                            <p>
+                              {q.question_type === "fill_blank"
+                                ? "Điền từ thích hợp vào ô trống."
+                                : "Chọn đáp án đúng trong các ngoặc vuông ［...］."}
+                            </p>
+                            <p className="hint-points">
+                              (Tổng cộng: {q.points} điểm)
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* Example Section */}
-                    {q.example && (
-                      <div className="example-section">
-                        <p className="example-label">Ví dụ (Rei)</p>
-                        <div className="example-content">
-                          {renderWithFurigana(q.example)}
+                        {q.example && (
+                          <div className="example-section">
+                            <p className="example-label">Ví dụ (Rei)</p>
+                            <div className="example-content">
+                              {renderWithFurigana(q.example)}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="main-question-content">
+                          {renderInteractiveContent(q)}
                         </div>
                       </div>
-                    )}
-
-                    {/* Main Content */}
-                    <div className="main-question-content">
-                      {renderInteractiveContent(q)}
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
 
         {/* FOOTER */}
         <div className="modal-footer">
+          <div className="submit-debug-info">
+            <span>
+              Debug: LessonID={lessonId} | UserID={userId} | Time=
+              {formatTime(timeLeft)}
+            </span>
+          </div>
           <button
             onClick={handleSubmit}
             disabled={submitting || timeLeft <= 0 || questions.length === 0}
@@ -404,9 +585,11 @@ export function MiniTestModal({
           >
             {submitting ? (
               <div className="submit-spinner" />
+            ) : timeLeft <= 0 ? (
+              "Hết giờ"
             ) : (
               <>
-                <span>Nộp bài ngay</span>
+                <span>Nộp bài</span>
                 <Send className="submit-icon" />
               </>
             )}
@@ -423,9 +606,36 @@ export function MiniTestModal({
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 50;
+          z-index: 99999;
           padding: 1rem;
           font-family: sans-serif;
+          animation: fadeIn 0.3s ease-out;
+        }
+        
+        .fade-out {
+          animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes fadeOut {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(0.95);
+          }
         }
         
         .test-modal {
@@ -440,6 +650,18 @@ export function MiniTestModal({
           overflow: hidden;
           position: relative;
           border: 1px solid rgba(255, 255, 255, 0.5);
+          animation: slideInUp 0.4s ease-out;
+        }
+        
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
         .modal-header {
@@ -485,6 +707,18 @@ export function MiniTestModal({
         .lesson-title {
           color: #6b7280;
           font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .lesson-id-badge {
+          font-size: 0.75rem;
+          background: #e5e7eb;
+          padding: 0.125rem 0.5rem;
+          border-radius: 0.375rem;
+          color: #6b7280;
+          font-family: monospace;
         }
         
         .header-right {
@@ -509,10 +743,16 @@ export function MiniTestModal({
           color: #374151;
         }
         
+        .timer-low {
+          background: #fef3c7;
+          color: #d97706;
+          animation: pulse 2s infinite;
+        }
+        
         .timer-warning {
           background: #fef2f2;
           color: #dc2626;
-          animation: pulse 2s infinite;
+          animation: pulse 1s infinite;
         }
         
         .timer-icon {
@@ -524,13 +764,22 @@ export function MiniTestModal({
           font-variant-numeric: tabular-nums;
         }
         
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        
         .close-modal-button {
           padding: 0.75rem;
           border-radius: 9999px;
           transition: background-color 0.2s;
           color: #9ca3af;
-          border: none;
           background: none;
+          border: none;
           cursor: pointer;
         }
         
@@ -576,34 +825,20 @@ export function MiniTestModal({
           border-radius: 9999px;
         }
         
-        .no-questions-container {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 2rem;
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
         }
         
-        .no-questions-text {
-          font-size: 1.25rem;
+        .debug-info {
+          font-size: 0.75rem;
           color: #6b7280;
-          text-align: center;
-        }
-        
-        .close-modal-btn {
-          padding: 0.75rem 2rem;
-          background: #7c3aed;
-          color: white;
-          border: none;
-          border-radius: 0.75rem;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-        
-        .close-modal-btn:hover {
-          background: #6d28d9;
+          background: #f3f4f6;
+          padding: 0.5rem;
+          border-radius: 0.375rem;
+          font-family: monospace;
+          margin-top: 0.5rem;
         }
         
         .questions-container {
@@ -611,6 +846,49 @@ export function MiniTestModal({
           margin-left: auto;
           margin-right: auto;
           padding-bottom: 5rem;
+        }
+        
+        .questions-stats {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
+          flex-wrap: wrap;
+        }
+        
+        .stat-badge {
+          font-size: 0.875rem;
+          background: #e0e7ff;
+          color: #3730a3;
+          padding: 0.375rem 0.75rem;
+          border-radius: 9999px;
+          font-weight: 500;
+        }
+        
+        .no-questions-message {
+          text-align: center;
+          padding: 3rem;
+          background: white;
+          border-radius: 1rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          max-width: 32rem;
+          margin: 0 auto;
+          color: #6b7280;
+        }
+        
+        .close-no-questions-button {
+          margin-top: 1rem;
+          padding: 0.75rem 2rem;
+          background: #7c3aed;
+          color: white;
+          border-radius: 0.5rem;
+          font-weight: bold;
+          transition: background-color 0.2s;
+          border: none;
+          cursor: pointer;
+        }
+        
+        .close-no-questions-button:hover {
+          background: #6d28d9;
         }
         
         .question-card {
@@ -622,6 +900,24 @@ export function MiniTestModal({
           position: relative;
           margin-bottom: 3rem;
           transition: box-shadow 0.3s;
+        }
+        
+        .question-card.highlight-empty {
+          animation: shake 0.5s ease-in-out;
+          border-color: #f59e0b !important;
+          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+        }
+        
+        @keyframes shake {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+          }
+          20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+          }
         }
         
         .question-card:hover {
@@ -728,23 +1024,23 @@ export function MiniTestModal({
           color: #7c3aed;
           font-weight: bold;
           background: #faf5ff;
-          border-bottom-width: 2px;
-          border-color: #d8b4fe;
-          border-top-left-radius: 0.25rem;
-          border-top-right-radius: 0.25rem;
+          border: 2px solid #d8b4fe;
+          border-radius: 0.25rem;
           transition: all 0.2s;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          border: none;
-          outline: none;
+          padding: 0 0.5rem;
+          font-size: 1rem;
         }
         
         .blank-input-field:focus {
           border-color: #7c3aed;
           background: white;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
         
         .blank-input-field::placeholder {
-          color: #e9d5ff;
+          color: #c4b5fd;
         }
         
         .choice-container {
@@ -759,12 +1055,12 @@ export function MiniTestModal({
         .choice-button {
           padding-left: 0.75rem;
           padding-right: 0.75rem;
-          padding-top: 0.25rem;
-          padding-bottom: 0.25rem;
-          border-radius: 9999px;
+          padding-top: 0.5rem;
+          padding-bottom: 0.5rem;
+          border-radius: 0.5rem;
           font-size: 0.875rem;
           font-weight: bold;
-          border: 1px solid;
+          border: 2px solid;
           transition: all 0.2s;
           transform: scale(1);
           cursor: pointer;
@@ -798,9 +1094,20 @@ export function MiniTestModal({
           background: white;
           border-top: 1px solid #f3f4f6;
           display: flex;
-          justify-content: center;
+          flex-direction: column;
+          gap: 0.75rem;
           z-index: 20;
           box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.02);
+        }
+        
+        .submit-debug-info {
+          text-align: center;
+          font-size: 0.75rem;
+          color: #6b7280;
+          font-family: monospace;
+          background: #f3f4f6;
+          padding: 0.5rem;
+          border-radius: 0.375rem;
         }
         
         .submit-button {
@@ -836,6 +1143,7 @@ export function MiniTestModal({
         @media (min-width: 768px) {
           .submit-button {
             width: auto;
+            align-self: center;
           }
         }
         
@@ -863,78 +1171,6 @@ export function MiniTestModal({
           transform: translateX(0.25rem);
         }
         
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 50;
-          padding: 1rem;
-        }
-        
-        .submission-success-modal {
-          background: white;
-          border-radius: 1.5rem;
-          padding: 2rem;
-          max-width: 28rem;
-          width: 100%;
-          text-align: center;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-          animation: fadeInUp 0.5s ease-out;
-        }
-        
-        .success-icon-container {
-          width: 5rem;
-          height: 5rem;
-          background: #dcfce7;
-          border-radius: 9999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: auto;
-          margin-right: auto;
-          margin-bottom: 1.5rem;
-        }
-        
-        .success-icon {
-          width: 2.5rem;
-          height: 2.5rem;
-          color: #16a34a;
-        }
-        
-        .success-title {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 0.5rem;
-        }
-        
-        .success-message {
-          color: #6b7280;
-          margin-bottom: 2rem;
-        }
-        
-        .close-success-button {
-          width: 100%;
-          padding-top: 0.75rem;
-          padding-bottom: 0.75rem;
-          background: #111827;
-          color: white;
-          border-radius: 0.75rem;
-          font-weight: bold;
-          transition: background-color 0.2s;
-          border: none;
-          cursor: pointer;
-        }
-        
-        .close-success-button:hover {
-          background: #1f2937;
-        }
-        
-        /* Custom Scrollbar */
         .modal-body::-webkit-scrollbar {
           width: 8px;
         }
@@ -954,45 +1190,8 @@ export function MiniTestModal({
           background-color: #C084FC;
         }
         
-        /* Ruby Text */
         ruby {
           ruby-align: center;
-        }
-        
-        rt {
-          font-size: 0.6em;
-          line-height: 1;
-          transform: translateY(-2px);
-          color: #7c3aed;
-          font-weight: normal;
-          user-select: none;
-        }
-        
-        /* Animations */
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
         }
       `}</style>
     </div>
