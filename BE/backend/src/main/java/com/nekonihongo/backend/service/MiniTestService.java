@@ -348,100 +348,262 @@ public class MiniTestService {
 
     /**
      * Parse answers từ JSON string - Xử lý cả array và object format
+     * FIXED VERSION: Xử lý nhiều format JSON khác nhau
      */
     private List<MiniTestSubmissionDTO.AnswerDTO> parseAnswersJson(String answersJson) {
         List<MiniTestSubmissionDTO.AnswerDTO> answers = new ArrayList<>();
 
         if (answersJson == null || answersJson.trim().isEmpty()) {
+            log.debug("Answers JSON is null or empty");
             return answers;
         }
 
         try {
+            log.debug("Parsing answers JSON (first 200 chars): {}",
+                    answersJson.length() > 200 ? answersJson.substring(0, 200) + "..." : answersJson);
+
             JsonNode rootNode = objectMapper.readTree(answersJson);
 
+            log.debug("JSON Node Type - isArray: {}, isObject: {}, size: {}",
+                    rootNode.isArray(), rootNode.isObject(), rootNode.size());
+
             if (rootNode.isArray()) {
-                // Format: [{"question_id":1,"user_answer":"A"},...]
-                for (JsonNode node : rootNode) {
-                    // Chuyển đổi int sang Long
-                    Long questionId = node.get("question_id").asLong();
-                    if (questionId == null) {
-                        questionId = (long) node.get("question_id").asInt();
-                    }
+                // Format 1: [{"question_id":1,"user_answer":"A"},...]
+                // Format 2: [{"questionId":1,"userAnswer":"A"},...]
+                log.debug("Detected ARRAY format");
+                parseArrayFormat(rootNode, answers);
 
-                    MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
-                            .questionId(questionId)
-                            .userAnswer(node.get("user_answer").asText())
-                            .build();
-                    answers.add(answerDTO);
-                }
             } else if (rootNode.isObject()) {
-                // Format: {"1":{"question_id":1,"user_answer":"A"},...}
-                // Hoặc: {"question_1":{"question_id":1,"user_answer":"A"},...}
-                Iterator<Map.Entry<String, JsonNode>> fields = rootNode.fields();
-                while (fields.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = fields.next();
-                    JsonNode answerNode = entry.getValue();
+                // Format 3: {"1":{"question_id":1,"user_answer":"A"},...}
+                // Format 4: {"1":"A","2":"B"} (simple key-value)
+                // Format 5: {"question_1":"A","question_2":"B"}
+                // Format 6: {"q1":"A","q2":"B"}
+                log.debug("Detected OBJECT format");
+                parseObjectFormat(rootNode, answers);
 
-                    // Kiểm tra xem node có chứa question_id và user_answer không
-                    if (answerNode.has("question_id") && answerNode.has("user_answer")) {
-                        // Chuyển đổi int sang Long
-                        Long questionId = answerNode.get("question_id").asLong();
-                        if (questionId == null) {
-                            questionId = (long) answerNode.get("question_id").asInt();
-                        }
-
-                        MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
-                                .questionId(questionId)
-                                .userAnswer(answerNode.get("user_answer").asText())
-                                .build();
-                        answers.add(answerDTO);
-                    } else if (answerNode.isObject()) {
-                        // Nếu không có các field chuẩn, thử parse các field khác
-                        Iterator<String> fieldNames = answerNode.fieldNames();
-                        while (fieldNames.hasNext()) {
-                            String fieldName = fieldNames.next();
-                            JsonNode fieldValue = answerNode.get(fieldName);
-                            if (fieldValue.isTextual()) {
-                                // Cố gắng parse questionId từ field name
-                                try {
-                                    String cleanFieldName = fieldName
-                                            .replace("question_", "")
-                                            .replace("q", "");
-                                    Long questionId = Long.parseLong(cleanFieldName);
-
-                                    MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO
-                                            .builder()
-                                            .questionId(questionId)
-                                            .userAnswer(fieldValue.asText())
-                                            .build();
-                                    answers.add(answerDTO);
-                                } catch (NumberFormatException e) {
-                                    log.warn("Cannot parse questionId from field name: {}", fieldName);
-                                }
-                            }
-                        }
-                    }
-                }
+            } else {
+                log.warn("Unknown JSON format - neither array nor object");
             }
+
         } catch (Exception e) {
-            log.error("Error parsing answers JSON: {}", answersJson, e);
-            // Nếu parse lỗi, thử parse như mảng trước khi throw
+            log.error("Error parsing answers JSON: {}", e.getMessage());
+            log.debug("Full error stack:", e);
+
+            // Fallback: Thử parse như mảng thông thường
             try {
-                // Thử parse như mảng thông thường
-                return objectMapper.readValue(answersJson,
+                log.debug("Trying fallback array parsing");
+                List<MiniTestSubmissionDTO.AnswerDTO> fallbackAnswers = objectMapper.readValue(
+                        answersJson,
                         new TypeReference<List<MiniTestSubmissionDTO.AnswerDTO>>() {
                         });
+                answers.addAll(fallbackAnswers);
+                log.debug("Fallback parsing successful, found {} answers", fallbackAnswers.size());
             } catch (JsonProcessingException ex) {
-                log.error("Fallback parsing also failed for: {}", answersJson);
-                // Không throw exception, trả về list rỗng
-                return List.of();
+                log.error("Fallback parsing also failed: {}", ex.getMessage());
             }
         }
 
         // Sắp xếp theo questionId để hiển thị đúng thứ tự
         answers.sort(Comparator.comparing(MiniTestSubmissionDTO.AnswerDTO::getQuestionId));
 
+        log.debug("Successfully parsed {} answers", answers.size());
+        if (!answers.isEmpty()) {
+            log.debug("Sample answer: questionId={}, answer={}",
+                    answers.get(0).getQuestionId(), answers.get(0).getUserAnswer());
+        }
+
         return answers;
+    }
+
+    /**
+     * Parse array format JSON
+     */
+    private void parseArrayFormat(JsonNode arrayNode, List<MiniTestSubmissionDTO.AnswerDTO> answers) {
+        for (JsonNode node : arrayNode) {
+            try {
+                Long questionId = extractQuestionId(node);
+                String userAnswer = extractUserAnswer(node);
+
+                if (questionId != null && userAnswer != null) {
+                    MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
+                            .questionId(questionId)
+                            .userAnswer(userAnswer)
+                            .build();
+                    answers.add(answerDTO);
+                } else {
+                    log.warn("Could not extract questionId or userAnswer from array node: {}", node);
+                }
+            } catch (Exception e) {
+                log.warn("Error processing array node: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Parse object format JSON
+     */
+    private void parseObjectFormat(JsonNode objectNode, List<MiniTestSubmissionDTO.AnswerDTO> answers) {
+        Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String key = entry.getKey();
+            JsonNode valueNode = entry.getValue();
+
+            try {
+                if (valueNode.isObject()) {
+                    // Format: {"1":{"question_id":1,"user_answer":"A"}}
+                    Long questionId = extractQuestionIdFromKey(key, valueNode);
+                    String userAnswer = extractUserAnswer(valueNode);
+
+                    if (questionId == null) {
+                        questionId = extractQuestionId(valueNode);
+                    }
+
+                    if (questionId != null && userAnswer != null) {
+                        MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
+                                .questionId(questionId)
+                                .userAnswer(userAnswer)
+                                .build();
+                        answers.add(answerDTO);
+                    }
+
+                } else if (valueNode.isTextual() || valueNode.isNumber() || valueNode.isBoolean()) {
+                    // Format: {"1":"A"} hoặc {"question_1":"A"}
+                    Long questionId = extractQuestionIdFromKey(key, null);
+                    String userAnswer = valueNode.asText();
+
+                    if (userAnswer == null || userAnswer.isEmpty()) {
+                        userAnswer = String.valueOf(valueNode.asText());
+                    }
+
+                    if (questionId != null) {
+                        MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
+                                .questionId(questionId)
+                                .userAnswer(userAnswer)
+                                .build();
+                        answers.add(answerDTO);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error processing object field key='{}': {}", key, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Extract question ID từ JSON node
+     */
+    private Long extractQuestionId(JsonNode node) {
+        if (node == null)
+            return null;
+
+        // Thử các field name khác nhau
+        if (node.has("question_id") && !node.get("question_id").isNull()) {
+            return node.get("question_id").asLong();
+        }
+        if (node.has("questionId") && !node.get("questionId").isNull()) {
+            return node.get("questionId").asLong();
+        }
+        if (node.has("id") && !node.get("id").isNull()) {
+            return node.get("id").asLong();
+        }
+        if (node.has("qid") && !node.get("qid").isNull()) {
+            return node.get("qid").asLong();
+        }
+        if (node.has("question") && !node.get("question").isNull()) {
+            return node.get("question").asLong();
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract user answer từ JSON node
+     */
+    private String extractUserAnswer(JsonNode node) {
+        if (node == null)
+            return null;
+
+        // Thử các field name khác nhau
+        if (node.has("user_answer") && !node.get("user_answer").isNull()) {
+            return node.get("user_answer").asText();
+        }
+        if (node.has("userAnswer") && !node.get("userAnswer").isNull()) {
+            return node.get("userAnswer").asText();
+        }
+        if (node.has("answer") && !node.get("answer").isNull()) {
+            return node.get("answer").asText();
+        }
+        if (node.has("value") && !node.get("value").isNull()) {
+            return node.get("value").asText();
+        }
+        if (node.has("text") && !node.get("text").isNull()) {
+            return node.get("text").asText();
+        }
+
+        // Nếu node là primitive value, trả về giá trị đó
+        if (node.isTextual()) {
+            return node.asText();
+        }
+        if (node.isNumber()) {
+            return String.valueOf(node.asLong());
+        }
+        if (node.isBoolean()) {
+            return String.valueOf(node.asBoolean());
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract question ID từ key (string) và optional value node
+     */
+    private Long extractQuestionIdFromKey(String key, JsonNode valueNode) {
+        try {
+            // Loại bỏ các prefix phổ biến
+            String cleanKey = key.toLowerCase()
+                    .replace("question_", "")
+                    .replace("question", "")
+                    .replace("q", "")
+                    .replace("item_", "")
+                    .replace("item", "")
+                    .replace("_", "")
+                    .trim();
+
+            // Nếu cleanKey là số
+            if (cleanKey.matches("\\d+")) {
+                return Long.parseLong(cleanKey);
+            }
+
+            // Nếu không phải số, thử parse phần số
+            String[] parts = cleanKey.split("[^\\d]+");
+            for (String part : parts) {
+                if (!part.isEmpty() && part.matches("\\d+")) {
+                    return Long.parseLong(part);
+                }
+            }
+
+            // Nếu có valueNode, thử extract từ đó
+            if (valueNode != null) {
+                Long questionId = extractQuestionId(valueNode);
+                if (questionId != null) {
+                    return questionId;
+                }
+            }
+
+            // Fallback: thử parse key trực tiếp
+            try {
+                return Long.parseLong(key);
+            } catch (NumberFormatException e2) {
+                // Nếu key không phải số, trả về null
+                return null;
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to extract questionId from key '{}': {}", key, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -540,20 +702,40 @@ public class MiniTestService {
 
         for (MiniTestSubmission sub : allSubmissions) {
             try {
-                JsonNode node = objectMapper.readTree(sub.getAnswers());
                 log.info("Submission ID: {}, User: {}, Lesson: {}, Status: {}",
                         sub.getId(), sub.getUserId(), sub.getLessonId(), sub.getStatus());
-                log.info("  JSON Type: isArray={}, isObject={}", node.isArray(), node.isObject());
-                log.info("  Answers preview: {}",
-                        sub.getAnswers().length() > 100 ? sub.getAnswers().substring(0, 100) + "..."
-                                : sub.getAnswers());
 
-                // Thử parse bằng method mới
-                List<MiniTestSubmissionDTO.AnswerDTO> parsed = parseAnswersJson(sub.getAnswers());
-                log.info("  Parsed answers count: {}", parsed.size());
+                if (sub.getAnswers() != null && !sub.getAnswers().isEmpty()) {
+                    try {
+                        JsonNode node = objectMapper.readTree(sub.getAnswers());
+                        log.info("  JSON Type: isArray={}, isObject={}, size={}",
+                                node.isArray(), node.isObject(), node.size());
+
+                        // Hiển thị preview
+                        String preview = sub.getAnswers().length() > 200
+                                ? sub.getAnswers().substring(0, 200) + "..."
+                                : sub.getAnswers();
+                        log.info("  Preview: {}", preview);
+
+                        // Thử parse bằng method mới
+                        List<MiniTestSubmissionDTO.AnswerDTO> parsed = parseAnswersJson(sub.getAnswers());
+                        log.info("  Parsed answers count: {}", parsed.size());
+
+                        if (!parsed.isEmpty()) {
+                            log.info("  Sample parsed answer: questionId={}, answer={}",
+                                    parsed.get(0).getQuestionId(), parsed.get(0).getUserAnswer());
+                        }
+
+                    } catch (Exception e) {
+                        log.error("  Error parsing JSON: {}", e.getMessage());
+                        log.info("  Raw answers: {}", sub.getAnswers());
+                    }
+                } else {
+                    log.info("  No answers data");
+                }
 
             } catch (Exception e) {
-                log.error("  Error parsing submission {}: {}", sub.getId(), e.getMessage());
+                log.error("  Error processing submission {}: {}", sub.getId(), e.getMessage());
             }
         }
         log.info("=== END DEBUG ===");
