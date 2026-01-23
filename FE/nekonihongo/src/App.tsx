@@ -48,7 +48,7 @@ function AppContent() {
 
   const handleNavigate = (
     page: string,
-    params?: { category?: string; level?: string }
+    params?: { category?: string; level?: string },
   ) => {
     setCurrentPage(page);
     setPageParams(params || null);
@@ -63,7 +63,7 @@ function AppContent() {
     if (metaDescription) {
       metaDescription.setAttribute(
         "content",
-        "Học tiếng Nhật theo phong cách kawaii dễ thương cùng mèo Neko! Từ vựng, Ngữ pháp, Kanji và Flashcard giúp bạn học hiệu quả hơn."
+        "Học tiếng Nhật theo phong cách kawaii dễ thương cùng mèo Neko! Từ vựng, Ngữ pháp, Kanji và Flashcard giúp bạn học hiệu quả hơn.",
       );
     } else {
       const meta = document.createElement("meta");
@@ -104,11 +104,12 @@ function AppContent() {
     return <SplashScreen onComplete={markSplashAsSeen} />;
   }
   const isMyPage = currentPage === "mypage" || currentPage === "admin";
+  const isUserMiniTestSubmissions = "user-mini-test-submissions";
   // 4. Đã thấy splash → vào app chính
   return (
     <div className="min-h-screen page-transition">
       {!isMyPage && <Background />}
-
+      {!isUserMiniTestSubmissions && <Background />}
       <div className="relative z-10 min-h-screen">
         {!isMyPage && (
           <Navigation currentPage={currentPage} onNavigate={handleNavigate} />

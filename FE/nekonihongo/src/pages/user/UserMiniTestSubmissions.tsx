@@ -1,4 +1,4 @@
-// UserMiniTestSubmissions.tsx - FIXED VERSION (Disable lesson details fetch)
+// src/pages/User/UserMiniTestSubmissions.tsx
 import { useState, useEffect } from "react";
 import api from "../../api/auth";
 import toast from "react-hot-toast";
@@ -11,9 +11,11 @@ import {
   FileText,
   AlertCircle,
   Search,
-  Filter,
   RefreshCw,
   MessageSquare,
+  Grid,
+  List,
+  BarChart,
 } from "lucide-react";
 
 interface Submission {
@@ -52,16 +54,8 @@ export function UserMiniTestSubmissions({
       setLoading(true);
       setDebugInfo("Đang tải dữ liệu...");
 
-      console.log("🔄 [DEBUG] Bắt đầu fetch submissions");
       const res = await api.get("/user/mini-test/submissions");
 
-      console.log("✅ [DEBUG] API Response status:", res.status);
-      console.log(
-        "📦 [DEBUG] Full response data:",
-        JSON.stringify(res.data, null, 2),
-      );
-
-      // Xử lý response
       let rawData: any[] = [];
 
       if (Array.isArray(res.data)) {
@@ -71,7 +65,6 @@ export function UserMiniTestSubmissions({
       } else if (res.data?.success && Array.isArray(res.data.data)) {
         rawData = res.data.data;
       } else if (res.data && typeof res.data === "object") {
-        // Thử tìm array trong object
         const keys = Object.keys(res.data);
         const arrayKey = keys.find((key) => Array.isArray(res.data[key]));
         if (arrayKey) {
@@ -81,50 +74,11 @@ export function UserMiniTestSubmissions({
         }
       }
 
-      console.log("📊 [DEBUG] Raw data items:", rawData.length);
-      console.log(
-        "📊 [DEBUG] First raw item:",
-        rawData[0] ? JSON.stringify(rawData[0], null, 2) : "No data",
-      );
-
-      // Đặc biệt kiểm tra answers field
-      if (rawData.length > 0 && rawData[0].answers) {
-        console.log(
-          "🔍 [DEBUG] Answers field type:",
-          typeof rawData[0].answers,
-        );
-        console.log("🔍 [DEBUG] Answers field value:", rawData[0].answers);
-
-        // Kiểm tra xem có phải là string JSON không
-        if (typeof rawData[0].answers === "string") {
-          console.log("🔍 [DEBUG] Answers is a string, trying to parse...");
-          try {
-            const parsed = JSON.parse(rawData[0].answers);
-            console.log("🔍 [DEBUG] Parsed answers:", parsed);
-            console.log("🔍 [DEBUG] Parsed type:", typeof parsed);
-            console.log("🔍 [DEBUG] Is array?", Array.isArray(parsed));
-          } catch (e) {
-            console.error("🔍 [DEBUG] Failed to parse answers string:", e);
-          }
-        }
-      }
-
-      // Normalize dữ liệu với xử lý đặc biệt cho answers
       const normalized = rawData
         .map((s: any, index: number) => {
-          console.log(`📝 [DEBUG] Processing submission ${s.id || index}:`, {
-            id: s.id,
-            lessonId: s.lesson_id || s.lessonId,
-            answers: s.answers,
-            answersType: typeof s.answers,
-            answersLength: Array.isArray(s.answers) ? s.answers.length : "N/A",
-          });
-
-          // Xử lý answers - QUAN TRỌNG: Backend có thể trả về string JSON
           let answers: { question_id: number; user_answer: string }[] = [];
 
           if (s.answers) {
-            // Case 1: Nếu answers là array
             if (Array.isArray(s.answers)) {
               answers = s.answers
                 .filter((ans: any) => ans != null)
@@ -139,22 +93,10 @@ export function UserMiniTestSubmissions({
                   ),
                 }))
                 .filter((ans: { question_id: number }) => ans.question_id > 0);
-            }
-            // Case 2: Nếu answers là string JSON
-            else if (typeof s.answers === "string") {
-              console.log(
-                `🔄 [DEBUG] Submission ${s.id}: Parsing answers as JSON string`,
-              );
-              console.log(
-                `🔄 [DEBUG] Answers string:`,
-                s.answers.substring(0, 200) +
-                  (s.answers.length > 200 ? "..." : ""),
-              );
-
+            } else if (typeof s.answers === "string") {
               try {
                 const parsed = JSON.parse(s.answers);
 
-                // Nếu parsed là array
                 if (Array.isArray(parsed)) {
                   answers = parsed
                     .filter((ans: any) => ans != null)
@@ -167,19 +109,13 @@ export function UserMiniTestSubmissions({
                       ),
                     }))
                     .filter((ans) => ans.question_id > 0);
-                }
-                // Nếu parsed là object (key-value format)
-                else if (typeof parsed === "object" && parsed !== null) {
-                  console.log(
-                    `🔄 [DEBUG] Submission ${s.id}: Parsed as object, converting to array`,
-                  );
+                } else if (typeof parsed === "object" && parsed !== null) {
                   answers = Object.entries(parsed)
                     .map(([key, value]: [string, any]) => {
                       let questionId = 0;
                       let userAnswer = "";
 
                       if (value && typeof value === "object") {
-                        // Format: {"1": {"question_id": 1, "user_answer": "A"}}
                         questionId = Number(
                           value.question_id ||
                             value.questionId ||
@@ -192,7 +128,6 @@ export function UserMiniTestSubmissions({
                             "",
                         );
                       } else {
-                        // Format: {"1": "A"} hoặc {"question_1": "A"}
                         questionId = Number(
                           key.replace("question_", "").replace("q", ""),
                         );
@@ -207,18 +142,9 @@ export function UserMiniTestSubmissions({
                     .filter((ans) => ans.question_id > 0);
                 }
               } catch (parseError) {
-                console.error(
-                  `❌ [DEBUG] Error parsing JSON string for submission ${s.id}:`,
-                  parseError,
-                );
-                console.error(`❌ [DEBUG] Problematic JSON string:`, s.answers);
+                console.error("Error parsing JSON string:", parseError);
               }
-            }
-            // Case 3: Nếu answers là object trực tiếp
-            else if (typeof s.answers === "object" && s.answers !== null) {
-              console.log(
-                `🔄 [DEBUG] Submission ${s.id}: Answers is object, converting to array`,
-              );
+            } else if (typeof s.answers === "object" && s.answers !== null) {
               answers = Object.entries(s.answers)
                 .map(([key, value]: [string, any]) => {
                   let questionId = 0;
@@ -252,14 +178,6 @@ export function UserMiniTestSubmissions({
             }
           }
 
-          console.log(
-            `📊 [DEBUG] Submission ${s.id}: Parsed ${answers.length} answers`,
-          );
-          if (answers.length > 0) {
-            console.log(`📊 [DEBUG] Sample answer:`, answers[0]);
-          }
-
-          // Xác định lesson_title - Sử dụng fallback nếu không có
           let lessonTitle =
             s.lesson_title ||
             s.lesson?.title ||
@@ -290,59 +208,26 @@ export function UserMiniTestSubmissions({
             time_spent: s.time_spent || s.timeSpent || undefined,
           };
 
-          console.log(`✅ [DEBUG] Final submission ${submission.id}:`, {
-            id: submission.id,
-            lesson_id: submission.lesson_id,
-            lesson_title: submission.lesson_title,
-            answers_count: submission.answers.length,
-            status: submission.status,
-            has_feedback: !!submission.feedback,
-          });
-
           return submission;
         })
         .filter((s) => s.lesson_id > 0 && s.id > 0);
 
-      console.log(
-        "🎉 [DEBUG] Total submissions after normalization:",
-        normalized.length,
-      );
-
-      if (normalized.length > 0) {
-        console.log("🎉 [DEBUG] First normalized submission details:");
-        const firstSub = normalized[0];
-        console.log("  ID:", firstSub.id);
-        console.log("  Lesson ID:", firstSub.lesson_id);
-        console.log("  Lesson Title:", firstSub.lesson_title);
-        console.log("  Answers count:", firstSub.answers.length);
-        console.log("  Status:", firstSub.status);
-        console.log("  First 3 answers:", firstSub.answers.slice(0, 3));
-      }
-
       setDebugInfo(`Đã tải ${normalized.length} bài nộp`);
       setSubmissions(normalized);
     } catch (err: any) {
-      console.error("❌ [DEBUG] Error fetching submissions:", err);
+      console.error("Error fetching submissions:", err);
 
       if (err.response) {
-        console.error("❌ [DEBUG] Response error:", {
-          status: err.response.status,
-          data: err.response.data,
-        });
         setDebugInfo(`Lỗi ${err.response.status}`);
-
-        // Hiển thị thông báo lỗi cụ thể
         if (err.response.status === 404) {
           toast.error("Không tìm thấy endpoint!");
         } else if (err.response.status === 500) {
           toast.error("Lỗi server. Vui lòng thử lại sau!");
         }
       } else if (err.request) {
-        console.error("❌ [DEBUG] No response:", err.request);
         setDebugInfo("Không nhận được phản hồi");
         toast.error("Không thể kết nối đến server!");
       } else {
-        console.error("❌ [DEBUG] Setup error:", err.message);
         setDebugInfo(`Lỗi: ${err.message}`);
         toast.error("Lỗi kết nối!");
       }
@@ -367,13 +252,12 @@ export function UserMiniTestSubmissions({
     if (!confirm("Bạn có chắc muốn xóa bài nộp này?")) return;
 
     try {
-      console.log("🗑️ [DEBUG] Deleting submission:", id);
       await api.delete(`/user/mini-test/submission/${id}`);
       toast.success("Đã xóa bài nộp!");
       fetchSubmissions();
       if (selected?.id === id) setSelected(null);
     } catch (error) {
-      console.error("❌ [DEBUG] Delete error:", error);
+      console.error("Delete error:", error);
       toast.error("Xóa thất bại!");
     }
   };
@@ -382,11 +266,11 @@ export function UserMiniTestSubmissions({
     switch (status) {
       case "feedbacked":
       case "reviewed":
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="status-icon status-icon--checked" />;
       case "pending":
-        return <Clock className="w-5 h-5 text-orange-500" />;
+        return <Clock className="status-icon status-icon--pending" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="status-icon status-icon--unknown" />;
     }
   };
 
@@ -420,141 +304,68 @@ export function UserMiniTestSubmissions({
     }
   };
 
-  // Hàm để test backend response
-  const testBackendResponse = async () => {
-    console.log("🧪 [TEST] Testing backend response format...");
-    try {
-      const testRes = await api.get("/user/mini-test/submissions");
-      console.log("🧪 [TEST] Response structure:", Object.keys(testRes.data));
-      console.log(
-        "🧪 [TEST] Full response:",
-        JSON.stringify(testRes.data, null, 2),
-      );
-
-      if (testRes.data?.data?.[0]?.answers) {
-        const answers = testRes.data.data[0].answers;
-        console.log("🧪 [TEST] Answers type:", typeof answers);
-        console.log("🧪 [TEST] Answers value:", answers);
-
-        if (typeof answers === "string") {
-          console.log("🧪 [TEST] Answers is string, trying to parse...");
-          try {
-            const parsed = JSON.parse(answers);
-            console.log("🧪 [TEST] Parsed successfully:", parsed);
-            console.log("🧪 [TEST] Parsed type:", typeof parsed);
-            console.log("🧪 [TEST] Is array?", Array.isArray(parsed));
-          } catch (e) {
-            console.error("🧪 [TEST] Parse failed:", e);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("🧪 [TEST] Error:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="text-xl text-purple-600 mt-4">Đang tải bài nộp...</p>
-          {debugInfo && (
-            <p className="text-sm text-gray-500 mt-2">{debugInfo}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
+    <div className="submissions-container">
+      <div className="submissions-wrapper">
+        {/* Header Section */}
+        <div className="submissions-header">
+          <div className="submissions-header-content">
             <button
               onClick={() => onNavigate("user")}
-              className="p-2 bg-white rounded-full shadow hover:shadow-md transition"
+              className="submissions-back-button"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
+              <ChevronLeft />
             </button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-800">
-                Bài Mini Test của tôi
-              </h1>
-              <p className="text-gray-600 mt-1">
+            <div className="submissions-title-section">
+              <h1 className="submissions-main-title">Bài Mini Test của tôi</h1>
+              <p className="submissions-subtitle">
                 Quản lý và xem kết quả các bài test đã làm
               </p>
-              <div className="mt-2 flex items-center gap-3">
-                {debugInfo && (
-                  <div className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded">
-                    {debugInfo}
-                  </div>
-                )}
-                <button
-                  onClick={testBackendResponse}
-                  className="text-xs text-blue-500 hover:text-blue-700"
-                >
-                  [Test Backend]
-                </button>
-                <button
-                  onClick={() =>
-                    console.log("📊 [DEBUG] Current submissions:", submissions)
-                  }
-                  className="text-xs text-purple-500 hover:text-purple-700"
-                >
-                  [Xem Data]
-                </button>
-              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="submissions-view-toggle">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg ${viewMode === "grid" ? "bg-purple-100 text-purple-600" : "bg-white text-gray-600"}`}
+                className={`view-toggle-button ${viewMode === "grid" ? "view-toggle-button--active" : ""}`}
               >
+                <Grid />
                 Grid
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg ${viewMode === "list" ? "bg-purple-100 text-purple-600" : "bg-white text-gray-600"}`}
+                className={`view-toggle-button ${viewMode === "list" ? "view-toggle-button--active" : ""}`}
               >
+                <List />
                 List
               </button>
             </div>
           </div>
 
-          {/* Filters & Search */}
-          <div className="bg-white rounded-xl p-4 shadow mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm bài học..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
+          {/* Search and Filter Section */}
+          <div className="submissions-filter-section">
+            <div className="filter-section-content">
+              <div className="search-container">
+                <Search className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm bài học..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
               </div>
-              <div className="flex gap-2">
+              <div className="filter-controls">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2 border rounded-lg bg-white"
+                  className="status-filter"
                 >
                   <option value="all">Tất cả trạng thái</option>
                   <option value="pending">Chờ chấm</option>
                   <option value="feedbacked">Đã chấm</option>
                   <option value="reviewed">Đã xem xét</option>
                 </select>
-                <button
-                  onClick={fetchSubmissions}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
+                <button onClick={fetchSubmissions} className="refresh-button">
+                  <RefreshCw />
                   Làm mới
                 </button>
               </div>
@@ -562,293 +373,310 @@ export function UserMiniTestSubmissions({
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow">
-            <div className="text-3xl font-bold text-purple-600">
-              {submissions.length}
-            </div>
-            <div className="text-gray-600">Tổng bài nộp</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow">
-            <div className="text-3xl font-bold text-green-600">
-              {
-                submissions.filter(
-                  (s) => s.status === "feedbacked" || s.status === "reviewed",
-                ).length
-              }
-            </div>
-            <div className="text-gray-600">Đã chấm</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow">
-            <div className="text-3xl font-bold text-orange-600">
-              {submissions.filter((s) => s.status === "pending").length}
-            </div>
-            <div className="text-gray-600">Chờ chấm</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow">
-            <div className="text-3xl font-bold text-blue-600">
-              {submissions.filter((s) => s.score).length > 0
-                ? (
-                    submissions.reduce((acc, s) => acc + (s.score || 0), 0) /
-                    submissions.filter((s) => s.score).length
-                  ).toFixed(1)
-                : "0"}
-            </div>
-            <div className="text-gray-600">Điểm trung bình</div>
-          </div>
-        </div>
-
-        {/* Submissions List/Grid */}
-        {filteredSubmissions.length === 0 ? (
-          <div className="text-center py-20">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-xl text-gray-600">Không tìm thấy bài nộp nào</p>
-            <p className="text-gray-500 mt-2">
-              {searchTerm
-                ? "Thử tìm kiếm với từ khóa khác"
-                : submissions.length === 0
-                  ? "Bạn chưa có bài nộp nào. Hãy làm bài test để bắt đầu!"
-                  : "Không có bài nộp nào phù hợp với bộ lọc"}
-            </p>
-            <button
-              onClick={fetchSubmissions}
-              className="mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Thử tải lại
-            </button>
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSubmissions.map((sub) => (
-              <div
-                key={sub.id}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <span className="inline-block px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
-                        Bài {sub.lesson_id}
-                      </span>
-                      <h3 className="text-xl font-bold text-gray-800 mt-2">
-                        {sub.lesson_title}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(sub.status)}
-                      <span className="text-sm font-medium">
-                        {getStatusText(sub.status)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Ngày nộp:</span>
-                      <span className="font-medium">
-                        {formatDate(sub.submitted_at)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Số câu:</span>
-                      <span className="font-medium">{sub.total_questions}</span>
-                    </div>
-                    {sub.time_spent && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Thời gian:</span>
-                        <span className="font-medium">
-                          {Math.floor(sub.time_spent / 60)}:
-                          {String(sub.time_spent % 60).padStart(2, "0")}
-                        </span>
-                      </div>
-                    )}
-                    {sub.score !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Điểm:</span>
-                        <span
-                          className={`font-bold ${sub.score >= 5 ? "text-green-600" : "text-red-600"}`}
-                        >
-                          {sub.score}/{sub.total_questions}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelected(sub)}
-                      className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Xem chi tiết ({sub.answers.length} câu)
-                    </button>
-                    <button
-                      onClick={() => handleDelete(sub.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                      title="Xóa bài nộp"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Loading State */}
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">Đang tải bài nộp...</p>
+            {debugInfo && <p className="loading-debug">{debugInfo}</p>}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left">Bài học</th>
-                  <th className="px-6 py-3 text-left">Trạng thái</th>
-                  <th className="px-6 py-3 text-left">Điểm</th>
-                  <th className="px-6 py-3 text-left">Ngày nộp</th>
-                  <th className="px-6 py-3 text-left">Số câu</th>
-                  <th className="px-6 py-3 text-left">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+          <>
+            {/* Stats Cards */}
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon-wrapper stat-icon--total">
+                  <FileText className="stat-icon" />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-value">{submissions.length}</div>
+                  <div className="stat-label">Tổng bài nộp</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper stat-icon--graded">
+                  <CheckCircle className="stat-icon" />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-value">
+                    {
+                      submissions.filter(
+                        (s) =>
+                          s.status === "feedbacked" || s.status === "reviewed",
+                      ).length
+                    }
+                  </div>
+                  <div className="stat-label">Đã chấm</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper stat-icon--pending">
+                  <Clock className="stat-icon" />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-value">
+                    {submissions.filter((s) => s.status === "pending").length}
+                  </div>
+                  <div className="stat-label">Chờ chấm</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper stat-icon--average">
+                  <BarChart className="stat-icon" />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-value">
+                    {submissions.filter((s) => s.score).length > 0
+                      ? (
+                          submissions.reduce(
+                            (acc, s) => acc + (s.score || 0),
+                            0,
+                          ) / submissions.filter((s) => s.score).length
+                        ).toFixed(1)
+                      : "0.0"}
+                  </div>
+                  <div className="stat-label">Điểm TB</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submissions Content */}
+            {filteredSubmissions.length === 0 ? (
+              <div className="empty-state">
+                <FileText className="empty-state-icon" />
+                <p className="empty-state-title">Không tìm thấy bài nộp nào</p>
+                <p className="empty-state-description">
+                  {searchTerm
+                    ? "Thử tìm kiếm với từ khóa khác"
+                    : submissions.length === 0
+                      ? "Bạn chưa có bài nộp nào. Hãy làm bài test để bắt đầu!"
+                      : "Không có bài nộp nào phù hợp với bộ lọc"}
+                </p>
+                <button
+                  onClick={fetchSubmissions}
+                  className="empty-state-button"
+                >
+                  Thử tải lại
+                </button>
+              </div>
+            ) : viewMode === "grid" ? (
+              <div className="submissions-grid">
                 {filteredSubmissions.map((sub) => (
-                  <tr key={sub.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium">Bài {sub.lesson_id}</div>
-                        <div className="text-sm text-gray-600">
-                          {sub.lesson_title}
+                  <div key={sub.id} className="submission-card">
+                    <div className="submission-card-content">
+                      <div className="submission-header">
+                        <div className="submission-title-section">
+                          <span className="lesson-badge">
+                            Bài {sub.lesson_id}
+                          </span>
+                          <h3 className="lesson-title">{sub.lesson_title}</h3>
+                        </div>
+                        <div className="submission-status">
+                          {getStatusIcon(sub.status)}
+                          <span className="status-text">
+                            {getStatusText(sub.status)}
+                          </span>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(sub.status)}
-                        {getStatusText(sub.status)}
+
+                      <div className="submission-details">
+                        <div className="detail-row">
+                          <span className="detail-label">Ngày nộp:</span>
+                          <span className="detail-value">
+                            {formatDate(sub.submitted_at)}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Số câu:</span>
+                          <span className="detail-value">
+                            {sub.total_questions}
+                          </span>
+                        </div>
+                        {sub.time_spent && (
+                          <div className="detail-row">
+                            <span className="detail-label">Thời gian:</span>
+                            <span className="detail-value">
+                              {Math.floor(sub.time_spent / 60)}:
+                              {String(sub.time_spent % 60).padStart(2, "0")}
+                            </span>
+                          </div>
+                        )}
+                        {sub.score !== undefined && (
+                          <div className="detail-row">
+                            <span className="detail-label">Điểm:</span>
+                            <span
+                              className={`score-value ${sub.score >= 5 ? "score-pass" : "score-fail"}`}
+                            >
+                              {sub.score}/{sub.total_questions}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {sub.score !== undefined ? (
-                        <span
-                          className={`font-bold ${sub.score >= 5 ? "text-green-600" : "text-red-600"}`}
-                        >
-                          {sub.score}/{sub.total_questions}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">--</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {formatDate(sub.submitted_at)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium">{sub.answers.length}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
+
+                      <div className="submission-actions">
                         <button
                           onClick={() => setSelected(sub)}
-                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                          className="view-detail-button"
                         >
-                          Xem
+                          <Eye />
+                          Xem chi tiết ({sub.answers.length} câu)
                         </button>
                         <button
                           onClick={() => handleDelete(sub.id)}
-                          className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          className="delete-button"
+                          title="Xóa bài nộp"
                         >
-                          Xóa
+                          <Trash2 />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            ) : (
+              <div className="submissions-table-container">
+                <table className="submissions-table">
+                  <thead className="table-header">
+                    <tr>
+                      <th className="table-header-cell">Bài học</th>
+                      <th className="table-header-cell">Trạng thái</th>
+                      <th className="table-header-cell">Điểm</th>
+                      <th className="table-header-cell">Ngày nộp</th>
+                      <th className="table-header-cell">Số câu</th>
+                      <th className="table-header-cell">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="table-body">
+                    {filteredSubmissions.map((sub) => (
+                      <tr key={sub.id} className="table-row">
+                        <td className="table-cell">
+                          <div className="lesson-cell">
+                            <div className="lesson-number">
+                              Bài {sub.lesson_id}
+                            </div>
+                            <div className="lesson-name">
+                              {sub.lesson_title}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <div className="status-cell">
+                            {getStatusIcon(sub.status)}
+                            {getStatusText(sub.status)}
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          {sub.score !== undefined ? (
+                            <span
+                              className={`table-score ${sub.score >= 5 ? "score-pass" : "score-fail"}`}
+                            >
+                              {sub.score}/{sub.total_questions}
+                            </span>
+                          ) : (
+                            <span className="no-score">--</span>
+                          )}
+                        </td>
+                        <td className="table-cell">
+                          {formatDate(sub.submitted_at)}
+                        </td>
+                        <td className="table-cell">
+                          <span className="answer-count">
+                            {sub.answers.length}
+                          </span>
+                        </td>
+                        <td className="table-cell">
+                          <div className="action-buttons">
+                            <button
+                              onClick={() => setSelected(sub)}
+                              className="view-button"
+                            >
+                              Xem
+                            </button>
+                            <button
+                              onClick={() => handleDelete(sub.id)}
+                              className="delete-table-button"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Detail Modal */}
       {selected && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold">
-                    Bài {selected.lesson_id}: {selected.lesson_title}
-                  </h2>
-                  <div className="text-gray-600 space-y-1 mt-2">
-                    <p>Nộp ngày: {formatDate(selected.submitted_at)}</p>
-                    {selected.time_spent && (
-                      <p>
-                        Thời gian làm bài:{" "}
-                        {Math.floor(selected.time_spent / 60)} phút{" "}
-                        {selected.time_spent % 60} giây
-                      </p>
-                    )}
-                    <p>Trạng thái: {getStatusText(selected.status)}</p>
-                  </div>
+        <div className="detail-modal-overlay">
+          <div className="detail-modal">
+            <div className="modal-header">
+              <div className="modal-title-section">
+                <h2 className="modal-title">
+                  Bài {selected.lesson_id}: {selected.lesson_title}
+                </h2>
+                <div className="modal-subtitle">
+                  <p>Nộp ngày: {formatDate(selected.submitted_at)}</p>
+                  {selected.time_spent && (
+                    <p>
+                      Thời gian làm bài: {Math.floor(selected.time_spent / 60)}{" "}
+                      phút {selected.time_spent % 60} giây
+                    </p>
+                  )}
+                  <p>Trạng thái: {getStatusText(selected.status)}</p>
                 </div>
-                <button
-                  onClick={() => setSelected(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
-                >
-                  ✕
-                </button>
               </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="modal-close-button"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="p-6">
-              {/* Answers */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">Câu trả lời của bạn</h3>
-                  <span className="text-sm text-gray-500">
+            <div className="modal-content">
+              {/* Answers Section */}
+              <div className="answers-section">
+                <div className="section-header">
+                  <h3 className="section-title">Câu trả lời của bạn</h3>
+                  <span className="section-count">
                     {selected.answers.length} câu hỏi
                   </span>
                 </div>
                 {selected.answers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-                    <AlertCircle className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <div className="empty-answers">
+                    <AlertCircle className="empty-answers-icon" />
                     <p>Không có câu trả lời nào được ghi nhận</p>
-                    <p className="text-sm mt-1">Có thể do:</p>
-                    <ul className="text-xs text-gray-400 mt-1 text-left max-w-md mx-auto">
+                    <p className="empty-notes">Có thể do:</p>
+                    <ul className="empty-reasons">
                       <li>• Backend chưa xử lý đúng dữ liệu answers</li>
                       <li>• Dữ liệu answers trong database bị lỗi</li>
                       <li>• Frontend không parse được format của answers</li>
                     </ul>
-                    <button
-                      onClick={() =>
-                        console.log(
-                          "🔍 [DEBUG] Selected submission raw:",
-                          selected,
-                        )
-                      }
-                      className="mt-3 text-sm text-blue-500 hover:text-blue-700"
-                    >
-                      [Xem debug data]
-                    </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="answers-list">
                     {selected.answers.map((answer, index) => (
-                      <div
-                        key={index}
-                        className="border rounded-lg p-4 hover:bg-gray-50 transition"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-purple-600">
+                      <div key={index} className="answer-item">
+                        <div className="answer-header">
+                          <div className="answer-info">
+                            <span className="question-number">
                               Câu {answer.question_id}
                             </span>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                              #{index + 1}
-                            </span>
+                            <span className="question-index">#{index + 1}</span>
                           </div>
-                          <span className="text-xs text-gray-400">
+                          <span className="question-id">
                             ID: {answer.question_id}
                           </span>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded font-mono text-sm">
+                        <div className="answer-content">
                           {answer.user_answer || "(Không có câu trả lời)"}
                         </div>
                       </div>
@@ -857,56 +685,44 @@ export function UserMiniTestSubmissions({
                 )}
               </div>
 
-              {/* Feedback */}
+              {/* Feedback Section */}
               {selected.feedback && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4">
-                    Phản hồi từ giáo viên
-                  </h3>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <MessageSquare className="w-5 h-5 text-blue-500 mt-1" />
-                      <div className="flex-1">
+                <div className="feedback-section">
+                  <h3 className="section-title">Phản hồi từ giáo viên</h3>
+                  <div className="feedback-content">
+                    <div className="feedback-header">
+                      <MessageSquare className="feedback-icon" />
+                      <div className="feedback-details">
                         {selected.feedback_at && (
-                          <p className="text-sm text-blue-700 mb-2">
+                          <p className="feedback-date">
                             Ngày feedback: {formatDate(selected.feedback_at)}
                           </p>
                         )}
-                        <div className="text-gray-700 whitespace-pre-wrap bg-white p-3 rounded border">
-                          {selected.feedback}
-                        </div>
+                        <div className="feedback-text">{selected.feedback}</div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex justify-between pt-6 border-t">
-                <div className="flex gap-3">
+              {/* Actions Section */}
+              <div className="modal-actions">
+                <div className="action-buttons-group">
                   <button
                     onClick={() => {
                       if (confirm("Bạn có chắc muốn xóa bài nộp này?")) {
                         handleDelete(selected.id);
                       }
                     }}
-                    className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center gap-2"
+                    className="modal-delete-button"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 />
                     Xóa bài nộp
-                  </button>
-                  <button
-                    onClick={() =>
-                      console.log("🔍 [DEBUG] Full submission data:", selected)
-                    }
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm border"
-                  >
-                    Debug Data
                   </button>
                 </div>
                 <button
                   onClick={() => setSelected(null)}
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  className="modal-close-action"
                 >
                   Đóng
                 </button>
@@ -915,6 +731,1328 @@ export function UserMiniTestSubmissions({
           </div>
         </div>
       )}
+
+      <style>{`
+        /* Global Styles */
+        .submissions-container {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          padding: 1rem;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .submissions-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        /* Loading State */
+        .loading-state {
+          text-align: center;
+          padding: 6rem 2rem;
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          animation: fadeIn 0.6s ease;
+        }
+
+        .loading-spinner {
+          width: 60px;
+          height: 60px;
+          border: 4px solid #e5e7eb;
+          border-top-color: #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 2rem;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+          font-size: 1.25rem;
+          color: #4b5563;
+          margin-bottom: 1rem;
+          font-weight: 600;
+        }
+
+        .loading-debug {
+          color: #9ca3af;
+          font-size: 0.875rem;
+          font-family: 'SF Mono', monospace;
+          background: #f3f4f6;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          display: inline-block;
+        }
+
+        /* Header Section */
+        .submissions-header {
+          margin-bottom: 2rem;
+          animation: fadeIn 0.6s ease;
+        }
+
+        .submissions-header-content {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .submissions-back-button {
+          padding: 0.75rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .submissions-back-button:hover {
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px) scale(1.05);
+        }
+
+        .submissions-back-button svg {
+          width: 24px;
+          height: 24px;
+          color: #4b5563;
+          transition: color 0.3s ease;
+        }
+
+        .submissions-back-button:hover svg {
+          color: #7c3aed;
+        }
+
+        .submissions-title-section {
+          flex: 1;
+          min-width: 300px;
+        }
+
+        .submissions-main-title {
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: #1f2937;
+          margin-bottom: 0.5rem;
+          line-height: 1.2;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .submissions-subtitle {
+          color: #6b7280;
+          font-size: 1rem;
+          font-weight: 500;
+        }
+
+        .submissions-view-toggle {
+          display: flex;
+          gap: 0.5rem;
+          background: white;
+          padding: 0.25rem;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .view-toggle-button {
+          padding: 0.75rem 1.25rem;
+          border-radius: 8px;
+          border: none;
+          background: transparent;
+          color: #6b7280;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .view-toggle-button:hover {
+          background: #f3f4f6;
+          transform: translateY(-1px);
+        }
+
+        .view-toggle-button--active {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .view-toggle-button svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        /* Filter Section */
+        .submissions-filter-section {
+          background: white;
+          border-radius: 16px;
+          padding: 1.5rem;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          margin-bottom: 1.5rem;
+          animation: slideUp 0.7s ease;
+        }
+
+        .filter-section-content {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+          .filter-section-content {
+            flex-direction: row;
+            align-items: center;
+          }
+        }
+
+        .search-container {
+          position: relative;
+          flex: 1;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 20px;
+          height: 20px;
+          color: #9ca3af;
+          z-index: 2;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 0.875rem 1rem 0.875rem 3rem;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 0.9375rem;
+          outline: none;
+          transition: all 0.3s ease;
+          background: #f9fafb;
+        }
+
+        .search-input:focus {
+          border-color: #7c3aed;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        .filter-controls {
+          display: flex;
+          gap: 0.75rem;
+        }
+
+        .status-filter {
+          padding: 0.875rem 1rem;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          background: #f9fafb;
+          font-size: 0.9375rem;
+          color: #374151;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          min-width: 160px;
+        }
+
+        .status-filter:focus {
+          outline: none;
+          border-color: #7c3aed;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        .refresh-button {
+          padding: 0.875rem 1.5rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .refresh-button:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-button:active {
+          transform: translateY(0);
+        }
+
+        .refresh-button svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(1, 1fr);
+          gap: 1.25rem;
+          margin-bottom: 2rem;
+          animation: slideUp 0.8s ease;
+        }
+
+        @media (min-width: 640px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        .stat-card {
+          background: white;
+          border-radius: 16px;
+          padding: 1.75rem;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stat-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-card:hover::before {
+          opacity: 1;
+        }
+
+        .stat-card:nth-child(1) { --gradient-start: #667eea; --gradient-end: #764ba2; }
+        .stat-card:nth-child(2) { --gradient-start: #10b981; --gradient-end: #059669; }
+        .stat-card:nth-child(3) { --gradient-start: #f59e0b; --gradient-end: #d97706; }
+        .stat-card:nth-child(4) { --gradient-start: #3b82f6; --gradient-end: #1d4ed8; }
+
+        .stat-icon-wrapper {
+          width: 60px;
+          height: 60px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-icon-wrapper {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        .stat-icon--total {
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+          color: #667eea;
+        }
+
+        .stat-icon--graded {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+          color: #10b981;
+        }
+
+        .stat-icon--pending {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+          color: #f59e0b;
+        }
+
+        .stat-icon--average {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(29, 78, 216, 0.15));
+          color: #3b82f6;
+        }
+
+        .stat-icon {
+          width: 28px;
+          height: 28px;
+        }
+
+        .stat-content {
+          flex: 1;
+        }
+
+        .stat-value {
+          font-size: 2.25rem;
+          font-weight: 800;
+          line-height: 1;
+          margin-bottom: 0.375rem;
+          font-feature-settings: "tnum";
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-value {
+          transform: translateY(-2px);
+        }
+
+        .stat-icon--total + .stat-content .stat-value { color: #667eea; }
+        .stat-icon--graded + .stat-content .stat-value { color: #10b981; }
+        .stat-icon--pending + .stat-content .stat-value { color: #f59e0b; }
+        .stat-icon--average + .stat-content .stat-value { color: #3b82f6; }
+
+        .stat-label {
+          color: #6b7280;
+          font-size: 0.9375rem;
+          font-weight: 500;
+          letter-spacing: 0.3px;
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 4rem 2rem;
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          animation: fadeIn 0.9s ease;
+        }
+
+        .empty-state-icon {
+          width: 80px;
+          height: 80px;
+          color: #e5e7eb;
+          margin: 0 auto 1.5rem;
+          animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+
+        .empty-state-title {
+          font-size: 1.5rem;
+          color: #4b5563;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+        }
+
+        .empty-state-description {
+          color: #9ca3af;
+          font-size: 1rem;
+          max-width: 400px;
+          margin: 0 auto 2rem;
+          line-height: 1.5;
+        }
+
+        .empty-state-button {
+          padding: 1rem 2rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          font-size: 1rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .empty-state-button:hover {
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Grid View */
+        .submissions-grid {
+          display: grid;
+          grid-template-columns: repeat(1, 1fr);
+          gap: 1.75rem;
+          animation: fadeIn 1s ease;
+        }
+
+        @media (min-width: 768px) {
+          .submissions-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 1200px) {
+          .submissions-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        .submission-card {
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          border: 2px solid transparent;
+        }
+
+        .submission-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 5px;
+          background: linear-gradient(90deg, #667eea, #764ba2);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .submission-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+          border-color: #e5e7eb;
+        }
+
+        .submission-card:hover::before {
+          opacity: 1;
+        }
+
+        .submission-card-content {
+          padding: 1.75rem;
+        }
+
+        .submission-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 1.25rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #f3f4f6;
+        }
+
+        .submission-title-section {
+          flex: 1;
+          padding-right: 1rem;
+        }
+
+        .lesson-badge {
+          display: inline-block;
+          padding: 0.375rem 1rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 20px;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .lesson-title {
+          font-size: 1.375rem;
+          font-weight: 700;
+          color: #1f2937;
+          margin-top: 0.75rem;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .submission-status {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.375rem;
+        }
+
+        .status-icon {
+          width: 24px;
+          height: 24px;
+        }
+
+        .status-icon--checked {
+          color: #10b981;
+        }
+
+        .status-icon--pending {
+          color: #f59e0b;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+
+        .status-icon--unknown {
+          color: #6b7280;
+        }
+
+        .status-text {
+          font-size: 0.8125rem;
+          font-weight: 600;
+          white-space: nowrap;
+          padding: 0.25rem 0.75rem;
+          border-radius: 6px;
+          background: #f9fafb;
+        }
+
+        .status-icon--checked + .status-text { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .status-icon--pending + .status-text { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .status-icon--unknown + .status-text { background: #f3f4f6; color: #6b7280; }
+
+        .submission-details {
+          margin-bottom: 1.75rem;
+        }
+
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+          padding: 0.5rem 0;
+          transition: all 0.2s ease;
+        }
+
+        .detail-row:hover {
+          background: #f9fafb;
+          padding: 0.5rem;
+          border-radius: 8px;
+        }
+
+        .detail-label {
+          color: #6b7280;
+          font-size: 0.9375rem;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .detail-label::before {
+          content: '•';
+          color: #9ca3af;
+        }
+
+        .detail-value {
+          font-weight: 600;
+          font-size: 0.9375rem;
+          color: #374151;
+        }
+
+        .score-value {
+          font-weight: 800;
+          font-size: 1rem;
+          padding: 0.25rem 0.75rem;
+          border-radius: 6px;
+          transition: all 0.3s ease;
+        }
+
+        .score-pass {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+        }
+
+        .score-fail {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+        }
+
+        .submission-actions {
+          display: flex;
+          gap: 0.75rem;
+        }
+
+        .view-detail-button {
+          flex: 1;
+          padding: 1rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .view-detail-button:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .view-detail-button:active {
+          transform: translateY(0);
+        }
+
+        .view-detail-button svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .delete-button {
+          padding: 1rem;
+          color: #ef4444;
+          background: transparent;
+          border: 2px solid #fecaca;
+          cursor: pointer;
+          border-radius: 12px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .delete-button:hover {
+          background: #fef2f2;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .delete-button svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        /* Table View */
+        .submissions-table-container {
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          overflow: hidden;
+          animation: fadeIn 1s ease;
+        }
+
+        .submissions-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .table-header {
+          background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        }
+
+        .table-header-cell {
+          padding: 1.25rem 1.75rem;
+          text-align: left;
+          font-size: 0.875rem;
+          font-weight: 700;
+          color: #4b5563;
+          border-bottom: 2px solid #e5e7eb;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .table-body {
+          background: white;
+        }
+
+        .table-row {
+          border-bottom: 1px solid #f3f4f6;
+          transition: all 0.3s ease;
+        }
+
+        .table-row:hover {
+          background-color: #f9fafb;
+          transform: scale(1.01);
+        }
+
+        .table-row:last-child {
+          border-bottom: none;
+        }
+
+        .table-cell {
+          padding: 1.25rem 1.75rem;
+          font-size: 0.9375rem;
+        }
+
+        .lesson-cell {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .lesson-number {
+          font-weight: 700;
+          margin-bottom: 0.375rem;
+          color: #667eea;
+        }
+
+        .lesson-name {
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .status-cell {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .table-score {
+          font-weight: 800;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+        }
+
+        .score-pass {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+        }
+
+        .score-fail {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+        }
+
+        .no-score {
+          color: #9ca3af;
+          font-style: italic;
+        }
+
+        .answer-count {
+          font-weight: 700;
+          color: #374151;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .view-button {
+          padding: 0.625rem 1.25rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          font-size: 0.875rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .view-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .delete-table-button {
+          padding: 0.625rem 1.25rem;
+          color: #ef4444;
+          background: transparent;
+          border: 2px solid #fecaca;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 0.875rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .delete-table-button:hover {
+          background: #fef2f2;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Detail Modal */
+        .detail-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          z-index: 9999;
+          animation: modalFadeIn 0.4s ease;
+        }
+
+        @keyframes modalFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0); }
+          to { opacity: 1; backdrop-filter: blur(8px); }
+        }
+
+        .detail-modal {
+          background: white;
+          border-radius: 24px;
+          max-width: 56rem;
+          width: 100%;
+          max-height: 90vh;
+          overflow: hidden;
+          animation: modalSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes modalSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(40px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .modal-header {
+          padding: 2rem;
+          border-bottom: 2px solid #f3f4f6;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        }
+
+        .modal-title-section {
+          flex: 1;
+        }
+
+        .modal-title {
+          font-size: 2rem;
+          font-weight: 800;
+          color: #1f2937;
+          margin-bottom: 1rem;
+          line-height: 1.3;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .modal-subtitle {
+          color: #6b7280;
+          font-size: 0.9375rem;
+        }
+
+        .modal-subtitle p {
+          margin-bottom: 0.375rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .modal-subtitle p:last-child {
+          margin-bottom: 0;
+        }
+
+        .modal-close-button {
+          padding: 0.75rem;
+          background: white;
+          border: 2px solid #e5e7eb;
+          cursor: pointer;
+          color: #6b7280;
+          border-radius: 12px;
+          font-size: 1.5rem;
+          line-height: 1;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          margin-left: 1rem;
+          flex-shrink: 0;
+        }
+
+        .modal-close-button:hover {
+          background: #f3f4f6;
+          color: #ef4444;
+          transform: rotate(90deg);
+          border-color: #fecaca;
+        }
+
+        .modal-content {
+          padding: 2rem;
+          overflow-y: auto;
+          max-height: calc(90vh - 160px);
+        }
+
+        /* Answers Section */
+        .answers-section {
+          margin-bottom: 2.5rem;
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #f3f4f6;
+        }
+
+        .section-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .section-count {
+          color: #9ca3af;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          padding: 0.5rem 1rem;
+          background: #f3f4f6;
+          border-radius: 20px;
+        }
+
+        .empty-answers {
+          text-align: center;
+          padding: 3rem 2rem;
+          border: 3px dashed #e5e7eb;
+          border-radius: 16px;
+          color: #6b7280;
+          background: #fafafa;
+        }
+
+        .empty-answers-icon {
+          width: 60px;
+          height: 60px;
+          color: #d1d5db;
+          margin: 0 auto 1.5rem;
+        }
+
+        .empty-notes {
+          font-size: 1rem;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+          color: #4b5563;
+          font-weight: 600;
+        }
+
+        .empty-reasons {
+          list-style: none;
+          padding: 0;
+          margin: 0.75rem auto 0;
+          max-width: 400px;
+          text-align: left;
+          font-size: 0.875rem;
+          color: #9ca3af;
+        }
+
+        .empty-reasons li {
+          margin-bottom: 0.5rem;
+          padding-left: 1rem;
+          position: relative;
+        }
+
+        .empty-reasons li::before {
+          content: '→';
+          position: absolute;
+          left: 0;
+          color: #667eea;
+        }
+
+        .answers-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .answer-item {
+          border: 2px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 1.5rem;
+          transition: all 0.3s ease;
+          background: white;
+        }
+
+        .answer-item:hover {
+          background: #f9fafb;
+          border-color: #d1d5db;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .answer-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .answer-info {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .question-number {
+          font-weight: 700;
+          color: #4f46e5;
+          font-size: 1.125rem;
+        }
+
+        .question-index {
+          font-size: 0.875rem;
+          color: white;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-weight: 600;
+        }
+
+        .question-id {
+          font-size: 0.8125rem;
+          color: #9ca3af;
+          font-family: 'SF Mono', monospace;
+          background: #f3f4f6;
+          padding: 0.25rem 0.75rem;
+          border-radius: 6px;
+        }
+
+        .answer-content {
+          background: #f9fafb;
+          padding: 1rem;
+          border-radius: 12px;
+          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+          font-size: 0.9375rem;
+          color: #374151;
+          word-break: break-word;
+          white-space: pre-wrap;
+          line-height: 1.6;
+          border: 1px solid #e5e7eb;
+        }
+
+        /* Feedback Section */
+        .feedback-section {
+          margin-bottom: 2.5rem;
+        }
+
+        .feedback-content {
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border: 2px solid #bae6fd;
+          border-radius: 16px;
+          padding: 1.5rem;
+          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+        }
+
+        .feedback-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .feedback-icon {
+          width: 24px;
+          height: 24px;
+          color: #0ea5e9;
+          margin-top: 0.25rem;
+          flex-shrink: 0;
+        }
+
+        .feedback-details {
+          flex: 1;
+        }
+
+        .feedback-date {
+          color: #0369a1;
+          font-size: 0.875rem;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .feedback-date::before {
+          content: '📅';
+          font-size: 0.875rem;
+        }
+
+        .feedback-text {
+          background: white;
+          padding: 1.25rem;
+          border-radius: 12px;
+          border: 1px solid #dbeafe;
+          color: #1f2937;
+          white-space: pre-wrap;
+          font-size: 0.9375rem;
+          line-height: 1.7;
+          font-weight: 500;
+        }
+
+        /* Modal Actions */
+        .modal-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 2rem;
+          border-top: 2px solid #e5e7eb;
+        }
+
+        .action-buttons-group {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .modal-delete-button {
+          padding: 1rem 2rem;
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: white;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .modal-delete-button:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .modal-delete-button:active {
+          transform: translateY(0);
+        }
+
+        .modal-delete-button svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .modal-close-action {
+          padding: 1rem 2rem;
+          background: #f3f4f6;
+          color: #374151;
+          border-radius: 12px;
+          border: 2px solid #e5e7eb;
+          cursor: pointer;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-close-action:hover {
+          background: #e5e7eb;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Scrollbar Styling */
+        .modal-content::-webkit-scrollbar {
+          width: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 5px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 5px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #5a6fd8 0%, #6a419b 100%);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .submissions-main-title {
+            font-size: 2rem;
+          }
+          
+          .stat-value {
+            font-size: 1.875rem;
+          }
+          
+          .modal-title {
+            font-size: 1.5rem;
+          }
+          
+          .modal-actions {
+            flex-direction: column;
+            gap: 1rem;
+          }
+          
+          .action-buttons-group {
+            width: 100%;
+          }
+          
+          .modal-close-action {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .submissions-header-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+          }
+          
+          .submissions-view-toggle {
+            align-self: flex-start;
+          }
+          
+          .filter-controls {
+            flex-direction: column;
+            width: 100%;
+          }
+          
+          .status-filter {
+            width: 100%;
+          }
+          
+          .refresh-button {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </div>
   );
 }

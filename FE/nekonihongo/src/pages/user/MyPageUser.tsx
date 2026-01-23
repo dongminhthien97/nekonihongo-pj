@@ -17,7 +17,6 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     loading: authLoading,
   } = useAuth();
 
-  // ✅ TẤT CẢ HOOKS PHẢI Ở ĐÂY - TRƯỚC MỌI ĐIỀU KIỆN
   const [localLoading, setLocalLoading] = useState(true);
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -33,22 +32,12 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ Khởi tạo avatarUrl từ authUser
   useEffect(() => {
     if (authUser) {
       setAvatarUrl(authUser.avatarUrl || "");
     }
   }, [authUser]);
 
-  // Debug avatar URL
-  useEffect(() => {
-    console.log(
-      "[DEBUG MyPageUser] Current authUser.avatarUrl:",
-      authUser?.avatarUrl
-    );
-  }, [authUser?.avatarUrl]);
-
-  // Fetch feedback count
   useEffect(() => {
     const fetchFeedbackCount = async () => {
       try {
@@ -61,11 +50,10 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     fetchFeedbackCount();
   }, []);
 
-  // ✅ ĐIỀU KIỆN RETURN SAU CÙNG
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-        <p className="text-3xl text-purple-700">Đang tải thông tin mèo...</p>
+      <div className="mypage-loading-state">
+        <p>Đang tải thông tin mèo...</p>
       </div>
     );
   }
@@ -74,7 +62,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     return <NekoLoading message="Mèo đang chuẩn bị MyPage cho bạn... 😻" />;
   }
 
-  // THUẬT TOÁN TÍNH LEVEL
+  // --- LOGIC TÍNH TOÁN (Giữ nguyên) ---
   const calculateLevel = (points: number = 0): number => {
     if (points < 30) return 1;
     if (points < 70) return 2;
@@ -86,8 +74,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     if (points < 520) return 8;
     if (points < 630) return 9;
     if (points < 750) return 10;
-    const level = 10 + Math.floor((points - 630) / 150);
-    return level;
+    return 10 + Math.floor((points - 630) / 150);
   };
 
   const getNextLevelPoints = (currentLevel: number): number => {
@@ -98,139 +85,88 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
     return 630 + (currentLevel - 9) * 150;
   };
 
-  // Tính level từ points
   const userLevel = calculateLevel(authUser.points);
   const nextLevelPoints = getNextLevelPoints(userLevel);
-  const currentLevelPoints = getNextLevelPoints(userLevel - 1) || 0;
-  const pointsInCurrentLevel = authUser.points - currentLevelPoints;
-  const pointsNeededForNextLevel = nextLevelPoints - authUser.points;
-
   const progressToNextLevel = Math.min(
     (authUser.points / nextLevelPoints) * 100,
-    100
+    100,
   );
-
-  const exercisesToNextLevel = Math.ceil(pointsNeededForNextLevel / 10);
-  const joinDateFormatted = authUser.joinDate
-    ? new Date(authUser.joinDate).toLocaleDateString("vi-VN")
-    : "Chưa có";
-
-  const displayName = authUser.fullName || authUser.username || "Neko Chan";
-
-  const getStreakStatus = (streak: number) => {
-    if (streak === 0) return "Bắt đầu chuỗi ngay hôm nay!";
-    if (streak === 1) return "Chuỗi mới bắt đầu 🔥";
-    return "Tiếp tục duy trì nhé 💪";
-  };
+  const pointsNeeded = nextLevelPoints - authUser.points;
 
   const handleAvatarUpdate = async () => {
     if (!avatarUrl.trim()) {
       toast.error("Vui lòng nhập URL hợp lệ! 😿");
       return;
     }
-
-    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i;
-    if (!imageExtensions.test(avatarUrl.trim())) {
-      toast.error(
-        "URL phải là link ảnh trực tiếp (jpg, png, webp, gif, svg)! 😿"
-      );
-      return;
-    }
-
     try {
       const res = await api.patch("/user/me/avatar", {
         avatarUrl: avatarUrl.trim(),
       });
-
       const newAvatar =
         res.data?.data?.avatarUrl || res.data?.avatarUrl || avatarUrl.trim();
-
       updateUser({ avatarUrl: newAvatar });
       await refreshUser();
-
       toast.success("Cập nhật avatar thành công! 😻");
       setIsEditingAvatar(false);
-    } catch (err: any) {
+    } catch (err) {
       toast.error("Không thể cập nhật avatar 😿");
     }
   };
 
-  const handleBack = () => {
-    onNavigate("landing");
-  };
   return (
-    <div className="min-h-screen bg-soft-gradient p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-4xl text-purple-800">マイページ 🌸</h1>
+    <div className="neko-mypage-wrapper">
+      <div className="neko-mypage-container">
+        {/* TOP BAR */}
+        <header className="neko-top-bar">
+          <h1 className="neko-page-title">
+            マイページ <span className="sakura">🌸</span>
+          </h1>
           <button
-            onClick={() => onNavigate("user-mini-test-submissions")}
-            className="px-12 py-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-2xl hover:scale-105 transition-all shadow-2xl"
+            onClick={() => onNavigate("landing")}
+            className="neko-btn-back"
           >
-            🐾 Xem bài Mini Test đã nộp (
-            {feedbackCount > 0 && (
-              <span className="ml-2 bg-red-500 text-white rounded-full px-3 py-1 text-lg">
-                {feedbackCount}
-              </span>
-            )}
-            )
+            <span>✕</span> Đóng
           </button>
-          <button onClick={handleBack} className="btn-red">
-            Quay lại
-          </button>
-        </div>
+        </header>
 
-        {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl text-purple-700 mb-8 text-center">
-            Thông tin cá nhân
-          </h2>
-
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center mb-10">
-            <div className="relative group mb-4">
+        {/* HERO SECTION */}
+        <section className="neko-hero-card">
+          <div className="neko-avatar-wrapper">
+            <div className="neko-avatar-main">
               <img
                 src={authUser.avatarUrl || PLACEHOLDER_AVATAR_128}
                 alt="Avatar"
-                className="avatar-circle mx-auto"
                 onError={(e) => {
-                  // FIX: Khi URL từ DB invalid → fallback về placeholder SVG (local, không load external)
                   e.currentTarget.src = PLACEHOLDER_AVATAR_128;
-                  e.currentTarget.onerror = null; // Ngăn loop onError nếu placeholder cũng lỗi (hiếm)
+                  e.currentTarget.onerror = null;
                 }}
               />
               <button
-                onClick={() => {
-                  setIsEditingAvatar(true);
-                  setAvatarUrl(authUser.avatarUrl || "");
-                }}
-                className="floating-btn"
-                title="Thay đổi avatar"
+                className="neko-edit-badge"
+                onClick={() => setIsEditingAvatar(true)}
               >
                 ✏️
               </button>
             </div>
 
             {isEditingAvatar && (
-              <div className="mt-4 w-full max-w-md">
+              <div className="neko-avatar-edit-modal">
                 <input
                   type="text"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="Dán URL avatar mới"
-                  className="input-soft"
+                  placeholder="Dán link ảnh vào đây..."
                 />
-                <div className="flex gap-2 mt-2">
+                <div className="neko-edit-actions">
                   <button
                     onClick={handleAvatarUpdate}
-                    className="btn-purple btn-purple-shadow flex-1"
+                    className="neko-btn-save"
                   >
                     Lưu
                   </button>
                   <button
                     onClick={() => setIsEditingAvatar(false)}
-                    className="btn-gray btn-gray-shadow flex-1"
+                    className="neko-btn-cancel"
                   >
                     Hủy
                   </button>
@@ -239,367 +175,492 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
             )}
           </div>
 
-          {/* User Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column - Basic Info */}
-            <div className="space-y-6">
-              <div className="info-card">
-                <div className="info-icon">👤</div>
-                <div>
-                  <div className="info-label">Tên</div>
-                  <div className="info-value">{displayName}</div>
-                </div>
-              </div>
-
-              <div className="info-card">
-                <div className="info-icon">📧</div>
-                <div>
-                  <div className="info-label">Email</div>
-                  <div className="info-value">{authUser.email}</div>
-                </div>
-              </div>
-
-              <div className="info-card">
-                <div className="info-icon">🎭</div>
-                <div>
-                  <div className="info-label">Vai trò</div>
-                  <div className="info-badge">
-                    {authUser.role === "ADMIN" ? "Quản trị viên" : "Học viên"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="info-card">
-                <div className="info-icon">📅</div>
-                <div>
-                  <div className="info-label">Ngày tham gia</div>
-                  <div className="info-value">{joinDateFormatted}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Stats */}
-            <div className="space-y-6">
-              {/* Level Card */}
-              <div className="stats-card level-card">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <div className="stats-label">TRÌNH ĐỘ</div>
-                    <div className="stats-value">Level {userLevel}</div>
-                  </div>
-                  <div className="text-4xl">⭐</div>
-                </div>
-
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Tiến độ lên Level {userLevel + 1}</span>
-                    <span>{Math.round(progressToNextLevel)}%</span>
-                  </div>
-                  <div className="progress-bar-container">
-                    <div
-                      className="progress-bar-fill"
-                      style={{
-                        width: `${progressToNextLevel}%`,
-                        background: `linear-gradient(to right, #a855f7, #ec4899)`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {userLevel < 100 ? (
-                    <>
-                      Cần thêm {pointsNeededForNextLevel} điểm (
-                      {exercisesToNextLevel} bài) để lên Level {userLevel + 1}
-                    </>
-                  ) : (
-                    "🎉 Bạn là bậc thầy!"
-                  )}
-                </div>
-              </div>
-
-              {/* Points Card */}
-              <div className="stats-card points-card">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="stats-label">TỔNG ĐIỂM</div>
-                    <div className="stats-value points-value">
-                      {authUser.points}
-                    </div>
-                    <div className="text-sm text-pink-600 mt-1">
-                      ≈ {Math.floor(authUser.points / 10)} bài hoàn thành
-                    </div>
-                  </div>
-                  <div className="text-4xl">🎯</div>
-                </div>
-                <div className="text-sm text-gray-600 mt-2">
-                  Tích lũy từ tất cả bài tập đã hoàn thành (10đ/bài)
-                </div>
-              </div>
-
-              {/* Streak Card */}
-              <div className="stats-card streak-card">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="stats-label">CHUỖI ĐĂNG NHẬP</div>
-                    <div className="stats-value streak-value">
-                      {authUser.streak} ngày
-                    </div>
-                    <div className="text-sm text-orange-600 mt-1">
-                      {getStreakStatus(authUser.streak ?? 0)}
-                    </div>
-                    {(authUser.longestStreak ?? 0) > (authUser.streak ?? 0) && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Kỷ lục: {authUser.longestStreak ?? 0} ngày
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-4xl">🔥</div>
-                </div>
-                <div className="text-sm text-gray-600 mt-2">
-                  Đăng nhập mỗi ngày để duy trì chuỗi!
-                  <div className="mt-1 text-xs">
-                    {authUser.lastLoginDate
-                      ? `Đăng nhập lần cuối: ${new Date(
-                          authUser.lastLoginDate
-                        ).toLocaleDateString("vi-VN")}`
-                      : "Chưa đăng nhập lần nào"}
-                  </div>
-                </div>
-              </div>
+          <div className="neko-hero-info">
+            <h2 className="neko-user-name">
+              {authUser.fullName || authUser.username}
+            </h2>
+            <div className="neko-user-badges">
+              <span className="neko-badge-role">
+                {authUser.role === "ADMIN"
+                  ? "🛡️ Quản trị viên"
+                  : "🐾 Học viên Neko"}
+              </span>
+              <span className="neko-badge-level">Cấp độ {userLevel}</span>
             </div>
           </div>
+        </section>
 
-          {/* Level Info Table */}
-          {/* <div className="mt-8 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
-            <h3 className="text-lg font-semibold text-purple-800 mb-3">
-              Thông tin Level
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="text-center p-3 bg-white rounded-lg">
-                <div className="text-gray-600">Level hiện tại</div>
-                <div className="text-2xl font-bold text-purple-700">
-                  {userLevel}
+        {/* DASHBOARD GRID */}
+        <div className="neko-dashboard-grid">
+          {/* LEFT: INFO */}
+          <div className="neko-info-column">
+            <div className="neko-card-simple">
+              <div className="neko-card-icon">📧</div>
+              <div className="neko-card-body">
+                <label>Email liên hệ</label>
+                <p>{authUser.email}</p>
+              </div>
+            </div>
+
+            <div className="neko-card-simple">
+              <div className="neko-card-icon">📅</div>
+              <div className="neko-card-body">
+                <label>Gia nhập Neko</label>
+                <p>
+                  {new Date(authUser.joinDate || "").toLocaleDateString(
+                    "vi-VN",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="neko-cta-card"
+              onClick={() => onNavigate("user-mini-test-submissions")}
+            >
+              <div className="neko-cta-content">
+                <div className="neko-cta-icon">📝</div>
+                <div className="neko-cta-text">
+                  <h3>Bài Mini Test</h3>
+                  <p>Xem kết quả & feedback</p>
                 </div>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <div className="text-gray-600">Điểm hiện có</div>
-                <div className="text-2xl font-bold text-purple-700">
-                  {authUser.points}
-                </div>
+              {feedbackCount > 0 && (
+                <span className="neko-notif-pill">{feedbackCount}</span>
+              )}
+            </button>
+          </div>
+
+          {/* RIGHT: STATS */}
+          <div className="neko-stats-column">
+            <div className="neko-card-glass neko-level-stats">
+              <div className="neko-stat-header">
+                <h3>Tiến trình Cấp độ</h3>
+                <span className="neko-stat-value">
+                  {Math.round(progressToNextLevel)}%
+                </span>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <div className="text-gray-600">
-                  Điểm cần Level {userLevel + 1}
-                </div>
-                <div className="text-2xl font-bold text-purple-700">
-                  {nextLevelPoints}
-                </div>
+              <div className="neko-progress-outer">
+                <div
+                  className="neko-progress-inner"
+                  style={{ width: `${progressToNextLevel}%` }}
+                ></div>
               </div>
-              <div className="text-center p-3 bg-white rounded-lg">
-                <div className="text-gray-600">Bài tập cần</div>
-                <div className="text-2xl font-bold text-purple-700">
-                  {exercisesToNextLevel}
+              <p className="neko-stat-hint">
+                {userLevel < 100
+                  ? `Cần thêm ${pointsNeeded} điểm để lên Level ${userLevel + 1}`
+                  : "Bạn đã đạt đỉnh cao! 🎉"}
+              </p>
+            </div>
+
+            <div className="neko-stats-row">
+              <div className="neko-card-glass neko-stat-mini">
+                <span className="neko-mini-icon">🎯</span>
+                <label>Tổng điểm</label>
+                <div className="neko-mini-value">{authUser.points}</div>
+              </div>
+              <div className="neko-card-glass neko-stat-mini">
+                <span className="neko-mini-icon">🔥</span>
+                <label>Chuỗi Streak</label>
+                <div className="neko-mini-value">
+                  {authUser.streak || 0} ngày
                 </div>
               </div>
             </div>
-          </div> */}
+
+            <div className="neko-card-glass neko-streak-info">
+              <p>
+                🚀 Kỷ lục cao nhất:{" "}
+                <strong>{authUser.longestStreak || 0} ngày</strong>
+              </p>
+              <p className="neko-last-login">
+                Lần cuối học:{" "}
+                {authUser.lastLoginDate
+                  ? new Date(authUser.lastLoginDate).toLocaleDateString("vi-VN")
+                  : "Hôm nay"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+
       <style>{`
-        /* === STYLE GIỮ NGUYÊN ĐẸP LUNG LINH === */
-        .btn-red { 
-          padding: 0.5rem 1.5rem; 
-          background-color: #ef4444; 
-          color: #fff; 
-          border-radius: 0.5rem; 
-          transition: all 0.2s ease; 
-          cursor: pointer; 
-          font-weight: 600;
+        .neko-mypage-wrapper {
+          min-height: 100vh;
+          background: #fdf2f8;
+          background-image: radial-gradient(#fbcfe8 0.5px, transparent 0.5px);
+          background-size: 24px 24px;
+          padding: 2rem 1rem;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
-        .btn-red:hover { background-color: #dc2626; }
-        
-        .bg-soft-gradient { 
-          background: linear-gradient(to bottom right, #faf5ff, #fdf2f8, #eff6ff); 
-          background-attachment: fixed; 
+
+        .neko-mypage-container {
+          max-width: 1000px;
+          margin: 0 auto;
         }
-        
-        .text-purple-800 { color: #6b21a8; }
-        .text-purple-700 { color: #7c3aed; }
-        
-        .avatar-circle { 
-          width: 128px; 
-          height: 128px; 
-          border-radius: 9999px; 
-          border: 4px solid #c4b5fd; 
-          object-fit: cover; 
-          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); 
+
+        /* TOP BAR */
+        .neko-top-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
         }
-        .avatar-circle:hover { 
-          transform: translateY(-4px) scale(1.05); 
-          box-shadow: 0 20px 35px -10px rgba(147,51,234,0.3); 
-          transition: all 300ms ease; 
+
+        .neko-page-title {
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: #6b21a8;
         }
-        
-        .floating-btn { 
-          position: absolute; 
-          bottom: 0; 
-          right: 0; 
-          background-color: #a855f7; 
-          color: white; 
-          padding: 0.5rem; 
-          border-radius: 9999px; 
-          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); 
-          transition: background-color 200ms ease-in-out; 
-          z-index: 10; 
+
+        .neko-btn-back {
+          background: white;
+          border: 2px solid #e9d5ff;
+          padding: 0.6rem 1.2rem;
+          border-radius: 12px;
+          font-weight: 700;
+          color: #7c3aed;
           cursor: pointer;
-          border: 2px solid white;
-        }
-        .floating-btn:hover { background-color: #9333ea; }
-        
-        .input-soft { 
-          width: 100%; 
-          padding: 0.75rem 1rem; 
-          border: 2px solid #c4b5fd; 
-          border-radius: 0.75rem; 
-          outline: none; 
-          background-color: white; 
-          font-size: 1rem; 
-          transition: border-color 200ms ease; 
-        }
-        .input-soft:focus { 
-          border-color: #a855f7; 
-          box-shadow: 0 0 0 3px rgba(168,85,247,0.2); 
-        }
-        
-        .btn-purple { 
-          padding: 0.75rem 1.5rem; 
-          background-color: #a855f7; 
-          color: white; 
-          border-radius: 0.75rem; 
-          font-weight: 600; 
-          text-align: center; 
-          transition: all 200ms ease-in-out; 
-          cursor: pointer; 
-          border: none;
-        }
-        .btn-purple:hover { 
-          background-color: #9333ea; 
-          transform: translateY(-2px);
-        }
-        .btn-purple-shadow { 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
-        }
-        
-        .btn-gray { 
-          padding: 0.75rem 1.5rem; 
-          background-color: #e5e7eb; 
-          color: #374151; 
-          border-radius: 0.75rem; 
-          font-weight: 600; 
-          text-align: center; 
-          transition: all 200ms ease-in-out; 
-          cursor: pointer; 
-          border: none;
-        }
-        .btn-gray:hover { 
-          background-color: #d1d5db; 
-          transform: translateY(-2px);
-        }
-        .btn-gray-shadow { 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
-        }
-        
-        /* Info Cards */
-        .info-card {
+          transition: all 0.2s;
           display: flex;
           align-items: center;
-          gap: 1rem;
-          padding: 1.25rem;
-          background: linear-gradient(to right, #faf5ff, #fdf2f8);
-          border-radius: 1rem;
-          border: 2px solid #f3e8ff;
-          transition: transform 0.2s ease;
+          gap: 8px;
         }
-        .info-card:hover {
+
+        .neko-btn-back:hover {
+          background: #f3e8ff;
           transform: translateY(-2px);
         }
-        .info-icon {
+
+        /* HERO CARD */
+        .neko-hero-card {
+          background: white;
+          border-radius: 24px;
+          padding: 3rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          box-shadow: 0 10px 25px -5px rgba(107, 33, 168, 0.1);
+          margin-bottom: 2rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .neko-hero-card::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; right: 0; height: 120px;
+          background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+          z-index: 0;
+        }
+
+        .neko-avatar-wrapper {
+          position: relative;
+          z-index: 1;
+          margin-bottom: 1.5rem;
+        }
+
+        .neko-avatar-main {
+          position: relative;
+          width: 160px;
+          height: 160px;
+        }
+
+        .neko-avatar-main img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 6px solid white;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .neko-edit-badge {
+          position: absolute;
+          bottom: 5px;
+          right: 5px;
+          background: #7c3aed;
+          border: 3px solid white;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .neko-user-name {
+          font-size: 2.2rem;
+          color: #1e1b4b;
+          margin: 0.5rem 0;
+          font-weight: 800;
+        }
+
+        .neko-user-badges {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          margin-top: 1rem;
+        }
+
+        .neko-badge-role {
+          background: #dbeafe;
+          color: #1e40af;
+          padding: 0.5rem 1.2rem;
+          border-radius: 99px;
+          font-weight: 700;
+          font-size: 1rem;
+        }
+
+        .neko-badge-level {
+          background: #fef3c7;
+          color: #92400e;
+          padding: 0.5rem 1.2rem;
+          border-radius: 99px;
+          font-weight: 700;
+          font-size: 1rem;
+        }
+
+        /* DASHBOARD GRID */
+        .neko-dashboard-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.2fr;
+          gap: 2rem;
+        }
+
+        /* CARDS */
+        .neko-card-simple {
+          background: white;
+          padding: 1.5rem;
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          gap: 1.2rem;
+          margin-bottom: 1rem;
+          border: 1px solid #f3e8ff;
+        }
+
+        .neko-card-icon {
           font-size: 2rem;
-          min-width: 3rem;
+          background: #f5f3ff;
+          width: 60px;
+          height: 60px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 15px;
+        }
+
+        .neko-card-body label {
+          display: block;
+          font-size: 0.9rem;
+          color: #6b7280;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .neko-card-body p {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #4b5563;
+          margin: 0;
+        }
+
+        /* CTA CARD (Submission) */
+        .neko-cta-card {
+          width: 100%;
+          background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+          border: none;
+          padding: 2rem;
+          border-radius: 24px;
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+          text-align: left;
+        }
+
+        .neko-cta-card:hover {
+          transform: scale(1.02);
+          box-shadow: 0 15px 30px rgba(124, 58, 237, 0.4);
+        }
+
+        .neko-cta-content {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        .neko-cta-icon {
+          font-size: 2.5rem;
+        }
+
+        .neko-cta-text h3 {
+          margin: 0;
+          font-size: 1.4rem;
+          font-weight: 800;
+        }
+
+        .neko-cta-text p {
+          margin: 0;
+          opacity: 0.9;
+          font-size: 1rem;
+        }
+
+        .neko-notif-pill {
+          background: #f43f5e;
+          padding: 0.4rem 1rem;
+          border-radius: 12px;
+          font-weight: 800;
+          border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* STATS RIGHT COLUMN */
+        .neko-card-glass {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(10px);
+          border: 1px solid white;
+          border-radius: 24px;
+          padding: 1.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .neko-stat-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+
+        .neko-stat-header h3 {
+          margin: 0;
+          color: #6b21a8;
+          font-weight: 800;
+          font-size: 1.3rem;
+        }
+
+        .neko-stat-value {
+          font-weight: 900;
+          color: #7c3aed;
+          font-size: 1.4rem;
+        }
+
+        .neko-progress-outer {
+          height: 16px;
+          background: #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .neko-progress-inner {
+          height: 100%;
+          background: linear-gradient(to right, #a855f7, #ec4899);
+          border-radius: 10px;
+          transition: width 1s ease-out;
+        }
+
+        .neko-stat-hint {
+          margin-top: 0.8rem;
+          font-size: 0.95rem;
+          color: #6b7280;
+          font-weight: 600;
+        }
+
+        .neko-stats-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .neko-stat-mini {
           text-align: center;
         }
-        .info-label {
-          font-size: 0.875rem;
-          color: #6b7280;
-          margin-bottom: 0.25rem;
-        }
-        .info-value {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: #6b21a8;
-        }
-        .info-badge {
-          display: inline-block;
-          padding: 0.25rem 0.75rem;
-          background-color: #dbeafe;
-          color: #1e40af;
-          border-radius: 9999px;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-        
-        /* Stats Cards */
-        .stats-card {
-          padding: 1.5rem;
-          border-radius: 1rem;
-          transition: transform 0.2s ease;
-        }
-        .stats-card:hover {
-          transform: translateY(-2px);
-        }
-        .level-card {
-          background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-          border: 2px solid #ddd6fe;
-        }
-        .points-card {
-          background: linear-gradient(135deg, #fce7f3, #fbcfe8);
-          border: 2px solid #f9a8d4;
-        }
-        .streak-card {
-          background: linear-gradient(135deg, #ffedd5, #fed7aa);
-          border: 2px solid #fdba74;
-        }
-        .stats-label {
-          font-size: 0.75rem;
-          color: #6b7280;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.25rem;
-        }
-        .stats-value {
+
+        .neko-mini-icon {
           font-size: 2rem;
+          display: block;
+          margin-bottom: 0.5rem;
+        }
+
+        .neko-stat-mini label {
+          font-size: 0.9rem;
           font-weight: 700;
-          color: #6b21a8;
+          color: #6b7280;
         }
-        .points-value {
-          color: #be185d;
+
+        .neko-mini-value {
+          font-size: 1.8rem;
+          font-weight: 900;
+          color: #1e1b4b;
         }
-        .streak-value {
-          color: #ea580c;
+
+        /* EDIT AVATAR INPUT */
+        .neko-avatar-edit-modal {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          background: white;
+          padding: 1.5rem;
+          border-radius: 20px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          width: 300px;
+          z-index: 10;
+          margin-top: 10px;
         }
-        
-        /* Progress Bar */
-        .progress-bar-container { 
-          width: 100%; 
-          background: #e5e7eb; 
-          border-radius: 9999px; 
-          height: 0.75rem; 
-          overflow: hidden; 
+
+        .neko-avatar-edit-modal input {
+          width: 100%;
+          padding: 0.8rem;
+          border: 2px solid #e9d5ff;
+          border-radius: 10px;
+          margin-bottom: 1rem;
         }
-        .progress-bar-fill { 
-          height: 100%; 
-          border-radius: 9999px; 
-          transition: all 0.5s ease; 
+
+        .neko-edit-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .neko-btn-save {
+          flex: 1;
+          background: #7c3aed;
+          color: white;
+          border: none;
+          padding: 0.6rem;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .neko-btn-cancel {
+          flex: 1;
+          background: #f3f4f6;
+          color: #4b5563;
+          border: none;
+          padding: 0.6rem;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+          .neko-dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+          .neko-hero-card {
+            padding: 2rem 1rem;
+          }
+          .neko-page-title {
+            font-size: 1.8rem;
+          }
         }
       `}</style>
     </div>
