@@ -15,11 +15,20 @@ import java.util.List;
 public class MiniTestSubmissionDTO {
     private Long id;
     private Long userId;
+
+    // Thêm thông tin user
+    private String userName;
+    private String userEmail;
+
     private Long lessonId;
+    private String lessonTitle; // Thêm field lessonTitle
+
     private LocalDateTime submittedAt;
     private String feedback;
     private LocalDateTime feedbackAt;
     private String status;
+    private Integer score;
+    private Integer timeSpent;
     private List<AnswerDTO> answers;
 
     @Data
@@ -29,5 +38,7 @@ public class MiniTestSubmissionDTO {
     public static class AnswerDTO {
         private Long questionId;
         private String userAnswer;
+        private String correctAnswer;
+        private Boolean isCorrect;
     }
 }

@@ -5,7 +5,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Entity
 @Table(name = "mini_test_submissions")
@@ -48,6 +47,9 @@ public class MiniTestSubmission {
     @Column(nullable = false)
     @Builder.Default
     private Status status = Status.pending;
+
+    @Column(name = "score")
+    private Integer score; // Thêm field này
 
     public enum Status {
         pending,

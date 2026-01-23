@@ -38,7 +38,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/admin/users/{id}")
-    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable("id") Long id) {
         User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin user thành công", toResponse(user)));

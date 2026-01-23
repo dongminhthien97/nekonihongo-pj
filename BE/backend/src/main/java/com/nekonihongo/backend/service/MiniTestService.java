@@ -117,6 +117,7 @@ public class MiniTestService {
                     .status(Status.pending) // Sử dụng status.pending từ entity
                     .feedback(null)
                     .feedbackAt(null)
+                    .score(null) // Ban đầu chưa có điểm
                     .build();
 
             MiniTestSubmission savedSubmission = submissionRepository.save(submission);
@@ -176,6 +177,96 @@ public class MiniTestService {
             return SubmitTestResponseDTO.builder()
                     .success(false)
                     .message("Lỗi khi gửi feedback: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * Admin chấm điểm và cung cấp feedback
+     */
+    @Transactional
+    public SubmitTestResponseDTO scoreAndFeedback(Long submissionId, String feedback, Integer score) {
+        try {
+            Optional<MiniTestSubmission> submissionOpt = submissionRepository.findById(submissionId);
+
+            if (submissionOpt.isEmpty()) {
+                return SubmitTestResponseDTO.builder()
+                        .success(false)
+                        .message("Không tìm thấy bài nộp")
+                        .build();
+            }
+
+            MiniTestSubmission submission = submissionOpt.get();
+
+            // Validate score - sử dụng Integer và kiểm tra null
+            if (score == null) {
+                return SubmitTestResponseDTO.builder()
+                        .success(false)
+                        .message("Điểm không được để trống")
+                        .build();
+            }
+
+            if (score < 0) {
+                return SubmitTestResponseDTO.builder()
+                        .success(false)
+                        .message("Điểm phải là số dương")
+                        .build();
+            }
+
+            // Kiểm tra xem đã chấm điểm chưa
+            boolean alreadyScored = submission.getScore() != null;
+            Integer oldScore = submission.getScore() != null ? submission.getScore() : 0;
+
+            // Cập nhật feedback và điểm
+            submission.setFeedback(feedback);
+            submission.setFeedbackAt(LocalDateTime.now());
+            submission.setStatus(Status.feedbacked);
+            submission.setScore(score);
+
+            submissionRepository.save(submission);
+
+            // Cộng điểm cho user
+            if (score > 0) {
+                Optional<User> userOpt = userRepository.findById(submission.getUserId());
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+
+                    // Lấy điểm hiện tại của user - VÌ points là int nên không cần kiểm tra null
+                    int currentUserPoints = user.getPoints();
+                    int newPoints;
+
+                    if (alreadyScored) {
+                        // Nếu đã chấm điểm trước đó, trừ điểm cũ rồi cộng điểm mới
+                        newPoints = currentUserPoints - oldScore + score;
+                    } else {
+                        // Nếu chấm điểm lần đầu, cộng điểm mới
+                        newPoints = currentUserPoints + score;
+                    }
+
+                    // Đảm bảo điểm không âm
+                    user.setPoints(Math.max(newPoints, 0));
+                    userRepository.save(user);
+
+                    log.info("User {}: Old points={}, Added={}, New points={}",
+                            user.getId(), currentUserPoints, score, user.getPoints());
+                } else {
+                    log.warn("User not found for ID: {}", submission.getUserId());
+                }
+            }
+
+            log.info("Test scored: submission={}, score={}, alreadyScored={}",
+                    submissionId, score, alreadyScored);
+
+            return SubmitTestResponseDTO.builder()
+                    .success(true)
+                    .message("Đã chấm điểm và gửi feedback thành công")
+                    .submissionId(submissionId)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error scoring test {}", submissionId, e);
+            return SubmitTestResponseDTO.builder()
+                    .success(false)
+                    .message("Lỗi khi chấm điểm: " + e.getMessage())
                     .build();
         }
     }
@@ -244,6 +335,22 @@ public class MiniTestService {
                         .build();
             }
 
+            // Nếu đã chấm điểm, trừ điểm của user
+            // FIX: Kiểm tra null trước khi so sánh với > 0
+            Integer entityScore = entity.getScore();
+            if (entityScore != null && entityScore > 0) {
+                Optional<User> userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    int currentPoints = user.getPoints(); // VÌ points là int nên không cần kiểm tra null
+                    int newPoints = Math.max(currentPoints - entityScore, 0);
+                    user.setPoints(newPoints);
+                    userRepository.save(user);
+                    log.info("Subtracted {} points from user {} after deleting submission",
+                            entityScore, userId);
+                }
+            }
+
             submissionRepository.delete(entity);
             log.info("User {} deleted submission {}", userId, submissionId);
 
@@ -290,6 +397,19 @@ public class MiniTestService {
     }
 
     /**
+     * Lấy tất cả submissions (admin)
+     */
+    public List<MiniTestSubmissionDTO> getAllSubmissionsForAdmin() {
+        try {
+            List<MiniTestSubmission> submissions = submissionRepository.findAllByOrderBySubmittedAtDesc();
+            return submissions.stream().map(this::convertToDto).collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error getting all submissions for admin", e);
+            return List.of();
+        }
+    }
+
+    /**
      * Lấy bài nộp theo ID
      */
     public Optional<MiniTestSubmission> getSubmissionById(Long submissionId) {
@@ -297,6 +417,22 @@ public class MiniTestService {
             return submissionRepository.findById(submissionId);
         } catch (Exception e) {
             log.error("Error getting submission by ID {}", submissionId, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Lấy user info cho submission
+     */
+    public Optional<User> getUserInfoForSubmission(Long submissionId) {
+        try {
+            Optional<MiniTestSubmission> submissionOpt = submissionRepository.findById(submissionId);
+            if (submissionOpt.isPresent()) {
+                return userRepository.findById(submissionOpt.get().getUserId());
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Error getting user info for submission {}", submissionId, e);
             return Optional.empty();
         }
     }
@@ -328,6 +464,8 @@ public class MiniTestService {
                 .feedback(entity.getFeedback())
                 .feedbackAt(entity.getFeedbackAt())
                 .status(entity.getStatus().name())
+                .score(entity.getScore())
+                .timeSpent(entity.getTimeSpent())
                 .build();
 
         // Parse answers từ JSON string sang List<AnswerDTO>
@@ -348,7 +486,7 @@ public class MiniTestService {
 
     /**
      * Parse answers từ JSON string - Xử lý cả array và object format
-     * FIXED VERSION: Xử lý nhiều format JSON khác nhau
+     * FIXED VERSION: Xử lý format mới với key là section và value là array
      */
     private List<MiniTestSubmissionDTO.AnswerDTO> parseAnswersJson(String answersJson) {
         List<MiniTestSubmissionDTO.AnswerDTO> answers = new ArrayList<>();
@@ -374,12 +512,10 @@ public class MiniTestService {
                 parseArrayFormat(rootNode, answers);
 
             } else if (rootNode.isObject()) {
-                // Format 3: {"1":{"question_id":1,"user_answer":"A"},...}
-                // Format 4: {"1":"A","2":"B"} (simple key-value)
-                // Format 5: {"question_1":"A","question_2":"B"}
-                // Format 6: {"q1":"A","q2":"B"}
-                log.debug("Detected OBJECT format");
-                parseObjectFormat(rootNode, answers);
+                // Format mới từ database: {"7": ["a", "a", "a", "a", "a"], "8": ["a", "a", "a",
+                // "a"], ...}
+                log.debug("Detected OBJECT format với mảng giá trị");
+                parseObjectWithArrayFormat(rootNode, answers);
 
             } else {
                 log.warn("Unknown JSON format - neither array nor object");
@@ -388,19 +524,6 @@ public class MiniTestService {
         } catch (Exception e) {
             log.error("Error parsing answers JSON: {}", e.getMessage());
             log.debug("Full error stack:", e);
-
-            // Fallback: Thử parse như mảng thông thường
-            try {
-                log.debug("Trying fallback array parsing");
-                List<MiniTestSubmissionDTO.AnswerDTO> fallbackAnswers = objectMapper.readValue(
-                        answersJson,
-                        new TypeReference<List<MiniTestSubmissionDTO.AnswerDTO>>() {
-                        });
-                answers.addAll(fallbackAnswers);
-                log.debug("Fallback parsing successful, found {} answers", fallbackAnswers.size());
-            } catch (JsonProcessingException ex) {
-                log.error("Fallback parsing also failed: {}", ex.getMessage());
-            }
         }
 
         // Sắp xếp theo questionId để hiển thị đúng thứ tự
@@ -440,20 +563,67 @@ public class MiniTestService {
     }
 
     /**
-     * Parse object format JSON
+     * Parse object format với mảng giá trị - format mới từ database
+     * Format: {"7": ["a", "a", "a", "a", "a"], "8": ["a", "a", "a", "a"], "9":
+     * ["だれ", "わたし", ...]}
      */
-    private void parseObjectFormat(JsonNode objectNode, List<MiniTestSubmissionDTO.AnswerDTO> answers) {
+    private void parseObjectWithArrayFormat(JsonNode objectNode, List<MiniTestSubmissionDTO.AnswerDTO> answers) {
         Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+
+        // Để theo dõi số thứ tự câu hỏi toàn cục
+        int globalQuestionNumber = 1;
 
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
-            String key = entry.getKey();
+            String sectionKey = entry.getKey(); // "7", "8", "9"
             JsonNode valueNode = entry.getValue();
 
             try {
-                if (valueNode.isObject()) {
+                // Parse section number từ key
+                int sectionNumber;
+                try {
+                    sectionNumber = Integer.parseInt(sectionKey);
+                } catch (NumberFormatException e) {
+                    sectionNumber = globalQuestionNumber;
+                }
+
+                if (valueNode.isArray()) {
+                    // Giá trị là mảng các câu trả lời
+                    int questionInSection = 1;
+                    for (JsonNode answerNode : valueNode) {
+                        Long questionId = (long) globalQuestionNumber;
+                        String userAnswer;
+
+                        if (answerNode.isTextual()) {
+                            userAnswer = answerNode.asText();
+                        } else if (answerNode.isNumber()) {
+                            userAnswer = String.valueOf(answerNode.asLong());
+                        } else if (answerNode.isBoolean()) {
+                            userAnswer = String.valueOf(answerNode.asBoolean());
+                        } else if (answerNode.isObject()) {
+                            // Nếu là object, thử extract
+                            userAnswer = extractUserAnswer(answerNode);
+                            if (userAnswer == null) {
+                                userAnswer = answerNode.toString();
+                            }
+                        } else {
+                            userAnswer = answerNode.toString();
+                        }
+
+                        if (userAnswer != null && !userAnswer.isEmpty()) {
+                            MiniTestSubmissionDTO.AnswerDTO answerDTO = MiniTestSubmissionDTO.AnswerDTO.builder()
+                                    .questionId(questionId)
+                                    .userAnswer(userAnswer)
+                                    .build();
+                            answers.add(answerDTO);
+                        }
+
+                        globalQuestionNumber++;
+                        questionInSection++;
+                    }
+                } else if (valueNode.isObject()) {
                     // Format: {"1":{"question_id":1,"user_answer":"A"}}
-                    Long questionId = extractQuestionIdFromKey(key, valueNode);
+                    Long questionId = extractQuestionIdFromKey(sectionKey, valueNode);
                     String userAnswer = extractUserAnswer(valueNode);
 
                     if (questionId == null) {
@@ -466,11 +636,11 @@ public class MiniTestService {
                                 .userAnswer(userAnswer)
                                 .build();
                         answers.add(answerDTO);
+                        globalQuestionNumber++;
                     }
-
                 } else if (valueNode.isTextual() || valueNode.isNumber() || valueNode.isBoolean()) {
                     // Format: {"1":"A"} hoặc {"question_1":"A"}
-                    Long questionId = extractQuestionIdFromKey(key, null);
+                    Long questionId = extractQuestionIdFromKey(sectionKey, null);
                     String userAnswer = valueNode.asText();
 
                     if (userAnswer == null || userAnswer.isEmpty()) {
@@ -483,10 +653,11 @@ public class MiniTestService {
                                 .userAnswer(userAnswer)
                                 .build();
                         answers.add(answerDTO);
+                        globalQuestionNumber++;
                     }
                 }
             } catch (Exception e) {
-                log.warn("Error processing object field key='{}': {}", key, e.getMessage());
+                log.warn("Error processing object field key='{}': {}", sectionKey, e.getMessage());
             }
         }
     }
@@ -702,8 +873,8 @@ public class MiniTestService {
 
         for (MiniTestSubmission sub : allSubmissions) {
             try {
-                log.info("Submission ID: {}, User: {}, Lesson: {}, Status: {}",
-                        sub.getId(), sub.getUserId(), sub.getLessonId(), sub.getStatus());
+                log.info("Submission ID: {}, User: {}, Lesson: {}, Status: {}, Score: {}",
+                        sub.getId(), sub.getUserId(), sub.getLessonId(), sub.getStatus(), sub.getScore());
 
                 if (sub.getAnswers() != null && !sub.getAnswers().isEmpty()) {
                     try {

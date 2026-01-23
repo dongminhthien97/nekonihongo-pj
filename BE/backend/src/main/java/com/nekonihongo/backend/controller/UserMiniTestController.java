@@ -43,12 +43,19 @@ public class UserMiniTestController {
      * User: Xóa bài nộp của chính mình
      */
     @DeleteMapping("/submission/{id}")
-    public ResponseEntity<?> deleteUserSubmission(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUserSubmission(@PathVariable("id") Long id) {
         try {
-            miniTestService.deleteUserSubmission(id);
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Xóa bài nộp thành công"));
+            var response = miniTestService.deleteUserSubmission(id);
+
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", response.getMessage()));
+            } else {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", response.getMessage()));
+            }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
