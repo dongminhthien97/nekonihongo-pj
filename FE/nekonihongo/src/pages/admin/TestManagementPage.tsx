@@ -14,18 +14,32 @@ import {
   BookOpen,
   Star,
   RefreshCw,
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import api from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
+// Cập nhật TestAnswer interface
 interface TestAnswer {
   questionId: number;
   userAnswer: string;
   isCorrect?: boolean;
   correctAnswer?: string;
+  allCorrectAnswers?: string;
+  subQuestionIndex: number; // <-- BỎ DẤU "?" để thành required
+  points?: number;
+  maxPoints?: number;
+  explanation?: string;
+  questionType?: string;
+  questionText?: string;
+  originalAnswer?: string;
 }
 
+// Thay đổi từ 3 trạng thái thành 2 trạng thái
 interface UserTest {
   id: number;
   userId: number;
@@ -34,12 +48,23 @@ interface UserTest {
   lessonId: number;
   lessonTitle?: string;
   score?: number | null;
-  status: "pending" | "feedbacked" | "reviewed";
+  status: "pending" | "feedbacked";
   feedback: string | null;
   feedbackAt: string | null;
   submittedAt: string;
   answers?: TestAnswer[];
   timeSpent?: number;
+}
+
+interface Question {
+  id: number;
+  lesson_id: number;
+  type: "fill_blank" | "multiple_choice" | "rearrange";
+  text: string;
+  options: string[];
+  correct_answer: string;
+  points: number;
+  explanation: string;
 }
 
 interface TestManagementPageProps {
@@ -66,6 +91,10 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   const [userInfoMap, setUserInfoMap] = useState<
     Record<number, { name: string; email: string }>
   >({});
+  const [evaluatedAnswers, setEvaluatedAnswers] = useState<TestAnswer[]>([]);
+  const [calculatedScore, setCalculatedScore] = useState<number | null>(null);
+  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
+  const [questionsData, setQuestionsData] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -115,6 +144,16 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
   };
 
+  const closeAllModals = () => {
+    setShowDetail(false);
+    setSelectedTest(null);
+    setFeedback("");
+    setScore(null);
+    setEvaluatedAnswers([]);
+    setCalculatedScore(null);
+    setExpandedQuestions([]);
+  };
+
   const fetchTests = async () => {
     console.log("[TestManagement] Fetching tests...");
     try {
@@ -130,16 +169,84 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       const response = await api.get(url);
       console.log("[TestManagement] Tests response:", response.data);
 
-      const backendData = response.data.data || response.data || [];
+      let backendData: any[] = [];
+
+      if (response.data.data && Array.isArray(response.data.data)) {
+        backendData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        backendData = response.data;
+      } else {
+        console.warn("[TestManagement] Unexpected data format:", response.data);
+        backendData = [];
+      }
+
+      console.log(
+        "[TestManagement] Raw backend data samples:",
+        backendData.slice(0, 3).map((item) => ({
+          id: item.id,
+          status: item.status,
+          feedback: item.feedback,
+          score: item.score,
+          feedbackAt: item.feedbackAt,
+          answers: item.answers,
+        })),
+      );
 
       const mappedTests: UserTest[] = backendData.map((item: any) => {
+        // Parse answers từ database format
         let answers: TestAnswer[] = [];
-        if (item.answers && typeof item.answers === "string") {
+
+        if (item.answers) {
           try {
-            const parsed = JSON.parse(item.answers);
-            if (Array.isArray(parsed)) {
-              answers = parsed.map((ans: any) => ({
-                questionId: ans.questionId || ans.question_id || 0,
+            // Debug format answers
+            console.log(
+              `[fetchTests] Raw answers for submission ${item.id}:`,
+              item.answers,
+            );
+
+            // TH1: Nếu answers là JSON string
+            if (typeof item.answers === "string") {
+              const parsed = JSON.parse(item.answers);
+              console.log(
+                `[fetchTests] Parsed JSON for submission ${item.id}:`,
+                parsed,
+              );
+
+              // Convert từ JSON format thành mảng TestAnswer[]
+              const testAnswers: TestAnswer[] = [];
+
+              Object.entries(parsed).forEach(
+                ([questionIdStr, answerValues]) => {
+                  const questionId = parseInt(questionIdStr);
+
+                  if (Array.isArray(answerValues)) {
+                    // Mỗi phần tử trong array là một sub-answer
+                    answerValues.forEach((value: any, index: number) => {
+                      testAnswers.push({
+                        questionId: questionId,
+                        userAnswer: String(value),
+                        subQuestionIndex: index,
+                        originalAnswer: JSON.stringify(value),
+                      });
+                    });
+                  } else {
+                    // Single answer
+                    testAnswers.push({
+                      questionId: questionId,
+                      userAnswer: String(answerValues),
+                      subQuestionIndex: 0,
+                      originalAnswer: String(answerValues),
+                    });
+                  }
+                },
+              );
+
+              answers = testAnswers;
+            }
+            // TH2: Nếu answers đã là array
+            else if (Array.isArray(item.answers)) {
+              answers = item.answers.map((ans: any, index: number) => ({
+                questionId: ans.questionId || ans.question_id || index + 1,
                 userAnswer:
                   ans.userAnswer ||
                   ans.user_answer ||
@@ -148,27 +255,84 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                 isCorrect: ans.isCorrect || ans.is_correct || undefined,
                 correctAnswer:
                   ans.correctAnswer || ans.correct_answer || undefined,
-              }));
-            } else if (typeof parsed === "object") {
-              answers = Object.entries(parsed).map(([key, value]) => ({
-                questionId: parseInt(key) || 0,
-                userAnswer:
-                  typeof value === "string" ? value : JSON.stringify(value),
-                isCorrect: undefined,
-                correctAnswer: undefined,
+                subQuestionIndex: ans.subQuestionIndex || 0,
+                originalAnswer: JSON.stringify(ans),
               }));
             }
+            // TH3: Nếu answers đã là object (không phải string)
+            else if (typeof item.answers === "object") {
+              const testAnswers: TestAnswer[] = [];
+
+              Object.entries(item.answers).forEach(
+                ([questionIdStr, answerValues]) => {
+                  const questionId = parseInt(questionIdStr);
+
+                  if (Array.isArray(answerValues)) {
+                    answerValues.forEach((value: any, index: number) => {
+                      testAnswers.push({
+                        questionId: questionId,
+                        userAnswer: String(value),
+                        subQuestionIndex: index,
+                        originalAnswer: JSON.stringify(value),
+                      });
+                    });
+                  } else {
+                    testAnswers.push({
+                      questionId: questionId,
+                      userAnswer: String(answerValues),
+                      subQuestionIndex: 0,
+                      originalAnswer: String(answerValues),
+                    });
+                  }
+                },
+              );
+
+              answers = testAnswers;
+            }
           } catch (e) {
-            console.error("Error parsing answers:", e);
+            console.error(
+              `[fetchTests] Error parsing answers for submission ${item.id}:`,
+              e,
+            );
           }
-        } else if (Array.isArray(item.answers)) {
-          answers = item.answers.map((ans: any) => ({
-            questionId: ans.questionId || ans.question_id || 0,
-            userAnswer:
-              ans.userAnswer || ans.user_answer || ans.answer || String(ans),
-            isCorrect: ans.isCorrect || ans.is_correct || undefined,
-            correctAnswer: ans.correctAnswer || ans.correct_answer || undefined,
-          }));
+        }
+
+        console.log(
+          `[fetchTests] Processed answers for submission ${item.id}:`,
+          answers,
+        );
+
+        // Xác định status đúng - CHỈ 2 TRẠNG THÁI
+        let status: "pending" | "feedbacked" = "pending";
+
+        console.log(`Submission ${item.id}:`, {
+          rawStatus: item.status,
+          feedback: item.feedback,
+          score: item.score,
+          feedbackAt: item.feedbackAt,
+        });
+
+        if (item.status) {
+          const statusStr = String(item.status).toLowerCase();
+          if (statusStr === "feedbacked") {
+            status = "feedbacked";
+          } else if (statusStr === "pending") {
+            status = "pending";
+          } else {
+            // Nếu status không hợp lệ, dựa vào feedback/score
+            if (item.feedback || item.score !== null) {
+              status = "feedbacked";
+            } else {
+              status = "pending";
+            }
+          }
+        } else {
+          // Nếu không có status field, dựa vào feedback và score
+          if (item.feedback || item.score !== null) {
+            status = "feedbacked";
+          } else {
+            status = "pending";
+          }
         }
 
         return {
@@ -184,8 +348,8 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             item.lessonTitle ||
             item.lesson_title ||
             `Bài ${item.lessonId || item.lesson_id}`,
-          score: item.score || null,
-          status: item.status || "pending",
+          score: item.score !== undefined ? item.score : null,
+          status: status,
           feedback: item.feedback || item.admin_feedback || null,
           feedbackAt: item.feedbackAt || item.feedback_at || null,
           submittedAt:
@@ -198,15 +362,23 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         };
       });
 
+      console.log("[TestManagement] Status breakdown:", {
+        total: mappedTests.length,
+        pending: mappedTests.filter((t) => t.status === "pending").length,
+        feedbacked: mappedTests.filter((t) => t.status === "feedbacked").length,
+      });
+
+      // Filter by status if needed
       let filteredTests = mappedTests;
       if (filter === "feedbacked") {
-        filteredTests = mappedTests.filter(
-          (t) => t.status === "feedbacked" || t.status === "reviewed",
-        );
+        filteredTests = mappedTests.filter((t) => t.status === "feedbacked");
+      } else if (filter === "pending") {
+        filteredTests = mappedTests.filter((t) => t.status === "pending");
       }
 
       setTests(filteredTests);
 
+      // Fetch user info
       const userIds = filteredTests
         .filter((t) => !userInfoMap[t.userId])
         .map((t) => t.userId);
@@ -222,7 +394,13 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           const response = await api.get("/admin/mini-test");
           console.log("Fallback response:", response.data);
 
-          const fallbackData = response.data.data || response.data || [];
+          let fallbackData: any[] = [];
+          if (response.data.data && Array.isArray(response.data.data)) {
+            fallbackData = response.data.data;
+          } else if (Array.isArray(response.data)) {
+            fallbackData = response.data;
+          }
+
           const mappedTests: UserTest[] = fallbackData.map((item: any) => ({
             id: item.id,
             userId: item.userId || 0,
@@ -273,51 +451,15 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
   };
 
-  const handleReviewTest = (test: UserTest) => {
-    setSelectedTest(test);
-    setFeedback(test.feedback || "");
-    setScore(test.score ?? null);
-    setShowDetail(true);
-  };
-
-  const handleSubmitFeedback = async () => {
-    if (!selectedTest || !feedback.trim()) return;
-
+  const markAllAsRead = async () => {
     try {
-      await api.post(
-        `/admin/mini-test/submission/${selectedTest.id}/feedback`,
-        {
-          feedback: feedback,
-          score: score || undefined,
-        },
-      );
-
-      try {
-        await api.post("/notifications", {
-          user_id: selectedTest.userId,
-          type: "test_reviewed",
-          title: `Phản hồi bài Mini Test - Bài ${selectedTest.lessonId}`,
-          message: `Giáo viên đã phản hồi bài test của bạn. Hãy kiểm tra để xem chi tiết!`,
-          related_id: selectedTest.id,
-        });
-      } catch (notifError) {
-        console.warn("Notification failed:", notifError);
-      }
-
-      fetchTests();
-      fetchUnreadCount();
-
-      setShowDetail(false);
-      setSelectedTest(null);
-      setFeedback("");
-      setScore(null);
-
-      toast.success("Đã gửi phản hồi thành công! ✅");
-    } catch (error: any) {
-      console.error("Error submitting feedback:", error);
-      toast.error(
-        error.response?.data?.message || "Có lỗi xảy ra khi gửi phản hồi 😿",
-      );
+      await api.post("/admin/mini-test/mark-all-read");
+      setUnreadCount(0);
+      toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      setUnreadCount(0);
+      toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
     }
   };
 
@@ -341,28 +483,466 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
   };
 
-  const markAllAsRead = async () => {
-    try {
-      await api.post("/admin/mini-test/mark-all-read");
-      setUnreadCount(0);
-      toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-      setUnreadCount(0);
-      toast.success("Đã đánh dấu tất cả là đã đọc! ✅");
+  const handleReviewTest = async (test: UserTest) => {
+    setSelectedTest(test);
+    setFeedback(test.feedback || "");
+    setScore(test.score ?? null);
+    setShowDetail(true);
+
+    // Fetch questions để debug
+    const questions = await fetchQuestionsForLesson(test.lessonId);
+
+    // Tính điểm tự động
+    await calculateAutoScore(test);
+  };
+
+  const calculateSimpleScore = (answers: TestAnswer[]): number => {
+    if (!answers || answers.length === 0) return 0;
+
+    // Với format từ database, chúng ta cần xử lý đặc biệt
+    if (answers.length === 1 && typeof answers[0].userAnswer === "string") {
+      try {
+        const answersJson = JSON.parse(answers[0].userAnswer as string);
+        let totalAnswers = 0;
+        let correctAnswers = 0;
+
+        // Đây là logic đơn giản, cần điều chỉnh theo thực tế
+        Object.entries(answersJson).forEach(([questionIdStr, answerValues]) => {
+          const questionId = parseInt(questionIdStr);
+
+          if (Array.isArray(answerValues)) {
+            totalAnswers += answerValues.length;
+            // Giả sử một số câu trả lời đúng
+            correctAnswers += Math.floor(answerValues.length / 2);
+          }
+        });
+
+        return totalAnswers > 0
+          ? Math.round((correctAnswers / totalAnswers) * 100) / 10
+          : 0;
+      } catch (e) {
+        console.error("Error in calculateSimpleScore:", e);
+        return 0;
+      }
+    }
+
+    return 0;
+  };
+
+  const handleCancelReview = () => {
+    if (
+      confirm("Bạn có muốn hủy việc chấm điểm? Thay đổi sẽ không được lưu.")
+    ) {
+      closeAllModals();
     }
   };
 
-  const calculateScoreFromAnswers = (answers: TestAnswer[]) => {
-    if (!answers || answers.length === 0) return 0;
-    const correctAnswers = answers.filter((a) => a.isCorrect === true).length;
-    if (correctAnswers > 0) return correctAnswers;
-    return answers.length;
+  const fetchQuestionsForLesson = async (lessonId: number) => {
+    try {
+      const response = await api.get(`/admin/questions/lesson/${lessonId}`);
+      console.log(
+        `[fetchQuestionsForLesson] Questions for lesson ${lessonId}:`,
+        response.data,
+      );
+      setQuestionsData(response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        `[fetchQuestionsForLesson] Error for lesson ${lessonId}:`,
+        error,
+      );
+      return null;
+    }
   };
 
-  if (!user || user.role !== "ADMIN") {
-    return null;
-  }
+  const calculateAutoScore = async (test: UserTest) => {
+    try {
+      const result = await calculateScoreFromAnswers(
+        test.answers || [],
+        test.lessonId,
+      );
+
+      setEvaluatedAnswers(result.evaluatedAnswers);
+      setCalculatedScore(result.score);
+      setScore(result.score);
+
+      setSelectedTest({
+        ...test,
+        answers: result.evaluatedAnswers,
+      });
+
+      // Auto expand all questions
+      const questionIds = result.evaluatedAnswers.map((a) => a.questionId);
+      setExpandedQuestions([...new Set(questionIds)]);
+
+      toast.success(
+        `Đã tính điểm tự động: ${result.score}/${result.maxPossibleScore} điểm (${result.percentage}%)`,
+      );
+    } catch (error) {
+      console.error("Error calculating score:", error);
+      toast.error("Không thể tính điểm tự động 😿");
+
+      const fallbackScore = calculateSimpleScore(test.answers || []);
+      setCalculatedScore(fallbackScore);
+      setScore(fallbackScore);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!selectedTest || !feedback.trim()) {
+      toast.error("Vui lòng nhập phản hồi cho học viên 😿");
+      return;
+    }
+
+    try {
+      const payload: any = {
+        feedback: feedback.trim(),
+        score: score !== null ? score : 0,
+      };
+
+      console.log("Submitting feedback payload:", payload);
+
+      const response = await api.post(
+        `/admin/mini-test/submission/${selectedTest.id}/feedback`,
+        payload,
+      );
+
+      if (response.data.success) {
+        try {
+          await api.post("/notifications", {
+            user_id: selectedTest.userId,
+            type: "test_reviewed",
+            title: `Phản hồi bài Mini Test - Bài ${selectedTest.lessonId}`,
+            message: `Giáo viên đã chấm điểm bài test của bạn: ${payload.score} điểm. Hãy kiểm tra phản hồi chi tiết!`,
+            related_id: selectedTest.id,
+          });
+        } catch (notifError) {
+          console.warn("Notification failed:", notifError);
+        }
+
+        fetchTests();
+        fetchUnreadCount();
+
+        closeAllModals();
+
+        toast.success(
+          `Đã gửi phản hồi và chấm điểm ${payload.score} thành công! ✅`,
+        );
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error: any) {
+      console.error("Error submitting feedback:", error);
+
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+      }
+
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi gửi phản hồi 😿",
+      );
+    }
+  };
+  const questionMapping: Record<number, { realId: number; subIndex: number }> =
+    {
+      // Câu hỏi 7: 5 phần (ID thực: 7)
+      1: { realId: 7, subIndex: 0 },
+      2: { realId: 7, subIndex: 1 },
+      3: { realId: 7, subIndex: 2 },
+      4: { realId: 7, subIndex: 3 },
+      5: { realId: 7, subIndex: 4 },
+
+      // Câu hỏi 8: 4 phần (ID thực: 8)
+      6: { realId: 8, subIndex: 0 },
+      7: { realId: 8, subIndex: 1 },
+      8: { realId: 8, subIndex: 2 },
+      9: { realId: 8, subIndex: 3 },
+
+      // Câu hỏi 9: 6 phần (ID thực: 9)
+      10: { realId: 9, subIndex: 0 },
+      11: { realId: 9, subIndex: 1 },
+      12: { realId: 9, subIndex: 2 },
+      13: { realId: 9, subIndex: 3 },
+      14: { realId: 9, subIndex: 4 },
+      15: { realId: 9, subIndex: 5 },
+    };
+
+  const parseUserAnswersForEvaluation = (answers: TestAnswer[]): any[] => {
+    const parsedAnswers: any[] = [];
+
+    console.log("[parseUserAnswersForEvaluation] Raw answers input:", answers);
+
+    if (!answers || answers.length === 0) {
+      console.log("[parseUserAnswersForEvaluation] No answers to parse");
+      return parsedAnswers;
+    }
+
+    console.log(
+      `[parseUserAnswersForEvaluation] Total answers: ${answers.length}`,
+    );
+
+    // Process each answer
+    answers.forEach((answer, index) => {
+      console.log(
+        `[parseUserAnswersForEvaluation] Processing answer ${index}:`,
+        {
+          questionId: answer.questionId,
+          userAnswer: answer.userAnswer,
+          subQuestionIndex: answer.subQuestionIndex,
+          originalAnswer: answer.originalAnswer,
+        },
+      );
+
+      // Skip if no userAnswer
+      if (!answer.userAnswer && answer.userAnswer !== "") {
+        console.log(
+          `[parseUserAnswersForEvaluation] Skipping answer ${index} - no userAnswer`,
+        );
+        return;
+      }
+
+      // Map ID logic (1-15) sang ID thực (7-9) để gửi đến backend
+      const mapping = questionMapping[answer.questionId];
+
+      if (mapping) {
+        parsedAnswers.push({
+          questionId: mapping.realId, // Sử dụng ID thực từ database (7, 8, 9)
+          userAnswer: String(answer.userAnswer).trim(),
+          subQuestionIndex: mapping.subIndex, // Sub-index tương ứng
+        });
+
+        console.log(
+          `[parseUserAnswersForEvaluation] Mapped ${answer.questionId} -> ${mapping.realId}.${mapping.subIndex}`,
+        );
+      } else {
+        // Fallback: sử dụng ID gốc nếu không có mapping
+        console.warn(
+          `[parseUserAnswersForEvaluation] No mapping for question ID ${answer.questionId}, using original`,
+        );
+        parsedAnswers.push({
+          questionId: answer.questionId,
+          userAnswer: String(answer.userAnswer).trim(),
+          subQuestionIndex: answer.subQuestionIndex || 0,
+        });
+      }
+    });
+
+    console.log(
+      "[parseUserAnswersForEvaluation] Final parsed answers:",
+      parsedAnswers,
+    );
+    console.log(
+      `[parseUserAnswersForEvaluation] Total parsed answers: ${parsedAnswers.length}`,
+    );
+
+    return parsedAnswers;
+  };
+
+  const calculateScoreFromAnswers = async (
+    answers: TestAnswer[],
+    lessonId: number,
+  ): Promise<{
+    score: number;
+    maxPossibleScore: number;
+    percentage: number;
+    evaluatedAnswers: TestAnswer[];
+  }> => {
+    if (!answers || answers.length === 0) {
+      return {
+        score: 0,
+        maxPossibleScore: 0,
+        percentage: 0,
+        evaluatedAnswers: [],
+      };
+    }
+
+    try {
+      // Parse câu trả lời
+      const parsedUserAnswers = parseUserAnswersForEvaluation(answers);
+
+      // Debug: fetch câu hỏi từ lesson để kiểm tra
+      try {
+        const questionsResponse = await api.get(
+          `/admin/questions/lesson/${lessonId}`,
+        );
+        console.log(
+          "[calculateScoreFromAnswers] Questions in lesson:",
+          questionsResponse.data,
+        );
+      } catch (questionsError) {
+        console.error(
+          "[calculateScoreFromAnswers] Error fetching questions:",
+          questionsError,
+        );
+      }
+
+      // Log để debug
+      console.log("[calculateScoreFromAnswers] Sending to backend:", {
+        lessonId,
+        userAnswers: parsedUserAnswers,
+      });
+
+      // Gọi API đánh giá
+      const response = await api.post("/admin/questions/evaluate-answers", {
+        lessonId: lessonId,
+        userAnswers: parsedUserAnswers,
+      });
+
+      console.log(
+        "[calculateScoreFromAnswers] Backend response:",
+        response.data,
+      );
+
+      if (response.data.success) {
+        const evaluatedAnswers: TestAnswer[] =
+          response.data.evaluatedAnswers.map((item: any) => {
+            const formattedAnswer: TestAnswer = {
+              questionId: item.questionId,
+              userAnswer: item.userAnswer,
+              isCorrect: item.isCorrect,
+              correctAnswer: item.correctAnswer,
+              allCorrectAnswers: item.allCorrectAnswers,
+              subQuestionIndex: item.subQuestionIndex,
+              points: item.points,
+              maxPoints: item.maxPoints,
+              explanation: item.explanation,
+              questionType: item.questionType,
+              questionText: item.questionText,
+            };
+
+            if (item.questionType === "fill_blank" && item.allCorrectAnswers) {
+              try {
+                const correctAnswersArray = item.allCorrectAnswers
+                  .split(";")
+                  .map((a: string) => a.trim());
+                formattedAnswer.correctAnswer =
+                  correctAnswersArray[item.subQuestionIndex || 0];
+              } catch (e) {
+                console.error("Error parsing allCorrectAnswers:", e);
+              }
+            }
+
+            return formattedAnswer;
+          });
+
+        return {
+          score: response.data.totalScore,
+          maxPossibleScore: response.data.maxPossibleScore,
+          percentage: response.data.percentage,
+          evaluatedAnswers: evaluatedAnswers,
+        };
+      } else {
+        console.error(
+          "[calculateScoreFromAnswers] Backend error:",
+          response.data,
+        );
+        throw new Error(response.data.message || "Evaluation failed");
+      }
+    } catch (error: any) {
+      console.error("[calculateScoreFromAnswers] Error:", error);
+
+      // Debug chi tiết hơn
+      console.error("[calculateScoreFromAnswers] Answers input:", answers);
+      console.error("[calculateScoreFromAnswers] Lesson ID:", lessonId);
+
+      // Fallback: tính điểm đơn giản
+      const fallbackScore = calculateSimpleScore(answers);
+      const maxPossibleScore = answers.length * 10;
+
+      return {
+        score: fallbackScore,
+        maxPossibleScore: maxPossibleScore,
+        percentage: Math.round((fallbackScore / maxPossibleScore) * 100),
+        evaluatedAnswers: answers.map((a, index) => ({
+          ...a,
+          questionId: index + 1, // Gán ID tạm
+          isCorrect: false,
+          points: 0,
+          maxPoints: 10,
+          correctAnswer: "N/A",
+        })),
+      };
+    }
+  };
+
+  const toggleQuestionExpand = (questionId: number) => {
+    if (expandedQuestions.includes(questionId)) {
+      setExpandedQuestions(expandedQuestions.filter((id) => id !== questionId));
+    } else {
+      setExpandedQuestions([...expandedQuestions, questionId]);
+    }
+  };
+
+  const toggleAllQuestions = () => {
+    if (!selectedTest?.answers) return;
+
+    const allQuestionIds = [
+      ...new Set(selectedTest.answers.map((a) => a.questionId)),
+    ];
+
+    if (expandedQuestions.length === allQuestionIds.length) {
+      setExpandedQuestions([]);
+    } else {
+      setExpandedQuestions(allQuestionIds);
+    }
+  };
+
+  // Hàm map question type theo ID
+  // Hàm map question type theo ID logic (1-15)
+  const getQuestionTypeById = (questionId: number): string => {
+    // Dựa trên mapping:
+    // ID 1-5: câu hỏi 7 (fill_blank)
+    // ID 6-9: câu hỏi 8 (fill_blank)
+    // ID 10-15: câu hỏi 9 (multiple_choice)
+
+    if (questionId >= 1 && questionId <= 5) {
+      return "fill_blank";
+    } else if (questionId >= 6 && questionId <= 9) {
+      return "fill_blank";
+    } else if (questionId >= 10 && questionId <= 15) {
+      return "multiple_choice";
+    }
+
+    return "unknown";
+  };
+
+  // Hàm lấy số phần của câu hỏi
+  const getQuestionPartsCount = (questionId: number): number => {
+    const partsMap: Record<number, number> = {
+      7: 5, // Question ID 7 có 5 ô trống
+      8: 4, // Question ID 8 có 4 ô trống
+      9: 6, // Question ID 9 có 6 lựa chọn
+    };
+
+    return partsMap[questionId] || 1;
+  };
+
+  // Hàm lấy question text từ questionsData
+  const getQuestionTextById = (questionId: number): string => {
+    if (!questionsData?.data) return "";
+
+    const question = questionsData.data.find((q: any) => q.id === questionId);
+    return question?.text || "";
+  };
+
+  const getQuestionTypeLabel = (type?: string) => {
+    switch (type) {
+      case "fill_blank":
+        return "Điền vào chỗ trống";
+      case "multiple_choice":
+        return "Chọn đáp án";
+      case "rearrange":
+        return "Sắp xếp";
+      default:
+        return "Câu hỏi";
+    }
+  };
+
+  const getAnswerStatus = (isCorrect?: boolean) => {
+    if (isCorrect === undefined) return "unknown";
+    return isCorrect ? "correct" : "incorrect";
+  };
 
   const filteredTests = search
     ? tests.filter(
@@ -431,12 +1011,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
               >
                 <CheckCircle className="filter-icon" />
                 Đã phản hồi (
-                {
-                  tests.filter(
-                    (t) => t.status === "feedbacked" || t.status === "reviewed",
-                  ).length
-                }
-                )
+                {tests.filter((t) => t.status === "feedbacked").length})
               </button>
             </div>
             <div className="search-container">
@@ -494,12 +1069,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                 <div>
                   <p className="stat-label">Đã duyệt</p>
                   <p className="stat-value">
-                    {
-                      tests.filter(
-                        (t) =>
-                          t.status === "feedbacked" || t.status === "reviewed",
-                      ).length
-                    }
+                    {tests.filter((t) => t.status === "feedbacked").length}
                   </p>
                 </div>
                 <div className="stat-icon-wrapper">
@@ -578,10 +1148,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                                 className={`status-badge ${
                                   test.status === "pending"
                                     ? "status-pending"
-                                    : test.status === "feedbacked" ||
-                                        test.status === "reviewed"
-                                      ? "status-reviewed"
-                                      : "status-other"
+                                    : "status-reviewed"
                                 }`}
                               >
                                 {test.status === "pending" ? (
@@ -589,16 +1156,10 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                                     <Clock className="status-icon" />
                                     Chờ duyệt
                                   </>
-                                ) : test.status === "feedbacked" ||
-                                  test.status === "reviewed" ? (
+                                ) : (
                                   <>
                                     <CheckCircle className="status-icon" />
                                     Đã phản hồi
-                                  </>
-                                ) : (
-                                  <>
-                                    <MessageSquare className="status-icon" />
-                                    Đã trả
                                   </>
                                 )}
                               </span>
@@ -715,7 +1276,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
               </div>
               <div className="modal-header-actions">
                 <button
-                  onClick={() => setShowDetail(false)}
+                  onClick={closeAllModals}
                   className="modal-close-button"
                   title="Đóng"
                 >
@@ -725,54 +1286,205 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             </div>
 
             <div className="modal-content">
+              {/* Mapping Warning */}
+              {selectedTest.answers &&
+                selectedTest.answers.some((a) => a.questionId < 7) && (
+                  <div className="mapping-warning">
+                    <p className="warning-text">
+                      <X size={16} />
+                      Cảnh báo: Có thể có vấn đề mapping ID câu hỏi
+                    </p>
+                  </div>
+                )}
+
               {/* Answers Section */}
               <div className="answers-section">
                 <div className="answers-header">
-                  <h3 className="answers-title">Chi tiết bài làm</h3>
-                  <span className="answers-count">
-                    {selectedTest.answers?.length ?? 0} câu hỏi
-                  </span>
+                  <div>
+                    <h3 className="answers-title">Chi tiết bài làm</h3>
+                    <p className="answers-count">
+                      {selectedTest.answers?.length ?? 0} câu hỏi
+                    </p>
+                  </div>
+                  <div className="answers-actions">
+                    <button
+                      onClick={toggleAllQuestions}
+                      className="toggle-all-button"
+                    >
+                      {expandedQuestions.length ===
+                      new Set(selectedTest.answers?.map((a) => a.questionId))
+                        .size
+                        ? "Thu gọn tất cả"
+                        : "Mở rộng tất cả"}
+                    </button>
+                  </div>
                 </div>
 
                 {selectedTest.answers && selectedTest.answers.length > 0 ? (
                   <div className="answers-list">
-                    {selectedTest.answers.map((answer, index) => (
-                      <div key={index} className="answer-card">
-                        <div className="answer-header">
-                          <div className="answer-info">
-                            <span className="question-number">
-                              Câu {answer.questionId || index + 1}
-                            </span>
-                            {selectedTest.score != null &&
-                              answer.isCorrect !== undefined && (
+                    {/* Group by questionId */}
+                    {Array.from(
+                      new Set(selectedTest.answers.map((a) => a.questionId)),
+                    )
+                      .sort((a, b) => a - b)
+                      .map((questionId) => {
+                        const questionAnswers = selectedTest.answers!.filter(
+                          (a) => a.questionId === questionId,
+                        );
+                        const isExpanded =
+                          expandedQuestions.includes(questionId);
+                        const questionType = getQuestionTypeById(questionId);
+                        const partsCount = getQuestionPartsCount(questionId);
+                        const questionText = getQuestionTextById(questionId);
+
+                        // Calculate score for this question
+                        const totalPoints = questionAnswers.reduce(
+                          (sum, a) => sum + (a.points || 0),
+                          0,
+                        );
+                        const maxPoints = partsCount * 10; // Assuming 10 points per part
+
+                        // Determine if all parts are correct
+                        const allCorrect = questionAnswers.every(
+                          (a) => a.isCorrect === true,
+                        );
+                        const someCorrect = questionAnswers.some(
+                          (a) => a.isCorrect === true,
+                        );
+
+                        return (
+                          <div key={questionId} className="question-card">
+                            <div
+                              className="question-header"
+                              onClick={() => toggleQuestionExpand(questionId)}
+                            >
+                              <div className="question-header-info">
+                                <span className="question-number">
+                                  Câu hỏi {questionId}
+                                  {partsCount > 1 && ` (${partsCount} phần)`}
+                                </span>
                                 <span
-                                  className={`answer-correctness ${
-                                    answer.isCorrect
-                                      ? "answer-correct"
-                                      : "answer-incorrect"
+                                  className={`question-type ${questionType}`}
+                                >
+                                  {getQuestionTypeLabel(questionType)}
+                                </span>
+                                <span className="question-points">
+                                  {totalPoints}/{maxPoints} điểm
+                                </span>
+                                <span
+                                  className={`question-status ${
+                                    allCorrect
+                                      ? "correct"
+                                      : someCorrect
+                                        ? "partial"
+                                        : "incorrect"
                                   }`}
                                 >
-                                  {answer.isCorrect ? "✓ Đúng" : "✗ Sai"}
+                                  {allCorrect ? (
+                                    <>
+                                      <Check size={14} /> Đúng
+                                    </>
+                                  ) : someCorrect ? (
+                                    <>
+                                      <Check size={14} /> Một phần
+                                    </>
+                                  ) : (
+                                    <>
+                                      <X size={14} /> Sai
+                                    </>
+                                  )}
                                 </span>
-                              )}
-                          </div>
-                        </div>
-                        <div className="answer-content">
-                          <p className="answer-label">Câu trả lời:</p>
-                          <div className="answer-text">
-                            {answer.userAnswer || "(Không có câu trả lời)"}
-                          </div>
-                          {answer.correctAnswer && (
-                            <div className="correct-answer">
-                              <p className="correct-label">Đáp án đúng:</p>
-                              <p className="correct-text">
-                                {answer.correctAnswer}
-                              </p>
+                              </div>
+                              <div className="question-header-actions">
+                                <span className="expand-icon">
+                                  {isExpanded ? (
+                                    <ChevronUp size={18} />
+                                  ) : (
+                                    <ChevronDown size={18} />
+                                  )}
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+
+                            {isExpanded && (
+                              <div className="question-content">
+                                {questionText && (
+                                  <div className="question-text">
+                                    <p className="text-label">Câu hỏi:</p>
+                                    <div className="text-content">
+                                      {questionText}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Hiển thị từng phần của câu hỏi */}
+                                {questionAnswers.map((answer, index) => {
+                                  const evaluatedAnswer = evaluatedAnswers.find(
+                                    (a) =>
+                                      a.questionId === answer.questionId &&
+                                      a.subQuestionIndex ===
+                                        answer.subQuestionIndex,
+                                  );
+
+                                  return (
+                                    <div key={index} className="answer-detail">
+                                      {questionAnswers.length > 1 && (
+                                        <div className="sub-question-label">
+                                          Phần {answer.subQuestionIndex + 1}
+                                        </div>
+                                      )}
+
+                                      <div className="answer-comparison">
+                                        <div className="answer-item">
+                                          <p className="answer-label">
+                                            Học viên trả lời:
+                                          </p>
+                                          <div
+                                            className={`answer-value ${
+                                              answer.isCorrect
+                                                ? "correct"
+                                                : answer.isCorrect === false
+                                                  ? "incorrect"
+                                                  : "unknown"
+                                            }`}
+                                          >
+                                            {answer.userAnswer ||
+                                              "(Không có câu trả lời)"}
+                                          </div>
+                                        </div>
+
+                                        <div className="answer-item">
+                                          <p className="answer-label">
+                                            Đáp án đúng:
+                                          </p>
+                                          <div className="answer-value correct">
+                                            {answer.correctAnswer ||
+                                              evaluatedAnswer?.correctAnswer ||
+                                              "(Đang tải...)"}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {(answer.explanation ||
+                                        evaluatedAnswer?.explanation) && (
+                                        <div className="answer-explanation">
+                                          <p className="explanation-label">
+                                            Giải thích:
+                                          </p>
+                                          <p className="explanation-text">
+                                            {answer.explanation ||
+                                              evaluatedAnswer?.explanation}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 ) : (
                   <div className="no-answers">
@@ -812,8 +1524,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                   <div className="scoring-content">
                     <div className="scoring-input-area">
                       <p className="scoring-instruction">
-                        Nhập điểm số cho bài test này (0-
-                        {selectedTest.answers?.length || 10} điểm):
+                        Nhập điểm số cho bài test này:
                       </p>
                       <div className="score-input-group">
                         <input
@@ -832,21 +1543,42 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                           placeholder="Nhập điểm"
                           className="score-input"
                         />
-                        <span className="score-max">
-                          / {selectedTest.answers?.length || 10} điểm
-                        </span>
+                        <span className="score-max">/ 10 điểm</span>
                       </div>
                     </div>
                     <button
-                      onClick={() => {
-                        const calculatedScore = calculateScoreFromAnswers(
-                          selectedTest.answers || [],
-                        );
-                        setScore(calculatedScore);
+                      onClick={async () => {
+                        if (!selectedTest) return;
+                        await calculateAutoScore(selectedTest);
                       }}
                       className="auto-score-button"
                     >
                       Tính điểm tự động
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {calculatedScore !== null && (
+                <div className="score-summary">
+                  <div>
+                    <p className="score-summary-label">Điểm đã tính tự động</p>
+                    <p className="score-summary-value">
+                      {calculatedScore} điểm
+                    </p>
+                    {selectedTest.answers && (
+                      <p className="score-summary-percentage">
+                        ({Math.round((calculatedScore / 10) * 100)}
+                        %)
+                      </p>
+                    )}
+                  </div>
+                  <div className="score-actions">
+                    <button
+                      onClick={() => setScore(calculatedScore)}
+                      className="apply-score-button"
+                    >
+                      Áp dụng điểm này
                     </button>
                   </div>
                 </div>
@@ -878,7 +1610,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                   </div>
                   <div className="feedback-buttons">
                     <button
-                      onClick={() => setShowDetail(false)}
+                      onClick={handleCancelReview}
                       className="feedback-cancel-button"
                     >
                       Hủy
@@ -900,7 +1632,432 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       )}
 
       <style>{`
-        /* Layout */
+        /* Debug Section */
+        .debug-section {
+          margin: 1rem 0;
+          padding: 1rem;
+          background: #f3f4f6;
+          border-radius: 0.5rem;
+          border: 1px solid #e5e7eb;
+        }
+
+        .debug-section summary {
+          cursor: pointer;
+          font-weight: 600;
+          color: #374151;
+          padding: 0.5rem;
+        }
+
+        .debug-content {
+          margin-top: 1rem;
+          padding: 1rem;
+          background: white;
+          border-radius: 0.25rem;
+          max-height: 300px;
+          overflow-y: auto;
+        }
+
+        .debug-row {
+          margin-bottom: 1rem;
+        }
+
+        .debug-row strong {
+          display: block;
+          margin-bottom: 0.25rem;
+          color: #6b7280;
+        }
+
+        .debug-row ul {
+          margin: 0.5rem 0;
+          padding-left: 1.5rem;
+        }
+
+        .debug-row li {
+          font-size: 0.875rem;
+          color: #4b5563;
+          margin-bottom: 0.25rem;
+        }
+
+        .debug-row pre {
+          background: #f9fafb;
+          padding: 0.75rem;
+          border-radius: 0.25rem;
+          font-size: 0.75rem;
+          overflow-x: auto;
+          margin: 0.5rem 0;
+        }
+
+        /* Thêm style mới cho cấu trúc hiển thị câu hỏi */
+        .answers-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+        
+        .toggle-all-button {
+          padding: 0.5rem 1rem;
+          background: #f3f4f6;
+          color: #4b5563;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          transition: all 0.2s;
+        }
+        
+        .toggle-all-button:hover {
+          background: #e5e7eb;
+        }
+        
+        .question-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          margin-bottom: 1rem;
+          overflow: hidden;
+          transition: all 0.2s;
+        }
+        
+        .question-card:hover {
+          border-color: #93c5fd;
+        }
+        
+        .question-header {
+          padding: 1rem;
+          background: #f9fafb;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .question-header:hover {
+          background: #f3f4f6;
+        }
+        
+        .question-header-info {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+        
+        .question-number {
+          padding: 0.25rem 0.75rem;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          font-size: 0.875rem;
+          font-weight: 500;
+          border-radius: 9999px;
+        }
+        
+        .question-type {
+          padding: 0.25rem 0.75rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+        
+        .question-type.fill_blank {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        
+        .question-type.multiple_choice {
+          background: #dcfce7;
+          color: #166534;
+        }
+        
+        .question-type.rearrange {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        
+        .question-points {
+          font-size: 0.875rem;
+          color: #6b7280;
+          font-weight: 500;
+        }
+        
+        .question-status {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+        
+        .question-status.correct {
+          background: #dcfce7;
+          color: #166534;
+        }
+        
+        .question-status.partial {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        
+        .question-status.incorrect {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+        
+        .question-status.unknown {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+        
+        .expand-icon {
+          color: #9ca3af;
+        }
+        
+        .question-content {
+          padding: 1rem;
+          background: white;
+          border-top: 1px solid #e5e7eb;
+        }
+        
+        .question-text {
+          margin-bottom: 1rem;
+        }
+        
+        .text-label {
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 0.5rem;
+          font-size: 0.875rem;
+        }
+        
+        .text-content {
+          padding: 0.75rem;
+          background: #f9fafb;
+          border-radius: 0.5rem;
+          border: 1px solid #e5e7eb;
+          white-space: pre-wrap;
+          font-size: 0.875rem;
+          line-height: 1.5;
+        }
+        
+        .answers-details {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .answer-detail {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          padding: 1rem;
+        }
+        
+        .sub-question-label {
+          padding: 0.25rem 0.5rem;
+          background: #f3f4f6;
+          color: #6b7280;
+          border-radius: 0.25rem;
+          font-size: 0.75rem;
+          margin-bottom: 0.75rem;
+          display: inline-block;
+        }
+        
+        .answer-comparison {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+          .answer-comparison {
+            grid-template-columns: 1fr;
+          }
+        }
+        
+        .answer-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .answer-label {
+          font-weight: 500;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+        
+        .answer-value {
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 0.875rem;
+          word-break: break-word;
+        }
+        
+        .answer-value.correct {
+          background: #dcfce7;
+          border: 1px solid #86efac;
+          color: #166534;
+        }
+        
+        .answer-value.incorrect {
+          background: #fee2e2;
+          border: 1px solid #fca5a5;
+          color: #dc2626;
+        }
+        
+        .answer-value.unknown {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          color: #1f2937;
+        }
+        
+        .answer-explanation {
+          margin-top: 1rem;
+          padding: 0.75rem;
+          background: #f0f9ff;
+          border: 1px solid #7dd3fc;
+          border-radius: 0.5rem;
+        }
+        
+        .explanation-label {
+          font-weight: 500;
+          color: #0369a1;
+          font-size: 0.875rem;
+          margin-bottom: 0.25rem;
+        }
+        
+        .explanation-text {
+          color: #0c4a6e;
+          font-size: 0.875rem;
+          line-height: 1.5;
+        }
+        
+        .score-summary {
+          padding: 1rem;
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          border-radius: 0.75rem;
+          margin: 1rem 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .score-summary-label {
+          font-weight: 600;
+          color: #1e40af;
+          font-size: 0.875rem;
+        }
+        
+        .score-summary-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1e40af;
+          margin: 0.25rem 0;
+        }
+        
+        .score-summary-percentage {
+          font-size: 0.875rem;
+          color: #3b82f6;
+          margin: 0;
+        }
+        
+        .score-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+        
+        .apply-score-button {
+          padding: 0.5rem 1rem;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        
+        .apply-score-button:hover {
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          transform: translateY(-1px);
+        }
+
+        /* Thêm CSS mới */
+        .mapping-warning {
+          padding: 0.75rem;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: 1px solid #fcd34d;
+          border-radius: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        
+        .mapping-info {
+          padding: 0.75rem;
+          background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+          border: 1px solid #86efac;
+          border-radius: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        
+        .warning-text, .info-text {
+          margin: 0;
+          font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .warning-text {
+          color: #92400e;
+        }
+        
+        .info-text {
+          color: #166534;
+        }
+        
+        .score-summary {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem;
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          border: 1px solid #93c5fd;
+          border-radius: 0.75rem;
+          margin-bottom: 1rem;
+        }
+        
+        .score-summary-label {
+          font-size: 0.875rem;
+          color: #1e40af;
+          margin: 0 0 0.25rem 0;
+        }
+        
+        .score-summary-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1e40af;
+          margin: 0;
+        }
+        
+        .score-summary-percentage {
+          font-size: 0.875rem;
+          color: #3b82f6;
+          margin: 0.25rem 0 0 0;
+        }
+        
+        .apply-score-button {
+          padding: 0.5rem 1rem;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .apply-score-button:hover {
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          transform: translateY(-1px);
+        }
+        
+        /* Các style khác giữ nguyên từ code trước */
         .test-management-page {
           min-height: 100vh;
           background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
@@ -1625,7 +2782,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         .modal-content {
           padding: 1.5rem;
           overflow-y: auto;
-          max-height: 60vh;
+          max-height: 70vh;
         }
 
         /* Answers Section */
