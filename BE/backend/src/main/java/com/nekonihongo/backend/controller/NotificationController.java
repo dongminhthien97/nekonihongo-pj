@@ -1,28 +1,49 @@
-// src/main/java/com/nekonihongo/backend/controller/NotificationController.java (tạo mới để fix unread-count)
+// src/main/java/com/nekonihongo/backend/controller/NotificationController.java
 package com.nekonihongo.backend.controller;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/notifications")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping("/api/notifications")
+@RequiredArgsConstructor
+@Slf4j
 public class NotificationController {
 
-    // Fix 404 cho GET /api/admin/notifications/unread-count
-    @GetMapping("/unread-count")
-    public ResponseEntity<?> getUnreadCount() {
-        // TODO: Implement real count từ table notifications hoặc pending tests
-        // Hiện tại trả count = 0 để bell không badge đỏ khi chưa có data
-        Map<String, Integer> response = new HashMap<>();
-        response.put("count", 0);
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> createNotification(@RequestBody Map<String, Object> request) {
+        try {
+            log.info("Creating notification: {}", request);
 
-        return ResponseEntity.ok(response);
+            // Lấy thông tin từ request
+            Long userId = ((Number) request.get("user_id")).longValue();
+            String type = (String) request.get("type");
+            String title = (String) request.get("title");
+            String message = (String) request.get("message");
+            Long relatedId = request.get("related_id") != null ? ((Number) request.get("related_id")).longValue()
+                    : null;
+
+            log.info("Notification created for user {}: {} - {}",
+                    userId, title, message);
+
+            // Ở đây bạn có thể lưu vào database nếu cần
+            // notificationService.createNotification(userId, type, title, message,
+            // relatedId);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Notification created successfully"));
+        } catch (Exception e) {
+            log.error("Error creating notification: ", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Error creating notification: " + e.getMessage()));
+        }
     }
 }

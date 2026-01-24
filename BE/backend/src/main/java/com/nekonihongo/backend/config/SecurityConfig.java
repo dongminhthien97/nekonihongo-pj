@@ -72,6 +72,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/user/mini-test/**").permitAll()
                                                 .requestMatchers("/api/grammar-tests/**").permitAll()
                                                 .requestMatchers("/api/grammar/mini-test/**").permitAll()
+                                                .requestMatchers("/api/admin/questions/**").permitAll()
                                                 // Các API cần đăng nhập
                                                 .requestMatchers("/api/user/progress/vocabulary").authenticated()
                                                 .requestMatchers("/api/user/me/**").authenticated()

@@ -187,9 +187,14 @@ public class MiniTestService {
     @Transactional
     public SubmitTestResponseDTO scoreAndFeedback(Long submissionId, String feedback, Integer score) {
         try {
+            log.info("Scoring and feedback for submission: {}, score: {}, feedback: {}",
+                    submissionId, score,
+                    feedback != null ? feedback.substring(0, Math.min(50, feedback.length())) : "null");
+
             Optional<MiniTestSubmission> submissionOpt = submissionRepository.findById(submissionId);
 
             if (submissionOpt.isEmpty()) {
+                log.error("Submission not found: {}", submissionId);
                 return SubmitTestResponseDTO.builder()
                         .success(false)
                         .message("Không tìm thấy bài nộp")
@@ -198,24 +203,23 @@ public class MiniTestService {
 
             MiniTestSubmission submission = submissionOpt.get();
 
-            // Validate score - sử dụng Integer và kiểm tra null
+            // Validate score - CHO PHÉP score = 0
             if (score == null) {
-                return SubmitTestResponseDTO.builder()
-                        .success(false)
-                        .message("Điểm không được để trống")
-                        .build();
+                log.warn("Score is null, setting to 0 for submission: {}", submissionId);
+                score = 0; // Set default to 0
             }
 
             if (score < 0) {
-                return SubmitTestResponseDTO.builder()
-                        .success(false)
-                        .message("Điểm phải là số dương")
-                        .build();
+                log.warn("Negative score: {} for submission: {}, setting to 0", score, submissionId);
+                score = 0; // Set to 0 if negative
             }
 
-            // Kiểm tra xem đã chấm điểm chưa
-            boolean alreadyScored = submission.getScore() != null;
+            // Lấy điểm cũ để tính toán
             Integer oldScore = submission.getScore() != null ? submission.getScore() : 0;
+            boolean alreadyScored = submission.getScore() != null;
+
+            log.info("Updating submission: {}, oldScore: {}, newScore: {}, alreadyScored: {}",
+                    submissionId, oldScore, score, alreadyScored);
 
             // Cập nhật feedback và điểm
             submission.setFeedback(feedback);
@@ -225,37 +229,42 @@ public class MiniTestService {
 
             submissionRepository.save(submission);
 
-            // Cộng điểm cho user
-            if (score > 0) {
+            // Cập nhật điểm cho user - CHỈ khi có sự thay đổi điểm
+            try {
                 Optional<User> userOpt = userRepository.findById(submission.getUserId());
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
-
-                    // Lấy điểm hiện tại của user - VÌ points là int nên không cần kiểm tra null
                     int currentUserPoints = user.getPoints();
                     int newPoints;
 
                     if (alreadyScored) {
                         // Nếu đã chấm điểm trước đó, trừ điểm cũ rồi cộng điểm mới
                         newPoints = currentUserPoints - oldScore + score;
+                        log.info("Already scored - user {}: currentPoints={}, -oldScore={}, +newScore={}, newPoints={}",
+                                user.getId(), currentUserPoints, oldScore, score, newPoints);
                     } else {
                         // Nếu chấm điểm lần đầu, cộng điểm mới
                         newPoints = currentUserPoints + score;
+                        log.info("First time scoring - user {}: currentPoints={}, +score={}, newPoints={}",
+                                user.getId(), currentUserPoints, score, newPoints);
                     }
 
                     // Đảm bảo điểm không âm
-                    user.setPoints(Math.max(newPoints, 0));
+                    newPoints = Math.max(newPoints, 0);
+                    user.setPoints(newPoints);
                     userRepository.save(user);
 
-                    log.info("User {}: Old points={}, Added={}, New points={}",
-                            user.getId(), currentUserPoints, score, user.getPoints());
+                    log.info("User {} points updated: {} -> {}",
+                            user.getId(), currentUserPoints, user.getPoints());
                 } else {
                     log.warn("User not found for ID: {}", submission.getUserId());
                 }
+            } catch (Exception e) {
+                log.error("Error updating user points for submission {}: {}", submissionId, e.getMessage(), e);
+                // Không fail vì lỗi này, vẫn tiếp tục
             }
 
-            log.info("Test scored: submission={}, score={}, alreadyScored={}",
-                    submissionId, score, alreadyScored);
+            log.info("Test scored successfully: submission={}, score={}", submissionId, score);
 
             return SubmitTestResponseDTO.builder()
                     .success(true)
@@ -263,7 +272,7 @@ public class MiniTestService {
                     .submissionId(submissionId)
                     .build();
         } catch (Exception e) {
-            log.error("Error scoring test {}", submissionId, e);
+            log.error("Error scoring test {}: {}", submissionId, e.getMessage(), e);
             return SubmitTestResponseDTO.builder()
                     .success(false)
                     .message("Lỗi khi chấm điểm: " + e.getMessage())

@@ -4,10 +4,10 @@ package com.nekonihongo.backend.controller;
 import com.nekonihongo.backend.dto.MiniTestSubmissionDTO;
 import com.nekonihongo.backend.entity.MiniTestSubmission;
 import com.nekonihongo.backend.entity.User;
+import com.nekonihongo.backend.repository.GrammarQuestionRepository;
 import com.nekonihongo.backend.service.MiniTestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class AdminMiniTestController {
 
     private final MiniTestService miniTestService;
+    private final GrammarQuestionRepository grammarQuestionRepository;
 
     /**
      * GET /api/admin/mini-test (root path)
@@ -146,7 +147,7 @@ public class AdminMiniTestController {
      * Admin: Lấy chi tiết bài nộp
      */
     @GetMapping("/submission/{id}")
-    public ResponseEntity<?> getSubmissionById(@PathVariable Long id) {
+    public ResponseEntity<?> getSubmissionById(@PathVariable(name = "id") Long id) {
         try {
             var submissionOpt = miniTestService.getSubmissionById(id);
             if (submissionOpt.isEmpty()) {
@@ -183,7 +184,7 @@ public class AdminMiniTestController {
      * Admin: Lấy chi tiết bài làm với thông tin user và answers
      */
     @GetMapping("/{submissionId}/details")
-    public ResponseEntity<?> getSubmissionDetails(@PathVariable Long submissionId) {
+    public ResponseEntity<?> getSubmissionDetails(@PathVariable(name = "submissionId") Long submissionId) {
         try {
             Optional<MiniTestSubmission> submissionOpt = miniTestService.getSubmissionById(submissionId);
             if (submissionOpt.isEmpty()) {
@@ -236,16 +237,20 @@ public class AdminMiniTestController {
      * POST /api/admin/mini-test/submission/{id}/feedback
      * Admin: Thêm feedback và điểm cho bài nộp
      */
+    // src/main/java/com/nekonihongo/backend/controller/AdminMiniTestController.java
+
     @PostMapping("/submission/{id}/feedback")
     public ResponseEntity<?> addFeedbackWithScore(
-            @PathVariable Long id,
+            @PathVariable(name = "id") Long submissionId,
             @RequestBody Map<String, Object> feedbackRequest) {
 
         try {
+            log.info("Processing feedback for submission {}: request={}", submissionId, feedbackRequest);
+
             String feedback = (String) feedbackRequest.get("feedback");
             Integer score = null;
 
-            // Lấy điểm nếu có
+            // Lấy điểm nếu có - XỬ LÝ ĐÚNG CÁCH
             if (feedbackRequest.containsKey("score")) {
                 Object scoreObj = feedbackRequest.get("score");
                 if (scoreObj != null) {
@@ -254,31 +259,83 @@ public class AdminMiniTestController {
                     } else if (scoreObj instanceof Double) {
                         score = ((Double) scoreObj).intValue();
                     } else if (scoreObj instanceof String) {
-                        try {
-                            score = Integer.parseInt((String) scoreObj);
-                        } catch (NumberFormatException e) {
-                            // Không xử lý, giữ null
+                        String scoreStr = ((String) scoreObj).trim();
+                        if (!scoreStr.isEmpty()) {
+                            try {
+                                score = Integer.parseInt(scoreStr);
+                            } catch (NumberFormatException e) {
+                                log.warn("Invalid score format: {}", scoreStr);
+                                return ResponseEntity.badRequest().body(Map.of(
+                                        "success", false,
+                                        "message", "Định dạng điểm không hợp lệ. Phải là số nguyên."));
+                            }
+                        } else {
+                            // Nếu chuỗi rỗng, score = 0
+                            score = 0;
                         }
+                    } else if (scoreObj instanceof Number) {
+                        score = ((Number) scoreObj).intValue();
                     }
+                } else {
+                    // scoreObj là null, set score = 0
+                    score = 0;
                 }
+            } else {
+                // Không có key "score" trong request, set score = 0
+                score = 0;
             }
 
+            // Validation feedback
             if (feedback == null || feedback.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Feedback không được để trống"));
+                log.warn("Empty feedback for submission {}", submissionId);
+                feedback = "Đã xem"; // Default feedback nếu không có
+            } else {
+                feedback = feedback.trim();
             }
 
-            var result = miniTestService.scoreAndFeedback(id, feedback.trim(), score);
-            return ResponseEntity.ok(Map.of(
-                    "success", result.isSuccess(),
-                    "message", result.getMessage(),
-                    "submissionId", result.getSubmissionId()));
+            // Validate score - CHO PHÉP score = 0
+            if (score == null) {
+                score = 0; // Default to 0 if null
+            }
+
+            if (score < 0) {
+                log.warn("Negative score {} for submission {}", score, submissionId);
+                // Vẫn cho phép, nhưng cảnh báo
+            }
+
+            log.info("Calling scoreAndFeedback: submissionId={}, score={}, feedbackLength={}",
+                    submissionId, score, feedback.length());
+
+            // Gọi service
+            var result = miniTestService.scoreAndFeedback(submissionId, feedback, score);
+
+            // Tạo response an toàn (không dùng Map.of)
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", result.isSuccess());
+            response.put("message", result.getMessage());
+
+            if (result.getSubmissionId() != null) {
+                response.put("submissionId", result.getSubmissionId());
+            }
+
+            if (result.getTestId() != null) {
+                response.put("testId", result.getTestId());
+            }
+
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
         } catch (Exception e) {
-            log.error("Error adding feedback for submission: {}", id, e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Lỗi server: " + e.getMessage()));
+            log.error("Error adding feedback for submission: {}", submissionId, e);
+
+            // Tạo error response an toàn
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Lỗi server: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 
@@ -287,7 +344,7 @@ public class AdminMiniTestController {
      * Admin: Thống kê bài nộp theo lesson
      */
     @GetMapping("/lesson/{lessonId}/stats")
-    public ResponseEntity<?> getLessonStats(@PathVariable Integer lessonId) {
+    public ResponseEntity<?> getLessonStats(@PathVariable(name = "lessonId") Integer lessonId) {
         try {
             long pendingCount = miniTestService.countPendingByLesson(lessonId);
             long feedbackedCount = miniTestService.countFeedbackedByLesson(lessonId);
@@ -414,7 +471,7 @@ public class AdminMiniTestController {
      * Admin: Xóa bài nộp
      */
     @DeleteMapping("/submission/{id}")
-    public ResponseEntity<?> deleteSubmission(@PathVariable Long id) {
+    public ResponseEntity<?> deleteSubmission(@PathVariable(name = "id") Long id) {
         try {
             var result = miniTestService.deleteUserSubmission(id);
             return ResponseEntity.ok(Map.of(
@@ -426,6 +483,28 @@ public class AdminMiniTestController {
             return ResponseEntity.internalServerError().body(Map.of(
                     "success", false,
                     "message", "Lỗi server: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/mini-test/max-score/{lessonId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getMaxScoreForLesson(@PathVariable(name = "lessonId") Integer lessonId) {
+        try {
+            Integer maxScore = grammarQuestionRepository.sumPointsByLessonId(lessonId);
+            Long questionCount = grammarQuestionRepository.countByLessonId(lessonId);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "lessonId", lessonId,
+                    "maxScore", maxScore != null ? maxScore : 0,
+                    "questionCount", questionCount,
+                    "averagePointsPerQuestion",
+                    questionCount > 0 && maxScore != null ? Math.round((double) maxScore / questionCount) : 10));
+        } catch (Exception e) {
+            log.error("Error getting max score for lesson {}: ", lessonId, e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Error getting max score"));
         }
     }
 }
