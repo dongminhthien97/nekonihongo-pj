@@ -125,8 +125,8 @@ export function Navigation({
                     isLogout
                       ? "text-shadow-hover-effect"
                       : isActive
-                      ? "gradient-text-shadow"
-                      : "red-text-hover-gradient"
+                        ? "gradient-text-shadow"
+                        : "red-text-hover-gradient"
                   }`}
                 >
                   <Icon
@@ -154,9 +154,9 @@ export function Navigation({
                   onClick={() => onNavigate("user-mini-test-submissions")}
                   className="p-3 rounded-full bg-white/20 hover:bg-white/40 transition-all"
                 >
-                  <Bell className="w-6 h-6 text-white" />
+                  <Bell className="w-6 h-6 text-black" />
                   {feedbackCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    <span className="badge-error-pulse">
                       {feedbackCount > 9 ? "9+" : feedbackCount}
                     </span>
                   )}
@@ -182,8 +182,8 @@ export function Navigation({
                     isLogout
                       ? "hover-text-scale"
                       : isActive
-                      ? "hover-black-scale"
-                      : "gray-text-hover-pink"
+                        ? "hover-black-scale"
+                        : "gray-text-hover-pink"
                   }`}
                   title={item.label}
                 >
@@ -258,6 +258,41 @@ export function Navigation({
         </div>
       )}
       <style>{`
+      .badge-error-pulse {
+  /* Vị trí tuyệt đối */
+  position: absolute;
+  top: -0.25rem;    /* tương ứng -top-1 (1 * 0.25rem = 4px) */
+  right: -0.25rem;  /* tương ứng -right-1 */
+
+  /* Kích thước & Hình dạng */
+  width: 1.25rem;   /* tương ứng w-5 (20px) */
+  height: 1.25rem;  /* tương ứng h-5 (20px) */
+  border-radius: 9999px; /* tương ứng rounded-full */
+
+  /* Màu sắc & Font */
+  background-color: #ef4444; /* đỏ red-500 */
+  color: #ffffff;
+  font-size: 0.75rem;        /* tương ứng text-xs (12px) */
+  font-weight: 700;          /* tương ứng font-bold */
+
+  /* Căn giữa số/nội dung bên trong */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Hiệu ứng nhấp nháy */
+  animation: pulse-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Định nghĩa hiệu ứng animate-pulse */
+@keyframes pulse-animation {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
       .group-hover-rotate {
   /* transition duration-500 */
   /* Áp dụng transition cho thuộc tính transform để việc xoay diễn ra mượt mà */

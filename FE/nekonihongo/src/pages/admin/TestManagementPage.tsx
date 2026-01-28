@@ -15,6 +15,8 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Check,
+  Square,
 } from "lucide-react";
 import api from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
@@ -81,6 +83,11 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   const [scoringModalPos, setScoringModalPos] = useState({ x: 50, y: 50 });
   const [answersModalPos, setAnswersModalPos] = useState({ x: 550, y: 50 });
 
+  // State cho batch delete
+  const [selectedTests, setSelectedTests] = useState<number[]>([]);
+  const [isSelectAll, setIsSelectAll] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+
   useEffect(() => {
     if (!user) {
       onNavigate("login");
@@ -120,6 +127,12 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     setFilteredTests(filtered);
     setCurrentPage(1);
   }, [tests, filter, search]);
+
+  // Reset selected tests when tests change
+  useEffect(() => {
+    setSelectedTests([]);
+    setIsSelectAll(false);
+  }, [filteredTests]);
 
   const fetchUserInfo = async (userIds: number[]) => {
     try {
@@ -312,6 +325,119 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
   };
 
+  // Handle batch selection
+  const handleSelectTest = (testId: number) => {
+    setSelectedTests((prev) => {
+      if (prev.includes(testId)) {
+        const newSelected = prev.filter((id) => id !== testId);
+        setIsSelectAll(false);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, testId];
+        // If all items on current page are selected, also check select all
+        if (newSelected.length === paginatedTests.length) {
+          setIsSelectAll(true);
+        }
+        return newSelected;
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (isSelectAll) {
+      setSelectedTests([]);
+      setIsSelectAll(false);
+    } else {
+      const currentPageIds = paginatedTests.map((test) => test.id);
+      setSelectedTests(currentPageIds);
+      setIsSelectAll(true);
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedTests.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một bài test để xóa");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Bạn có chắc muốn xóa ${selectedTests.length} bài test đã chọn? Hành động này không thể hoàn tác.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsBatchDeleting(true);
+
+      // Gọi API batch delete
+      const response = await api.post("/admin/mini-test/batch-delete", {
+        ids: selectedTests,
+      });
+
+      console.log("Batch delete response:", response.data);
+
+      if (response.data.success) {
+        const successCount = response.data.successCount || 0;
+        const failedCount = response.data.failedCount || 0;
+
+        // Remove successfully deleted tests from state
+        if (successCount > 0) {
+          const successIds = response.data.successIds || [];
+          setTests((prevTests) =>
+            prevTests.filter((test) => !successIds.includes(test.id)),
+          );
+          setFilteredTests((prevTests) =>
+            prevTests.filter((test) => !successIds.includes(test.id)),
+          );
+
+          // Remove from selected tests
+          setSelectedTests((prev) =>
+            prev.filter((id) => !successIds.includes(id)),
+          );
+        }
+
+        // Show appropriate message
+        if (successCount > 0 && failedCount === 0) {
+          toast.success(`Đã xóa thành công ${successCount} bài test`);
+        } else if (successCount > 0 && failedCount > 0) {
+          toast.success(
+            `Đã xóa thành công ${successCount} bài test, ${failedCount} bài không thể xóa`,
+          );
+
+          // Log errors for failed deletions
+          if (response.data.errors) {
+            console.warn("Failed deletions:", response.data.errors);
+          }
+        } else {
+          toast.error("Không thể xóa các bài test đã chọn");
+        }
+
+        // Fetch unread count
+        await fetchUnreadCount();
+      } else {
+        toast.error(
+          response.data.message || "Có lỗi xảy ra khi xóa nhiều bài test",
+        );
+      }
+    } catch (error: any) {
+      console.error("Error in batch delete:", error);
+
+      let errorMessage = "Có lỗi xảy ra khi xóa nhiều bài test";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      toast.error(errorMessage);
+
+      // Fetch lại dữ liệu để đồng bộ
+      fetchTests();
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   const handleDeleteTest = async (testId: number) => {
     if (
       !window.confirm(
@@ -322,15 +448,93 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
 
     try {
-      await api.delete(`/admin/mini-test/submission/${testId}`);
-      fetchTests();
-      fetchUnreadCount();
-      toast.success("Đã xóa bài test thành công!");
+      console.log(`Attempting to delete test ID: ${testId}`);
+
+      // Gọi API delete
+      const response = await api.delete(
+        `/admin/mini-test/submission/${testId}`,
+      );
+
+      console.log("Delete API response:", response);
+      console.log("Response data:", response.data);
+
+      // Kiểm tra cấu trúc response
+      if (response.data && response.data.success === true) {
+        console.log("Delete successful, updating UI...");
+
+        // Cập nhật state
+        setTests((prevTests) => {
+          const newTests = prevTests.filter((test) => test.id !== testId);
+          console.log(
+            `Updated tests: ${prevTests.length} -> ${newTests.length}`,
+          );
+          return newTests;
+        });
+
+        setFilteredTests((prevTests) => {
+          const newTests = prevTests.filter((test) => test.id !== testId);
+          console.log(
+            `Updated filteredTests: ${prevTests.length} -> ${newTests.length}`,
+          );
+          return newTests;
+        });
+
+        // Remove from selected tests if it was selected
+        setSelectedTests((prev) => prev.filter((id) => id !== testId));
+
+        // Đóng modal nếu đang mở
+        if (selectedTest && selectedTest.id === testId) {
+          setSelectedTest(null);
+          setShowScoringModal(false);
+          setShowAnswersModal(false);
+        }
+
+        // Cập nhật unread count
+        await fetchUnreadCount();
+
+        toast.success(response.data.message || "Đã xóa bài test thành công!");
+      } else {
+        // Backend trả về success: false
+        console.error("Backend returned success: false", response.data);
+        throw new Error(
+          response.data?.message || "Xóa thất bại (không rõ lý do)",
+        );
+      }
     } catch (error: any) {
       console.error("Error deleting test:", error);
-      toast.error(
-        error.response?.data?.message || "Có lỗi xảy ra khi xóa bài test",
-      );
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      let errorMessage = "Có lỗi xảy ra khi xóa bài test";
+
+      if (error.response) {
+        if (error.response.status === 403) {
+          errorMessage = "Không có quyền xóa bài test này";
+        } else if (error.response.status === 404) {
+          errorMessage = "Bài test không tồn tại hoặc đã bị xóa";
+          // Vẫn cập nhật UI
+          setTests((prevTests) =>
+            prevTests.filter((test) => test.id !== testId),
+          );
+          setFilteredTests((prevTests) =>
+            prevTests.filter((test) => test.id !== testId),
+          );
+          setSelectedTests((prev) => prev.filter((id) => id !== testId));
+        } else {
+          errorMessage = `Lỗi ${error.response.status}: ${error.response.data?.message || error.response.data?.error || "Không rõ lỗi"}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+
+      // Fetch lại để đồng bộ dữ liệu
+      fetchTests();
     }
   };
 
@@ -383,6 +587,9 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   };
 
   const exportToCSV = () => {
+    // Thêm BOM để đảm bảo hiển thị tiếng Việt trong Excel
+    const BOM = "\uFEFF";
+
     const headers = [
       "ID",
       "Học viên",
@@ -391,31 +598,79 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       "Điểm",
       "Trạng thái",
       "Thời gian nộp",
+      "Thời gian phản hồi",
+      "Thời gian làm bài (phút)",
     ];
+
     const data = filteredTests.map((test) => [
       test.id,
       test.userName || `User ${test.userId}`,
       test.userEmail || "N/A",
       test.lessonTitle || `Bài ${test.lessonId}`,
-      test.score ?? "Chưa chấm",
+      test.score !== null && test.score !== undefined
+        ? test.score.toString().replace(".", ",")
+        : "Chưa chấm",
       test.status === "pending" ? "Chờ duyệt" : "Đã phản hồi",
-      new Date(test.submittedAt).toLocaleString("vi-VN"),
+      formatDateForCSV(test.submittedAt),
+      test.feedbackAt ? formatDateForCSV(test.feedbackAt) : "Chưa phản hồi",
+      test.timeSpent ? Math.round(test.timeSpent / 60) : "0",
     ]);
 
     const csvContent = [
       headers.join(","),
-      ...data.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...data.map((row) =>
+        row
+          .map((cell) => {
+            // Escape quotes và wrap trong quotes nếu chứa dấu phẩy hoặc xuống dòng
+            if (
+              typeof cell === "string" &&
+              (cell.includes(",") || cell.includes("\n") || cell.includes('"'))
+            ) {
+              return `"${cell.replace(/"/g, '""')}"`;
+            }
+            return `"${cell}"`;
+          })
+          .join(","),
+      ),
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    // Tạo blob với UTF-8 encoding
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `test-submissions-${new Date().toISOString().split("T")[0]}.csv`;
+
+    // Đặt tên file với ngày tháng tiếng Việt
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("vi-VN").replace(/\//g, "-");
+    const timeStr = now.toLocaleTimeString("vi-VN").replace(/:/g, "-");
+    a.download = `bai-test-${dateStr}_${timeStr}.csv`;
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+
+    toast.success("Đã xuất file CSV thành công!");
+  };
+
+  // Hàm hỗ trợ định dạng ngày tháng cho CSV
+  const formatDateForCSV = (dateString: string) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    // Định dạng: DD/MM/YYYY HH:MM
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
   // Pagination
@@ -450,6 +705,19 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
               </p>
             </div>
             <div className="header-actions">
+              {/* Batch delete button - only show if items are selected */}
+              {selectedTests.length > 0 && (
+                <button
+                  className="batch-delete-button"
+                  onClick={handleBatchDelete}
+                  disabled={isBatchDeleting}
+                >
+                  <Trash2 size={16} />
+                  {isBatchDeleting
+                    ? `Đang xóa...`
+                    : `Xóa (${selectedTests.length})`}
+                </button>
+              )}
               <button className="export-button" onClick={exportToCSV}>
                 <Download size={16} />
                 Xuất CSV
@@ -549,10 +817,39 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             </div>
           ) : filteredTests.length > 0 ? (
             <>
+              {/* Batch selection info bar */}
+              {selectedTests.length > 0 && (
+                <div className="selection-info-bar">
+                  <div className="selection-info-content">
+                    <span className="selected-count">
+                      Đã chọn: {selectedTests.length} bài test
+                    </span>
+                    <button
+                      className="clear-selection"
+                      onClick={() => setSelectedTests([])}
+                    >
+                      Bỏ chọn tất cả
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="table-container">
                 <table className="tests-table">
                   <thead>
                     <tr>
+                      <th style={{ width: "50px" }}>
+                        <div
+                          className="checkbox-header"
+                          onClick={handleSelectAll}
+                        >
+                          {isSelectAll ? (
+                            <Check size={16} />
+                          ) : (
+                            <Square size={16} />
+                          )}
+                        </div>
+                      </th>
                       <th>Học viên</th>
                       <th>Bài học</th>
                       <th>Điểm</th>
@@ -566,9 +863,25 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                       const userInfo = userInfoMap[test.userId] || {};
                       const displayName = userInfo.name || test.userName;
                       const displayEmail = userInfo.email || test.userEmail;
+                      const isSelected = selectedTests.includes(test.id);
 
                       return (
-                        <tr key={test.id}>
+                        <tr
+                          key={test.id}
+                          className={isSelected ? "selected-row" : ""}
+                        >
+                          <td>
+                            <div
+                              className="test-checkbox"
+                              onClick={() => handleSelectTest(test.id)}
+                            >
+                              {isSelected ? (
+                                <Check size={16} />
+                              ) : (
+                                <Square size={16} />
+                              )}
+                            </div>
+                          </td>
                           <td>
                             <div className="user-cell">
                               <div className="user-avatar">
@@ -800,6 +1113,30 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         .header-actions {
           display: flex;
           gap: 0.75rem;
+          align-items: center;
+        }
+
+        .batch-delete-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.625rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          transition: all 0.2s;
+          border: none;
+          cursor: pointer;
+          background: #dc2626;
+          color: white;
+        }
+
+        .batch-delete-button:hover:not(:disabled) {
+          background: #b91c1c;
+        }
+
+        .batch-delete-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
         }
 
         .export-button,
@@ -987,6 +1324,39 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           overflow: hidden;
         }
 
+        .selection-info-bar {
+          background: linear-gradient(90deg, #dbeafe 0%, #bfdbfe 100%);
+          padding: 0.75rem 1.5rem;
+          border-bottom: 1px solid #93c5fd;
+        }
+
+        .selection-info-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .selected-count {
+          font-weight: 600;
+          color: #1e40af;
+        }
+
+        .clear-selection {
+          background: transparent;
+          border: 1px solid #3b82f6;
+          color: #3b82f6;
+          padding: 0.25rem 0.75rem;
+          border-radius: 0.375rem;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .clear-selection:hover {
+          background: #3b82f6;
+          color: white;
+        }
+
         .loading-container {
           display: flex;
           flex-direction: column;
@@ -1028,6 +1398,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           text-transform: uppercase;
           letter-spacing: 0.05em;
           border-bottom: 1px solid #e5e7eb;
+          cursor: default;
         }
 
         .tests-table tbody tr {
@@ -1039,9 +1410,55 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           background: #f9fafb;
         }
 
+        .tests-table tbody tr.selected-row {
+          background: #eff6ff;
+        }
+
+        .tests-table tbody tr.selected-row:hover {
+          background: #dbeafe;
+        }
+
         .tests-table td {
           padding: 1rem 1.5rem;
           font-size: 0.875rem;
+        }
+
+        .checkbox-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          cursor: pointer;
+          color: #6b7280;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .checkbox-header:hover {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .test-checkbox {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          cursor: pointer;
+          color: #6b7280;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .test-checkbox:hover {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .test-checkbox svg {
+          pointer-events: none;
         }
 
         .user-cell {
@@ -1270,6 +1687,17 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           
           .search-box {
             max-width: 100%;
+          }
+
+          .header-actions {
+            flex-wrap: wrap;
+          }
+
+          .batch-delete-button,
+          .export-button,
+          .refresh-button {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
           }
         }
       `}</style>

@@ -103,7 +103,11 @@ function AppContent() {
   if (!hasSeenSplash) {
     return <SplashScreen onComplete={markSplashAsSeen} />;
   }
-  const isMyPage = currentPage === "mypage" || currentPage === "admin";
+  const isMyPage =
+    currentPage === "mypage" ||
+    currentPage === "admin" ||
+    currentPage === "user" ||
+    currentPage === "user-mini-test-submissions";
   const isUserMiniTestSubmissions = "user-mini-test-submissions";
   // 4. Đã thấy splash → vào app chính
   return (

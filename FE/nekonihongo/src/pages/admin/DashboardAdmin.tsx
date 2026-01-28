@@ -298,7 +298,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUsers = sortedUsers.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const handlePageChange = (page: number) => {
@@ -365,7 +365,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
             >
               📝 <span className="truncate">Quản lý Mini Test</span>
               {unreadTestsCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                <span className="badge-pulse">
                   {unreadTestsCount > 9 ? "9+" : unreadTestsCount}
                 </span>
               )}
@@ -689,7 +689,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
-                        }
+                        },
                       )}
                     </div>
                   </div>
@@ -731,7 +731,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                         style={{
                           width: `${Math.min(
                             (selectedUser.points / 10000) * 100,
-                            100
+                            100,
                           )}%`,
                         }}
                       ></div>
@@ -751,7 +751,7 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
                         style={{
                           width: `${Math.min(
                             ((selectedUser.streak || 0) / 30) * 100,
-                            100
+                            100,
                           )}%`,
                         }}
                       ></div>
@@ -956,6 +956,40 @@ export function DashboardAdmin({ onNavigate }: DashboardAdminProps) {
       </div>
 
       <style>{`
+      .btn-secondary-gradient {
+      position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  background-size: 200% auto; /* Để tạo hiệu ứng di chuyển gradient */
+  
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.btn-secondary-gradient:hover {
+  background-position: right center; /* Di chuyển gradient */
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.4);
+  filter: brightness(1.1);
+}
+
+.btn-secondary-gradient:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+  .badge-pulse {position: absolute;top: -0.5rem;right: -0.5rem; width: 1.5rem;  height: 1.5rem; background-color: #ef4444; color: #ffffff;            font-size: 0.75rem;        
+  border-radius: 9999px; display: flex;align-items: center;justify-content: center;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }@keyframes pulse {0%, 100% {opacity: 1;}50% {opacity: .5;}}
         .badge-inactive { background-color: #f3f4f6; color: #1f2937; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; }
         .badge-danger { background-color: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; }
         .badge-success { background-color: #dcfce7; color: #166534; padding-left: 0.625rem; padding-right: 0.625rem; padding-top: 0.125rem; padding-bottom: 0.125rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }

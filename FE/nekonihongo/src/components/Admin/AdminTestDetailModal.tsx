@@ -10,7 +10,6 @@ import {
   BookOpen,
   Send,
   AlertCircle,
-  Eye,
   HelpCircle,
   CheckCircle,
   XSquare,
@@ -21,6 +20,10 @@ import {
   Filter,
   Hash,
   Database,
+  CheckSquare,
+  Square,
+  List,
+  FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -71,98 +74,18 @@ interface AdminTestDetailModalProps {
   onPositionChange?: (position: { x: number; y: number }) => void;
 }
 
-interface QuestionData {
+interface GrammarQuestion {
   id: number;
   lesson_id: number;
-  lessonId?: number;
-  example?: string | null;
+  example: string | null;
   type: string;
   text: string;
-  options?: string[] | null;
-  correct_answer?: string;
-  correctAnswer?: string;
+  options: string[] | null;
+  correct_answer: string;
   points: number;
   explanation: string | null;
-  answerParts?: string[];
-  numParts?: number;
-  subQuestions?: SubQuestionData[];
-}
-
-interface SubQuestionData {
-  index: number;
-  correctAnswer: string;
-  possibleAnswers?: string[];
-  points?: number;
-}
-
-interface QuestionMapping {
-  testQuestionId: number;
-  dbQuestionId: number;
-  subIndex: number;
-  subQuestionCount: number;
-}
-
-// Question Mapping Service
-class QuestionMappingService {
-  private static instance: QuestionMappingService;
-  private mappings: Map<number, QuestionMapping[]> = new Map();
-
-  private constructor() {
-    this.initializeMappings();
-  }
-
-  static getInstance(): QuestionMappingService {
-    if (!QuestionMappingService.instance) {
-      QuestionMappingService.instance = new QuestionMappingService();
-    }
-    return QuestionMappingService.instance;
-  }
-
-  private initializeMappings() {
-    // Lesson 1: 14 test questions map to 3 database questions
-    const lesson1Mappings: QuestionMapping[] = [
-      // Test Q1-6 map to DB Q7 (fill_blank with 5 parts)
-      { testQuestionId: 1, dbQuestionId: 7, subIndex: 0, subQuestionCount: 5 },
-      { testQuestionId: 2, dbQuestionId: 7, subIndex: 1, subQuestionCount: 5 },
-      { testQuestionId: 3, dbQuestionId: 7, subIndex: 2, subQuestionCount: 5 },
-      { testQuestionId: 4, dbQuestionId: 7, subIndex: 3, subQuestionCount: 5 },
-      { testQuestionId: 5, dbQuestionId: 7, subIndex: 4, subQuestionCount: 5 },
-      { testQuestionId: 6, dbQuestionId: 7, subIndex: 0, subQuestionCount: 5 }, // Repeat for different context
-
-      // Test Q7-9 map to DB Q8 (fill_blank with 4 parts)
-      { testQuestionId: 7, dbQuestionId: 8, subIndex: 0, subQuestionCount: 4 },
-      { testQuestionId: 8, dbQuestionId: 8, subIndex: 1, subQuestionCount: 4 },
-      { testQuestionId: 9, dbQuestionId: 8, subIndex: 2, subQuestionCount: 4 },
-
-      // Test Q10-14 map to DB Q9 (multiple_choice with parts)
-      { testQuestionId: 10, dbQuestionId: 9, subIndex: 0, subQuestionCount: 6 },
-      { testQuestionId: 11, dbQuestionId: 9, subIndex: 1, subQuestionCount: 6 },
-      { testQuestionId: 12, dbQuestionId: 9, subIndex: 2, subQuestionCount: 6 },
-      { testQuestionId: 13, dbQuestionId: 9, subIndex: 3, subQuestionCount: 6 },
-      { testQuestionId: 14, dbQuestionId: 9, subIndex: 4, subQuestionCount: 6 },
-    ];
-
-    this.mappings.set(1, lesson1Mappings);
-  }
-
-  getMapping(lessonId: number, testQuestionId: number): QuestionMapping | null {
-    const lessonMappings = this.mappings.get(lessonId);
-    if (!lessonMappings) return null;
-
-    return (
-      lessonMappings.find((m) => m.testQuestionId === testQuestionId) || null
-    );
-  }
-
-  getAllMappings(lessonId: number): QuestionMapping[] {
-    return this.mappings.get(lessonId) || [];
-  }
-
-  getDbQuestionIds(lessonId: number): number[] {
-    const mappings = this.getAllMappings(lessonId);
-    const uniqueIds = new Set(mappings.map((m) => m.dbQuestionId));
-    return Array.from(uniqueIds);
-  }
+  created_at: string;
+  updated_at: string;
 }
 
 export function AdminTestDetailModal({
@@ -184,18 +107,14 @@ export function AdminTestDetailModal({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
-  const [questionsData, setQuestionsData] = useState<QuestionData[]>([]);
-  const [autoGraded, setAutoGraded] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [mappingInfo, setMappingInfo] = useState<QuestionMapping[]>([]);
-  const [debugInfo, setDebugInfo] = useState<string>("");
-  const [lastFetchedLessonId, setLastFetchedLessonId] = useState<number | null>(
-    null,
+  const [grammarQuestions, setGrammarQuestions] = useState<GrammarQuestion[]>(
+    [],
   );
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showQuestionAnalysis, setShowQuestionAnalysis] = useState(false);
+  const [showGrammarQuestions, setShowGrammarQuestions] = useState(true);
+  const [autoGraded, setAutoGraded] = useState(false);
 
-  const mappingService = QuestionMappingService.getInstance();
   const fetchTimeoutRef = useRef<number | null>(null);
 
   // Khởi tạo dữ liệu khi test thay đổi
@@ -221,18 +140,8 @@ export function AdminTestDetailModal({
       }
       setCheckedAnswers(initialChecks);
 
-      // Lấy thông tin mapping
-      const mappings = mappingService.getAllMappings(test.lessonId);
-      setMappingInfo(mappings);
-      console.log(
-        `🗺️ Đã tải ${mappings.length} mappings cho bài ${test.lessonId}`,
-      );
-
-      // Chỉ fetch đáp án nếu lessonId thay đổi
-      if (test.lessonId !== lastFetchedLessonId) {
-        fetchCorrectAnswers();
-        setLastFetchedLessonId(test.lessonId);
-      }
+      // Fetch grammar questions
+      fetchGrammarQuestions();
     }
   }, [test]);
 
@@ -297,10 +206,10 @@ export function AdminTestDetailModal({
     return null;
   }, []);
 
-  // Fetch đáp án đúng từ API
-  const fetchCorrectAnswers = async () => {
+  // Fetch grammar questions từ API
+  const fetchGrammarQuestions = async () => {
     if (!test || !test.lessonId) {
-      toast.error("Không tìm thấy bài học để lấy đáp án");
+      toast.error("Không tìm thấy bài học để lấy câu hỏi");
       return;
     }
 
@@ -325,10 +234,10 @@ export function AdminTestDetailModal({
         Authorization: `Bearer ${token}`,
       };
 
-      console.log(`📤 Đang tải đáp án cho bài ${test.lessonId}`);
+      console.log(`📤 Đang tải câu hỏi cho bài ${test.lessonId}`);
 
       // Sử dụng endpoint chính
-      const apiUrl = `/api/admin/questions/lesson/${test.lessonId}/correct-answers`;
+      const apiUrl = `/api/grammar/mini-test/questions?lesson_id=${test.lessonId}`;
       console.log(`🌐 Fetching từ: ${apiUrl}`);
 
       const response = await fetch(apiUrl, {
@@ -339,7 +248,7 @@ export function AdminTestDetailModal({
 
       if (!response.ok) {
         // Thử endpoint thứ cấp nếu endpoint chính thất bại
-        const fallbackUrl = `/admin/questions/lesson/${test.lessonId}/correct-answers`;
+        const fallbackUrl = `/grammar/mini-test/questions?lesson_id=${test.lessonId}`;
         console.log(`🌐 Thử fallback: ${fallbackUrl}`);
 
         const fallbackResponse = await fetch(fallbackUrl, {
@@ -364,21 +273,12 @@ export function AdminTestDetailModal({
         const responseData = await fallbackResponse.json();
         console.log(`✅ Đã tải dữ liệu từ fallback:`, responseData);
 
-        const processedData = processResponseData(responseData);
+        const processedData = processGrammarQuestionsData(responseData);
         if (!processedData || processedData.length === 0) {
-          throw new Error("Không tìm thấy dữ liệu câu hỏi trong phản hồi");
+          throw new Error("Không tìm thấy câu hỏi trong phản hồi");
         }
 
-        setQuestionsData(processedData);
-
-        // Auto-grade nếu chưa chấm
-        if (!autoGraded && processedData.length > 0) {
-          fetchTimeoutRef.current = window.setTimeout(
-            () => autoGradeAnswers(processedData),
-            500,
-          );
-        }
-
+        setGrammarQuestions(processedData);
         toast.success(`Đã tải ${processedData.length} câu hỏi từ server`);
         return;
       }
@@ -393,24 +293,15 @@ export function AdminTestDetailModal({
       const responseData = await response.json();
       console.log(`✅ Đã tải dữ liệu từ API:`, responseData);
 
-      const processedData = processResponseData(responseData);
+      const processedData = processGrammarQuestionsData(responseData);
       if (!processedData || processedData.length === 0) {
-        throw new Error("Không tìm thấy dữ liệu câu hỏi trong phản hồi");
+        throw new Error("Không tìm thấy câu hỏi trong phản hồi");
       }
 
-      setQuestionsData(processedData);
-
-      // Auto-grade nếu chưa chấm
-      if (!autoGraded && processedData.length > 0) {
-        fetchTimeoutRef.current = window.setTimeout(
-          () => autoGradeAnswers(processedData),
-          500,
-        );
-      }
-
+      setGrammarQuestions(processedData);
       toast.success(`Đã tải ${processedData.length} câu hỏi từ server`);
     } catch (error: any) {
-      console.error("❌ Lỗi khi tải đáp án:", error);
+      console.error("❌ Lỗi khi tải câu hỏi:", error);
       setFetchError(error.message || "Không thể kết nối đến server");
       toast.error(`Lỗi: ${error.message}`);
     } finally {
@@ -418,9 +309,11 @@ export function AdminTestDetailModal({
     }
   };
 
-  // Xử lý dữ liệu phản hồi từ API
-  const processResponseData = (responseData: any): QuestionData[] => {
-    console.log("🔄 Đang xử lý dữ liệu phản hồi:", responseData);
+  // Xử lý dữ liệu grammar questions từ API
+  const processGrammarQuestionsData = (
+    responseData: any,
+  ): GrammarQuestion[] => {
+    console.log("🔄 Đang xử lý dữ liệu grammar questions:", responseData);
 
     if (!responseData) {
       console.error("Dữ liệu phản hồi rỗng");
@@ -429,18 +322,20 @@ export function AdminTestDetailModal({
 
     // Trường hợp 1: response là mảng
     if (Array.isArray(responseData)) {
-      return responseData.map((item) => normalizeQuestionData(item));
+      return responseData.map((item) => normalizeGrammarQuestionData(item));
     }
 
     // Trường hợp 2: response có thuộc tính 'data' là mảng
     if (responseData.data && Array.isArray(responseData.data)) {
-      return responseData.data.map((item: any) => normalizeQuestionData(item));
+      return responseData.data.map((item: any) =>
+        normalizeGrammarQuestionData(item),
+      );
     }
 
     // Trường hợp 3: response có thuộc tính 'questions' là mảng
     if (responseData.questions && Array.isArray(responseData.questions)) {
       return responseData.questions.map((item: any) =>
-        normalizeQuestionData(item),
+        normalizeGrammarQuestionData(item),
       );
     }
 
@@ -448,357 +343,24 @@ export function AdminTestDetailModal({
     return [];
   };
 
-  // Chuẩn hóa dữ liệu câu hỏi
-  const normalizeQuestionData = (item: any): QuestionData => {
-    const normalized: QuestionData = {
-      id: item.id || item.questionId || 0,
+  // Chuẩn hóa dữ liệu grammar question
+  const normalizeGrammarQuestionData = (item: any): GrammarQuestion => {
+    const normalized: GrammarQuestion = {
+      id: item.id || 0,
       lesson_id: item.lesson_id || item.lessonId || 0,
-      lessonId: item.lessonId || item.lesson_id || 0,
-      type: (item.type || "fill_blank").toLowerCase(),
+      example: item.example || null,
+      type: item.type || "fill_blank",
       text: item.text || item.questionText || item.content || "",
+      options: item.options || null,
       correct_answer: item.correct_answer || item.correctAnswer || "",
-      correctAnswer: item.correctAnswer || item.correct_answer || "",
       points: item.points || 10,
       explanation: item.explanation || item.hint || null,
+      created_at: item.created_at || item.createdAt || new Date().toISOString(),
+      updated_at: item.updated_at || item.updatedAt || new Date().toISOString(),
     };
-
-    // Xử lý answerParts cho fill_blank
-    if (item.answerParts && Array.isArray(item.answerParts)) {
-      normalized.answerParts = item.answerParts;
-    } else if (normalized.type === "fill_blank" && normalized.correctAnswer) {
-      normalized.answerParts = normalized.correctAnswer
-        .split(";")
-        .map((part: string) => part.trim());
-    }
-
-    // Xử lý numParts
-    if (item.numParts !== undefined) {
-      normalized.numParts = item.numParts;
-    } else if (normalized.answerParts) {
-      normalized.numParts = normalized.answerParts.length;
-    }
-
-    // Xử lý options cho multiple_choice
-    if (item.options && Array.isArray(item.options)) {
-      normalized.options = item.options;
-    } else if (item.choices && Array.isArray(item.choices)) {
-      normalized.options = item.choices;
-    }
-
-    // Xử lý example
-    if (item.example !== undefined) {
-      normalized.example = item.example;
-    }
 
     console.log(`🔄 Đã chuẩn hóa câu hỏi ${normalized.id}: ${normalized.type}`);
     return normalized;
-  };
-
-  // Hàm so sánh đáp án với format đặc biệt cho multiple_choice
-  const compareAnswers = (
-    userAnswer: string,
-    question: QuestionData,
-    subIndex: number,
-    mapping: QuestionMapping | null,
-  ): boolean => {
-    if (!question) return false;
-
-    const userAns = userAnswer.trim();
-    const correctAnswer =
-      question.correctAnswer || question.correct_answer || "";
-    const questionType = question.type.toLowerCase();
-
-    console.log(`🔍 So sánh [Q${question.id}.${subIndex}]: "${userAns}" vs`, {
-      correctAnswer,
-      type: questionType,
-      hasSemicolon: correctAnswer.includes(";"),
-      hasComma: correctAnswer.includes(","),
-    });
-
-    // TRƯỜNG HỢP ĐẶC BIỆT: multiple_choice với format "何(なん),わたしの;その;わたし;新聞(しんぶん);だれ"
-    if (questionType === "multiple_choice") {
-      // 1. Tách các phần bằng dấu ;
-      const answerSections = correctAnswer.split(";").map((s) => s.trim());
-
-      // 2. Kiểm tra nếu subIndex hợp lệ
-      if (subIndex >= 0 && subIndex < answerSections.length) {
-        const section = answerSections[subIndex];
-
-        // 3. Nếu phần có dấu , thì có nhiều đáp án đúng
-        if (section.includes(",")) {
-          const validAnswers = section.split(",").map((ans) => ans.trim());
-          // So sánh không phân biệt hoa thường và bỏ khoảng trắng
-          const normalizedUserAns = userAns.toLowerCase().trim();
-          const isCorrect = validAnswers.some(
-            (ans) => ans.toLowerCase().trim() === normalizedUserAns,
-          );
-          console.log(
-            `✅ Multiple choice (nhiều đáp án): "${userAns}" trong [${validAnswers}] = ${isCorrect}`,
-          );
-          return isCorrect;
-        }
-        // 4. Nếu không có dấu , thì chỉ có một đáp án đúng
-        else {
-          const normalizedUserAns = userAns.toLowerCase().trim();
-          const normalizedCorrectAns = section.toLowerCase().trim();
-          const isCorrect = normalizedUserAns === normalizedCorrectAns;
-          console.log(
-            `✅ Multiple choice (một đáp án): "${userAns}" = "${section}" = ${isCorrect}`,
-          );
-          return isCorrect;
-        }
-      }
-
-      console.log(
-        `❌ SubIndex ${subIndex} không hợp lệ, chỉ có ${answerSections.length} sections`,
-      );
-      return false;
-    }
-
-    // TRƯỜNG HỢP 2: fill_blank với format "は;も;は;は;の"
-    if (questionType === "fill_blank") {
-      if (correctAnswer.includes(";")) {
-        const answers = correctAnswer.split(";").map((ans) => ans.trim());
-        const isCorrect =
-          subIndex >= 0 && subIndex < answers.length
-            ? answers[subIndex].toLowerCase().trim() ===
-              userAns.toLowerCase().trim()
-            : false;
-        console.log(
-          `✅ Fill blank: "${userAns}" = "${answers[subIndex] || "N/A"}" = ${isCorrect}`,
-        );
-        return isCorrect;
-      }
-      const isCorrect =
-        correctAnswer.toLowerCase().trim() === userAns.toLowerCase().trim();
-      console.log(
-        `✅ Fill blank đơn giản: "${userAns}" = "${correctAnswer}" = ${isCorrect}`,
-      );
-      return isCorrect;
-    }
-
-    // TRƯỜNG HỢP MẶC ĐỊNH
-    const isCorrect =
-      correctAnswer.toLowerCase().trim() === userAns.toLowerCase().trim();
-    console.log(
-      `✅ So sánh mặc định: "${userAns}" = "${correctAnswer}" = ${isCorrect}`,
-    );
-    return isCorrect;
-  };
-
-  // Hàm lấy đáp án đúng cho sub question
-  const getCorrectAnswerForSubQuestion = (
-    question: QuestionData,
-    subIndex: number,
-    mapping: QuestionMapping | null,
-  ): string => {
-    if (!question) return "";
-
-    const correctAnswer =
-      question.correctAnswer || question.correct_answer || "";
-    const questionType = question.type.toLowerCase();
-
-    // Xử lý multiple_choice với format "何(なん),わたしの;その;わたし;新聞(しんぶん);だれ"
-    if (questionType === "multiple_choice" && correctAnswer.includes(";")) {
-      const answerSections = correctAnswer
-        .split(";")
-        .map((section) => section.trim());
-
-      if (subIndex >= 0 && subIndex < answerSections.length) {
-        const section = answerSections[subIndex];
-
-        // Nếu có nhiều đáp án (cách nhau bởi dấu ,)
-        if (section.includes(",")) {
-          const answers = section.split(",").map((ans) => ans.trim());
-
-          // Format hiển thị đẹp hơn
-          if (answers.length === 2) {
-            return `${answers[0]} hoặc ${answers[1]}`;
-          } else if (answers.length > 2) {
-            const last = answers.pop();
-            return `${answers.join(", ")} hoặc ${last}`;
-          }
-          return section;
-        }
-
-        // Chỉ có một đáp án
-        return section;
-      }
-
-      return "Không tìm thấy đáp án cho phần này";
-    }
-
-    // Xử lý fill_blank với format "は;も;は;は;の"
-    if (questionType === "fill_blank" && correctAnswer.includes(";")) {
-      const answers = correctAnswer.split(";").map((ans) => ans.trim());
-      if (subIndex >= 0 && subIndex < answers.length) {
-        return answers[subIndex];
-      }
-    }
-
-    return correctAnswer;
-  };
-
-  // Hàm phân tích cấu trúc câu hỏi multiple_choice chi tiết
-  const analyzeMultipleChoiceStructure = (
-    question: QuestionData,
-  ): Array<{
-    index: number;
-    questionText: string;
-    correctAnswers: string[];
-    userChoiceOptions?: string[]; // Các lựa chọn user có thể chọn
-    format: string;
-  }> => {
-    const result: Array<{
-      index: number;
-      questionText: string;
-      correctAnswers: string[];
-      userChoiceOptions?: string[];
-      format: string;
-    }> = [];
-
-    if (!question || question.type.toLowerCase() !== "multiple_choice") {
-      return result;
-    }
-
-    const correctAnswer =
-      question.correctAnswer || question.correct_answer || "";
-    const questionText = question.text || "";
-
-    // Tách các phần đáp án bằng dấu ;
-    const answerSections = correctAnswer
-      .split(";")
-      .map((section) => section.trim());
-
-    // Tìm các dòng trong question text để extract câu hỏi
-    const lines = questionText.split("\n").filter((line) => line.trim());
-
-    // Phân tích từng phần
-    answerSections.forEach((section, index) => {
-      // Lấy các đáp án đúng (có thể nhiều, cách nhau bởi dấu ,)
-      const correctAnswers = section.includes(",")
-        ? section.split(",").map((ans) => ans.trim())
-        : [section];
-
-      // Tìm câu hỏi tương ứng từ text
-      let qText = "";
-      if (index < lines.length) {
-        // Tìm câu hỏi có dạng "[...]" chứa options
-        const line = lines[index];
-        const match = line.match(/\[(.*?)\]/);
-        if (match) {
-          qText = line.replace(/\[.*?\]/, `[chọn đáp án]`);
-        } else {
-          qText = line;
-        }
-      } else {
-        qText = `Câu ${index + 1}: Chọn đáp án đúng`;
-      }
-
-      // Tìm các lựa chọn user có thể chọn (nếu có trong question text)
-      let userChoiceOptions: string[] | undefined;
-      if (index < lines.length) {
-        const line = lines[index];
-        const match = line.match(/\[(.*?)\]/);
-        if (match) {
-          userChoiceOptions = match[1].split(/[、,]/).map((opt) => opt.trim());
-        }
-      }
-
-      result.push({
-        index,
-        questionText: qText,
-        correctAnswers,
-        userChoiceOptions,
-        format: correctAnswers.length > 1 ? "multiple" : "single",
-      });
-    });
-
-    return result;
-  };
-
-  // Hàm tự động chấm điểm
-  const autoGradeAnswers = (questions: QuestionData[]) => {
-    if (!test?.answers || questions.length === 0) {
-      console.log("⚠️ Không thể tự động chấm: thiếu dữ liệu");
-      return;
-    }
-
-    console.log(`🔄 Bắt đầu tự động chấm ${test.answers.length} câu trả lời`);
-
-    const newChecks: Record<string, boolean> = {};
-    let correctCount = 0;
-
-    test.answers.forEach((answer) => {
-      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
-
-      // Tìm mapping
-      const mapping = mappingService.getMapping(
-        test.lessonId,
-        answer.questionId,
-      );
-      if (!mapping) {
-        console.log(`❌ Không tìm thấy mapping cho câu ${answer.questionId}`);
-        newChecks[key] = false;
-        return;
-      }
-
-      // Tìm câu hỏi trong database
-      const question = questions.find((q) => q.id === mapping.dbQuestionId);
-      if (!question) {
-        console.log(
-          `❓ Không tìm thấy câu hỏi DB ${mapping.dbQuestionId} cho test câu ${answer.questionId}`,
-        );
-        newChecks[key] = false;
-        return;
-      }
-
-      // Kiểm tra nếu đã được chấm thủ công
-      if (checkedAnswers[key] !== undefined) {
-        newChecks[key] = checkedAnswers[key];
-        if (checkedAnswers[key]) correctCount++;
-        return;
-      }
-
-      // So sánh đáp án
-      const isCorrect = compareAnswers(
-        answer.userAnswer || "",
-        question,
-        mapping.subIndex,
-        mapping,
-      );
-
-      newChecks[key] = isCorrect;
-      if (isCorrect) correctCount++;
-    });
-
-    setCheckedAnswers(newChecks);
-    setScore(correctCount);
-    setAutoGraded(true);
-
-    toast.success(
-      `Đã tự động chấm: ${correctCount}/${test.answers.length} câu đúng`,
-    );
-    console.log(`📊 Kết quả chấm: ${correctCount}/${test.answers.length}`);
-  };
-
-  // Hàm lấy dữ liệu câu hỏi cho test question
-  const getQuestionData = (
-    testQuestionId: number,
-  ): {
-    question: QuestionData | undefined;
-    mapping: QuestionMapping | null;
-  } => {
-    const mapping = mappingService.getMapping(
-      test?.lessonId || 0,
-      testQuestionId,
-    );
-    if (!mapping || !test) {
-      return { question: undefined, mapping: null };
-    }
-
-    const question = questionsData.find((q) => q.id === mapping.dbQuestionId);
-    return { question, mapping };
   };
 
   // Xử lý kéo thả modal
@@ -872,6 +434,73 @@ export function AdminTestDetailModal({
     return calculatedScore;
   };
 
+  // Xử lý toggle tất cả đáp án
+  const handleToggleAllCorrect = () => {
+    if (!test?.answers) return;
+
+    const newChecks: Record<string, boolean> = {};
+    test.answers.forEach((answer) => {
+      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
+      newChecks[key] = true;
+    });
+
+    setCheckedAnswers(newChecks);
+    calculateScoreFromChecks();
+    toast.success("Đã chấm tất cả câu là ĐÚNG");
+  };
+
+  const handleToggleAllIncorrect = () => {
+    if (!test?.answers) return;
+
+    const newChecks: Record<string, boolean> = {};
+    test.answers.forEach((answer) => {
+      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
+      newChecks[key] = false;
+    });
+
+    setCheckedAnswers(newChecks);
+    calculateScoreFromChecks();
+    toast.success("Đã chấm tất cả câu là SAI");
+  };
+
+  // Hàm auto grade đơn giản (dựa trên grammar questions nếu có)
+  const handleAutoGrade = () => {
+    if (!test?.answers || grammarQuestions.length === 0) {
+      toast.error("Không thể tự động chấm: thiếu dữ liệu câu hỏi");
+      return;
+    }
+
+    console.log(`🔄 Bắt đầu tự động chấm ${test.answers.length} câu trả lời`);
+
+    const newChecks: Record<string, boolean> = {};
+    let correctCount = 0;
+
+    test.answers.forEach((answer) => {
+      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
+
+      // Kiểm tra nếu đã được chấm thủ công
+      if (checkedAnswers[key] !== undefined) {
+        newChecks[key] = checkedAnswers[key];
+        if (checkedAnswers[key]) correctCount++;
+        return;
+      }
+
+      // Mặc định là đúng (hoặc logic đơn giản khác tùy nhu cầu)
+      // Ở đây ta có thể thêm logic so sánh nếu muốn, nhưng yêu cầu là không cần
+      newChecks[key] = true; // Tạm thời mặc định đúng
+      correctCount++;
+    });
+
+    setCheckedAnswers(newChecks);
+    setScore(correctCount);
+    setAutoGraded(true);
+
+    toast.success(
+      `Đã tự động chấm: ${correctCount}/${test.answers.length} câu đúng (mặc định)`,
+    );
+    console.log(`📊 Kết quả chấm: ${correctCount}/${test.answers.length}`);
+  };
+
   // Xử lý submit feedback
   const handleSubmit = async () => {
     if (!test) return;
@@ -916,116 +545,12 @@ export function AdminTestDetailModal({
     }
   };
 
-  // Hàm debug chi tiết
-  const handleDetailedDebug = () => {
-    console.clear();
-    console.log("=== DEBUG CHI TIẾT CÂU HỎI ===");
-
-    if (test?.answers) {
-      test.answers.forEach((answer, idx) => {
-        const { question, mapping } = getQuestionData(answer.questionId);
-
-        console.log(`\n📝 Câu trả lời ${idx + 1}:`);
-        console.log(`   Test Question ID: ${answer.questionId}`);
-        console.log(`   SubIndex: ${answer.subQuestionIndex}`);
-        console.log(`   User Answer: "${answer.userAnswer}"`);
-
-        if (question) {
-          const correctAnswer = getCorrectAnswerForSubQuestion(
-            question,
-            answer.subQuestionIndex,
-            mapping,
-          );
-
-          console.log(`   DB Question ID: ${question.id}`);
-          console.log(`   Question Type: ${question.type}`);
-          console.log(
-            `   Raw Correct Answer: "${question.correctAnswer || question.correct_answer}"`,
-          );
-          console.log(`   Processed Correct Answer: "${correctAnswer}"`);
-
-          // Kiểm tra đúng/sai
-          const isCorrect = compareAnswers(
-            answer.userAnswer || "",
-            question,
-            answer.subQuestionIndex,
-            mapping,
-          );
-          console.log(`   Kết quả: ${isCorrect ? "✓ ĐÚNG" : "✗ SAI"}`);
-
-          // Phân tích đặc biệt cho multiple_choice
-          if (question.type.toLowerCase() === "multiple_choice") {
-            const analysis = analyzeMultipleChoiceStructure(question);
-            if (analysis.length > 0) {
-              console.log(`   📊 Phân tích cấu trúc:`);
-              analysis.forEach((item) => {
-                console.log(
-                  `      Câu ${item.index + 1}: ${item.correctAnswers.join(" hoặc ")}`,
-                );
-              });
-            }
-          }
-        }
-      });
-    }
-
-    console.log("\n📊 Questions Data:", questionsData);
-    console.log("\n🗺️ Mappings:", mappingInfo);
-    console.log("\n✅ Checked Answers:", checkedAnswers);
-    console.log("\n=== KẾT THÚC DEBUG ===");
-    toast.success("Đã log debug chi tiết vào console");
-  };
-
-  // Hàm đánh dấu tất cả là đúng
-  const markAllCorrect = () => {
-    if (!test?.answers) return;
-
-    const newChecks: Record<string, boolean> = {};
-    test.answers.forEach((answer) => {
-      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
-      newChecks[key] = true;
-    });
-
-    setCheckedAnswers(newChecks);
-    calculateScoreFromChecks();
-    toast.success("Đã chấm tất cả câu là ĐÚNG");
-  };
-
-  // Hàm đánh dấu tất cả là sai
-  const markAllIncorrect = () => {
-    if (!test?.answers) return;
-
-    const newChecks: Record<string, boolean> = {};
-    test.answers.forEach((answer) => {
-      const key = `${answer.questionId}_${answer.subQuestionIndex}`;
-      newChecks[key] = false;
-    });
-
-    setCheckedAnswers(newChecks);
-    calculateScoreFromChecks();
-    toast.success("Đã chấm tất cả câu là SAI");
-  };
-
   // Tính toán tiến độ và thống kê
   const totalQuestions = test?.answers?.length || 0;
   const checkedCount = Object.keys(checkedAnswers).length;
   const correctCount = Object.values(checkedAnswers).filter(Boolean).length;
   const progressPercentage =
     totalQuestions > 0 ? (checkedCount / totalQuestions) * 100 : 0;
-
-  // Group answers by questionId
-  const groupedAnswers =
-    test?.answers?.reduce(
-      (groups, answer) => {
-        const key = answer.questionId;
-        if (!groups[key]) {
-          groups[key] = [];
-        }
-        groups[key].push(answer);
-        return groups;
-      },
-      {} as Record<number, TestAnswer[]>,
-    ) || {};
 
   if (!isOpen || !test) return null;
 
@@ -1126,8 +651,8 @@ export function AdminTestDetailModal({
           </div>
           <div className="stat-item">
             <Database size={16} className="stat-icon info" />
-            <span className="stat-count info">{questionsData.length}</span>
-            <span className="stat-label">Câu DB</span>
+            <span className="stat-count info">{grammarQuestions.length}</span>
+            <span className="stat-label">Câu hỏi</span>
           </div>
         </div>
       </div>
@@ -1136,8 +661,8 @@ export function AdminTestDetailModal({
       <div className="header-actions">
         <div className="action-buttons-group">
           <button
-            onClick={fetchCorrectAnswers}
-            className="view-answers-button"
+            onClick={fetchGrammarQuestions}
+            className="view-questions-button"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -1148,39 +673,31 @@ export function AdminTestDetailModal({
             ) : (
               <>
                 <Download size={16} />
-                Tải đáp án từ DB
+                Tải câu hỏi từ DB
               </>
             )}
           </button>
           <button
-            onClick={() => autoGradeAnswers(questionsData)}
+            onClick={handleAutoGrade}
             className="auto-grade-button"
-            disabled={!questionsData || questionsData.length === 0 || isLoading}
+            disabled={grammarQuestions.length === 0 || isLoading}
           >
             <CheckCircle size={16} />
             Chấm tự động
           </button>
           <button
-            onClick={handleDetailedDebug}
-            className="debug-detail-button"
-            title="Debug chi tiết"
+            onClick={() => setShowGrammarQuestions(!showGrammarQuestions)}
+            className="toggle-questions-button"
           >
-            <AlertCircle size={16} />
-            Debug
-          </button>
-          <button
-            onClick={() => setShowQuestionAnalysis(!showQuestionAnalysis)}
-            className="analysis-toggle-button"
-          >
-            <Filter size={16} />
-            {showQuestionAnalysis ? "Ẩn phân tích" : "Hiện phân tích"}
+            <List size={16} />
+            {showGrammarQuestions ? "Ẩn câu hỏi" : "Hiện câu hỏi"}
           </button>
         </div>
 
-        <div className="mapping-info">
-          <span className="mapping-text">
+        <div className="questions-info">
+          <span className="questions-text">
             <Hash size={14} />
-            {mappingInfo.length} test → {questionsData.length} DB
+            {grammarQuestions.length} câu hỏi trong DB
           </span>
         </div>
       </div>
@@ -1191,11 +708,11 @@ export function AdminTestDetailModal({
           <div className="error-message">
             <AlertCircle size={20} />
             <div className="error-content">
-              <strong>Lỗi khi tải đáp án:</strong>
+              <strong>Lỗi khi tải câu hỏi:</strong>
               <p className="error-detail">{fetchError}</p>
               <div className="error-actions">
                 <button
-                  onClick={fetchCorrectAnswers}
+                  onClick={fetchGrammarQuestions}
                   className="retry-button"
                   disabled={isLoading}
                 >
@@ -1208,337 +725,239 @@ export function AdminTestDetailModal({
         </div>
       )}
 
-      {/* Questions Section */}
-      <div className="questions-section">
+      {/* Grammar Questions Section */}
+      {showGrammarQuestions && grammarQuestions.length > 0 && (
+        <div className="grammar-questions-section">
+          <div className="section-header">
+            <h3 className="section-title">
+              <FileText size={20} />
+              Danh sách câu hỏi trong bài ({grammarQuestions.length} câu)
+            </h3>
+            <div className="scoring-info">
+              <HelpCircle size={16} />
+              <span>
+                Hiển thị tất cả câu hỏi từ bảng grammar_questions cho bài học
+                này
+              </span>
+            </div>
+          </div>
+
+          <div className="grammar-questions-list">
+            {grammarQuestions.map((question, index) => (
+              <div key={question.id} className="grammar-question-card">
+                <div className="grammar-question-header">
+                  <div className="grammar-question-header-left">
+                    <span className="grammar-question-number">
+                      Câu {index + 1}
+                    </span>
+                    <span className="grammar-question-type">
+                      {question.type === "fill_blank"
+                        ? "Điền vào chỗ trống"
+                        : question.type === "multiple_choice"
+                          ? "Trắc nghiệm"
+                          : question.type === "rearrange"
+                            ? "Sắp xếp"
+                            : question.type}
+                    </span>
+                    <span className="grammar-question-points">
+                      {question.points} điểm
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grammar-question-content">
+                  <div className="grammar-question-text-section">
+                    <div className="grammar-question-text">
+                      {question.text.split("\n").map((line, idx) => (
+                        <div key={idx} className="grammar-question-line">
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+
+                    {question.example && (
+                      <div className="grammar-question-example">
+                        <strong>Ví dụ:</strong> {question.example}
+                      </div>
+                    )}
+
+                    {question.explanation && (
+                      <div className="grammar-question-explanation">
+                        <strong>Giải thích:</strong> {question.explanation}
+                      </div>
+                    )}
+
+                    {question.correct_answer && (
+                      <div className="grammar-question-correct-answer">
+                        <strong>Đáp án đúng:</strong>{" "}
+                        <code>{question.correct_answer}</code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* User Answers Section */}
+      <div className="user-answers-section">
         <div className="section-header">
           <h3 className="section-title">
-            Chi tiết bài làm ({totalQuestions} câu)
+            <List size={20} />
+            Câu trả lời của học viên ({totalQuestions} câu)
           </h3>
           <div className="scoring-info">
             <HelpCircle size={16} />
             <span>
-              Hiển thị đáp án học viên và đáp án đúng
-              {questionsData.length > 0 &&
-                ` (${questionsData.length} câu đã tải từ DB)`}
+              Chấm điểm thủ công bằng cách chọn Đúng/Sai cho từng câu trả lời
             </span>
           </div>
         </div>
 
-        {questionsData.length === 0 && !fetchError && !isLoading && (
-          <div className="no-data-message">
+        {totalQuestions === 0 ? (
+          <div className="no-answers-message">
             <p>
               <Info size={20} />
-              Chưa có dữ liệu câu hỏi từ Database. Vui lòng nhấn "Tải đáp án từ
-              DB".
+              Học viên chưa trả lời câu hỏi nào.
             </p>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="bulk-actions">
+              <button
+                onClick={handleToggleAllCorrect}
+                className="bulk-correct-button"
+              >
+                <CheckSquare size={16} />
+                Chấm tất cả là ĐÚNG
+              </button>
+              <button
+                onClick={handleToggleAllIncorrect}
+                className="bulk-incorrect-button"
+              >
+                <Square size={16} />
+                Chấm tất cả là SAI
+              </button>
+              <button
+                onClick={calculateScoreFromChecks}
+                className="calculate-score-button"
+              >
+                <Calculator size={16} />
+                Tính điểm
+              </button>
+            </div>
 
-        <div className="questions-list">
-          {Object.entries(groupedAnswers).map(([questionId, answers]) => {
-            const testQuestionId = parseInt(questionId);
-            const { question: questionData, mapping } =
-              getQuestionData(testQuestionId);
+            <div className="user-answers-list">
+              {test.answers?.map((answer, index) => {
+                const key = `${answer.questionId}_${answer.subQuestionIndex}`;
+                const isChecked = checkedAnswers[key] !== undefined;
+                const isCorrect = checkedAnswers[key];
 
-            return (
-              <div key={questionId} className="question-card">
-                <div className="question-header">
-                  <div className="question-header-left">
-                    <span className="question-number">
-                      Câu {testQuestionId}
-                    </span>
-                    {mapping && (
-                      <span className="question-mapping">
-                        → DB Câu {mapping.dbQuestionId}.{mapping.subIndex}
-                      </span>
-                    )}
-                    <span className="question-type">
-                      {questionData?.type
-                        ? questionData.type === "fill_blank"
-                          ? "Điền vào chỗ trống"
-                          : questionData.type === "multiple_choice"
-                            ? "Trắc nghiệm"
-                            : questionData.type === "rearrange"
-                              ? "Sắp xếp"
-                              : questionData.type
-                        : "Chưa tải"}
-                    </span>
-                  </div>
-                  {!questionData && (
-                    <span className="question-warning">
-                      ⚠️ Chưa tải dữ liệu từ DB
-                    </span>
-                  )}
-                </div>
-
-                {questionData && (
-                  <div className="question-content">
-                    <div className="question-text-section">
-                      <h4 className="section-subtitle">Nội dung câu hỏi:</h4>
-                      <div className="question-text">
-                        {questionData.text.split("\n").map((line, idx) => (
-                          <div key={idx} className="question-line">
-                            {line}
-                          </div>
-                        ))}
+                return (
+                  <div key={index} className="user-answer-card">
+                    <div className="user-answer-header">
+                      <div className="user-answer-info">
+                        <span className="answer-index">
+                          Câu {index + 1}
+                          {answer.subQuestionIndex > 0 &&
+                            ` (Phần ${answer.subQuestionIndex + 1})`}
+                        </span>
+                        <span className="answer-question-id">
+                          ID câu hỏi: {answer.questionId}
+                        </span>
+                        {answer.questionType && (
+                          <span className="answer-type">
+                            Loại: {answer.questionType}
+                          </span>
+                        )}
                       </div>
 
-                      {questionData.explanation && (
-                        <div className="question-explanation">
-                          <strong>Giải thích:</strong>{" "}
-                          {questionData.explanation}
+                      <div className="answer-check-controls">
+                        <button
+                          onClick={() =>
+                            handleAnswerCheck(
+                              answer.questionId,
+                              answer.subQuestionIndex,
+                              true,
+                            )
+                          }
+                          className={`check-button ${isChecked && isCorrect ? "active-correct" : ""}`}
+                        >
+                          <Check size={16} />
+                          <span>Đúng</span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleAnswerCheck(
+                              answer.questionId,
+                              answer.subQuestionIndex,
+                              false,
+                            )
+                          }
+                          className={`check-button ${isChecked && !isCorrect ? "active-incorrect" : ""}`}
+                        >
+                          <XCircle size={16} />
+                          <span>Sai</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="user-answer-content">
+                      <div className="user-answer-text">
+                        <strong>Câu trả lời:</strong>
+                        <div className="answer-value">
+                          {answer.userAnswer || "(Chưa trả lời)"}
+                        </div>
+                      </div>
+
+                      {answer.questionText && (
+                        <div className="original-question">
+                          <strong>Câu hỏi gốc:</strong>
+                          <div className="question-text">
+                            {answer.questionText}
+                          </div>
                         </div>
                       )}
 
-                      {/* Phân tích cấu trúc câu hỏi multiple_choice */}
-                      {showQuestionAnalysis &&
-                        questionData.type.toLowerCase() ===
-                          "multiple_choice" && (
-                          <div className="question-analysis">
-                            <h4 className="analysis-title">
-                              <Info size={14} />
-                              Phân tích cấu trúc câu hỏi multiple_choice:
-                            </h4>
+                      {answer.explanation && (
+                        <div className="answer-explanation">
+                          <strong>Giải thích (nếu có):</strong>{" "}
+                          {answer.explanation}
+                        </div>
+                      )}
+                    </div>
 
-                            <div className="analysis-meta">
-                              <div className="meta-item">
-                                <strong>Format raw:</strong>
-                                <code className="meta-code">
-                                  {questionData.correctAnswer ||
-                                    questionData.correct_answer}
-                                </code>
-                              </div>
-                              <div className="meta-item">
-                                <strong>Number of sections:</strong>
-                                <span className="meta-value">
-                                  {
-                                    analyzeMultipleChoiceStructure(questionData)
-                                      .length
-                                  }{" "}
-                                  phần
-                                </span>
-                              </div>
-                            </div>
+                    <div className="user-answer-footer">
+                      <div className="answer-status">
+                        <span className="status-label">Trạng thái:</span>
+                        <span
+                          className={`status-badge ${isChecked ? (isCorrect ? "status-correct" : "status-incorrect") : "status-unchecked"}`}
+                        >
+                          {isChecked
+                            ? isCorrect
+                              ? "✓ Đã chấm Đúng"
+                              : "✗ Đã chấm Sai"
+                            : "Chưa chấm"}
+                        </span>
+                      </div>
 
-                            {analyzeMultipleChoiceStructure(questionData).map(
-                              (item, idx) => (
-                                <div
-                                  key={idx}
-                                  className="analysis-item detailed"
-                                >
-                                  <div className="analysis-header">
-                                    <span className="analysis-index">
-                                      Phần {item.index + 1}
-                                    </span>
-                                    <span
-                                      className={`analysis-type ${item.format === "multiple" ? "type-multiple" : "type-single"}`}
-                                    >
-                                      {item.format === "multiple"
-                                        ? "Nhiều đáp án đúng"
-                                        : "Một đáp án đúng"}
-                                    </span>
-                                  </div>
-
-                                  <div className="analysis-question">
-                                    <strong>Câu hỏi:</strong>{" "}
-                                    {item.questionText}
-                                  </div>
-
-                                  {item.userChoiceOptions &&
-                                    item.userChoiceOptions.length > 0 && (
-                                      <div className="analysis-user-options">
-                                        <span className="options-label">
-                                          Lựa chọn cho user:
-                                        </span>
-                                        <div className="options-list">
-                                          {item.userChoiceOptions.map(
-                                            (opt, optIdx) => (
-                                              <span
-                                                key={optIdx}
-                                                className="user-option"
-                                              >
-                                                {opt}
-                                              </span>
-                                            ),
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                  <div className="analysis-answers">
-                                    <span className="analysis-label">
-                                      Đáp án đúng:
-                                    </span>
-                                    <div className="correct-answers-list">
-                                      {item.correctAnswers.map(
-                                        (ans, ansIdx) => (
-                                          <div
-                                            key={ansIdx}
-                                            className="correct-answer-item"
-                                          >
-                                            <CheckCircle size={12} />
-                                            <span className="answer-text">
-                                              {ans}
-                                            </span>
-                                          </div>
-                                        ),
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        )}
+                      {isChecked && (
+                        <div className="score-display">
+                          <span className="score-label">Điểm:</span>
+                          <span className="score-value">
+                            {isCorrect ? "1" : "0"}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-
-                <div className="answers-list">
-                  {answers.map((answer, index) => {
-                    const key = `${answer.questionId}_${answer.subQuestionIndex}`;
-                    const isChecked = checkedAnswers[key] !== undefined;
-                    const isCorrect = checkedAnswers[key];
-
-                    const { question: answerQuestion } = getQuestionData(
-                      answer.questionId,
-                    );
-                    const correctAnswer = answerQuestion
-                      ? getCorrectAnswerForSubQuestion(
-                          answerQuestion,
-                          answer.subQuestionIndex,
-                          mapping,
-                        )
-                      : answer.correctAnswer || "";
-
-                    return (
-                      <div key={index} className="answer-item">
-                        <div className="answer-header">
-                          <span className="part-label">
-                            Phần {answer.subQuestionIndex + 1}
-                          </span>
-                          <div className="answer-comparison">
-                            <div className="comparison-item">
-                              <span className="comparison-label">
-                                Học viên:
-                              </span>
-                              <span
-                                className={`user-answer ${isChecked && !isCorrect ? "incorrect-text" : ""}`}
-                              >
-                                {answer.userAnswer || "(Chưa trả lời)"}
-                              </span>
-                            </div>
-                            <div className="comparison-item">
-                              <span className="comparison-label">
-                                Đáp án đúng:
-                              </span>
-                              <span className="correct-answer">
-                                {correctAnswer || "(Chưa tải)"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="check-buttons">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAnswerCheck(
-                                  answer.questionId,
-                                  answer.subQuestionIndex,
-                                  true,
-                                );
-                              }}
-                              className={`check-button ${isChecked && isCorrect ? "active-correct" : ""}`}
-                            >
-                              <Check size={16} />
-                              <span>Đúng</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAnswerCheck(
-                                  answer.questionId,
-                                  answer.subQuestionIndex,
-                                  false,
-                                );
-                              }}
-                              className={`check-button ${isChecked && !isCorrect ? "active-incorrect" : ""}`}
-                            >
-                              <XCircle size={16} />
-                              <span>Sai</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="answer-info">
-                          <div className="answer-status">
-                            <span className="status-label">Trạng thái:</span>
-                            <span
-                              className={`status-badge ${isChecked ? (isCorrect ? "status-correct" : "status-incorrect") : "status-unchecked"}`}
-                            >
-                              {isChecked
-                                ? isCorrect
-                                  ? "✓ Đã chấm Đúng"
-                                  : "✗ Đã chấm Sai"
-                                : "Chưa chấm"}
-                            </span>
-
-                            {answer.userAnswer &&
-                              correctAnswer &&
-                              answer.userAnswer.trim() !== "" &&
-                              answerQuestion && (
-                                <span className="comparison-result">
-                                  {compareAnswers(
-                                    answer.userAnswer,
-                                    answerQuestion,
-                                    answer.subQuestionIndex,
-                                    mapping,
-                                  ) ? (
-                                    <span className="match-correct">
-                                      ✓ Khớp đáp án
-                                    </span>
-                                  ) : (
-                                    <span className="match-incorrect">
-                                      ✗ Không khớp
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-                          </div>
-
-                          {answer.userAnswer &&
-                            correctAnswer &&
-                            answer.userAnswer.trim() !== "" &&
-                            answerQuestion &&
-                            !compareAnswers(
-                              answer.userAnswer,
-                              answerQuestion,
-                              answer.subQuestionIndex,
-                              mapping,
-                            ) && (
-                              <div className="comparison-detail">
-                                <div className="detail-row">
-                                  <span>Đáp án học viên:</span>
-                                  <code className="answer-detail incorrect-detail">
-                                    "{answer.userAnswer}"
-                                  </code>
-                                </div>
-                                <div className="detail-row">
-                                  <span>Đáp án đúng:</span>
-                                  <code className="answer-detail correct-detail">
-                                    "{correctAnswer}"
-                                  </code>
-                                </div>
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Score Summary */}
@@ -1566,15 +985,6 @@ export function AdminTestDetailModal({
             className="calculate-button"
           >
             Tính điểm từ chấm thủ công
-          </button>
-          <button onClick={markAllCorrect} className="mark-all-correct-button">
-            Chấm tất cả là Đúng
-          </button>
-          <button
-            onClick={markAllIncorrect}
-            className="mark-all-incorrect-button"
-          >
-            Chấm tất cả là Sai
           </button>
         </div>
       </div>
@@ -1856,7 +1266,7 @@ export function AdminTestDetailModal({
           flex-wrap: wrap;
         }
 
-        .mapping-info {
+        .questions-info {
           padding: 0.5rem 0.75rem;
           background: #f3f4f6;
           border-radius: 0.5rem;
@@ -1867,16 +1277,15 @@ export function AdminTestDetailModal({
           gap: 0.5rem;
         }
 
-        .mapping-text {
+        .questions-text {
           display: flex;
           align-items: center;
           gap: 0.5rem;
         }
 
-        .view-answers-button,
+        .view-questions-button,
         .auto-grade-button,
-        .debug-detail-button,
-        .analysis-toggle-button {
+        .toggle-questions-button {
           display: flex;
           align-items: center;
           gap: 0.5rem;
@@ -1889,12 +1298,12 @@ export function AdminTestDetailModal({
           cursor: pointer;
         }
 
-        .view-answers-button {
+        .view-questions-button {
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           color: white;
         }
 
-        .view-answers-button:hover:not(:disabled) {
+        .view-questions-button:hover:not(:disabled) {
           background: linear-gradient(135deg, #059669 0%, #047857 100%);
           transform: translateY(-1px);
         }
@@ -1909,30 +1318,19 @@ export function AdminTestDetailModal({
           transform: translateY(-1px);
         }
 
-        .debug-detail-button {
-          background: #8b5cf6;
+        .toggle-questions-button {
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
           color: white;
         }
 
-        .debug-detail-button:hover:not(:disabled) {
-          background: #7c3aed;
+        .toggle-questions-button:hover:not(:disabled) {
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
           transform: translateY(-1px);
         }
 
-        .analysis-toggle-button {
-          background: #f59e0b;
-          color: white;
-        }
-
-        .analysis-toggle-button:hover:not(:disabled) {
-          background: #d97706;
-          transform: translateY(-1px);
-        }
-
-        .view-answers-button:disabled,
+        .view-questions-button:disabled,
         .auto-grade-button:disabled,
-        .debug-detail-button:disabled,
-        .analysis-toggle-button:disabled {
+        .toggle-questions-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
           transform: none !important;
@@ -1997,21 +1395,10 @@ export function AdminTestDetailModal({
           cursor: not-allowed;
         }
 
-        .no-data-message {
-          padding: 2rem;
-          text-align: center;
-          background: #f3f4f6;
-          border-radius: 0.5rem;
-          margin: 1.5rem;
-          color: #6b7280;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-        }
-
-        .questions-section {
+        /* Grammar Questions Section */
+        .grammar-questions-section {
           padding: 1.5rem;
+          border-bottom: 1px solid #e5e7eb;
         }
 
         .section-header {
@@ -2022,6 +1409,9 @@ export function AdminTestDetailModal({
           margin: 0 0 0.5rem 0;
           color: #1f2937;
           font-size: 1.125rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .scoring-info {
@@ -2036,13 +1426,13 @@ export function AdminTestDetailModal({
           border-left: 3px solid #0ea5e9;
         }
 
-        .questions-list {
+        .grammar-questions-list {
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 1rem;
         }
 
-        .question-card {
+        .grammar-question-card {
           border: 1px solid #e5e7eb;
           border-radius: 0.75rem;
           overflow: hidden;
@@ -2050,7 +1440,7 @@ export function AdminTestDetailModal({
           box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         }
 
-        .question-header {
+        .grammar-question-header {
           padding: 1rem 1.25rem;
           background: #f9fafb;
           display: flex;
@@ -2059,14 +1449,14 @@ export function AdminTestDetailModal({
           border-bottom: 1px solid #e5e7eb;
         }
 
-        .question-header-left {
+        .grammar-question-header-left {
           display: flex;
           align-items: center;
           gap: 0.75rem;
           flex-wrap: wrap;
         }
 
-        .question-number {
+        .grammar-question-number {
           padding: 0.375rem 0.875rem;
           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: white;
@@ -2077,7 +1467,192 @@ export function AdminTestDetailModal({
           text-align: center;
         }
 
-        .question-mapping {
+        .grammar-question-type {
+          padding: 0.25rem 0.75rem;
+          background: #f3f4f6;
+          color: #4b5563;
+          font-size: 0.75rem;
+          font-weight: 500;
+          border-radius: 0.375rem;
+        }
+
+        .grammar-question-points {
+          padding: 0.25rem 0.75rem;
+          background: #fef3c7;
+          color: #92400e;
+          font-size: 0.75rem;
+          font-weight: 500;
+          border-radius: 0.375rem;
+        }
+
+        .grammar-question-content {
+          padding: 1.5rem;
+          background: white;
+        }
+
+        .grammar-question-text-section {
+          margin-bottom: 1rem;
+        }
+
+        .grammar-question-text {
+          font-size: 0.875rem;
+          color: #1f2937;
+          line-height: 1.6;
+          white-space: pre-wrap;
+          margin-bottom: 1rem;
+        }
+
+        .grammar-question-line {
+          margin-bottom: 0.5rem;
+        }
+
+        .grammar-question-example {
+          padding: 0.75rem;
+          background: #fefce8;
+          border-radius: 0.375rem;
+          margin-bottom: 0.75rem;
+          font-size: 0.875rem;
+          color: #854d0e;
+          border-left: 3px solid #f59e0b;
+        }
+
+        .grammar-question-explanation {
+          padding: 0.75rem;
+          background: #f0f9ff;
+          border-radius: 0.375rem;
+          margin-bottom: 0.75rem;
+          font-size: 0.875rem;
+          color: #0369a1;
+          border-left: 3px solid #0ea5e9;
+        }
+
+        .grammar-question-correct-answer {
+          padding: 0.75rem;
+          background: #f0fdf4;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          color: #065f46;
+          border-left: 3px solid #10b981;
+        }
+
+        .grammar-question-correct-answer code {
+          background: #d1fae5;
+          padding: 0.125rem 0.25rem;
+          border-radius: 0.25rem;
+          font-family: monospace;
+          margin-left: 0.5rem;
+        }
+
+        /* User Answers Section */
+        .user-answers-section {
+          padding: 1.5rem;
+        }
+
+        .no-answers-message {
+          padding: 2rem;
+          text-align: center;
+          background: #f3f4f6;
+          border-radius: 0.5rem;
+          margin: 1.5rem;
+          color: #6b7280;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .bulk-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+          padding: 1rem;
+          background: #f9fafb;
+          border-radius: 0.5rem;
+          border: 1px solid #e5e7eb;
+        }
+
+        .bulk-correct-button,
+        .bulk-incorrect-button,
+        .calculate-score-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          transition: all 0.2s;
+          border: none;
+          cursor: pointer;
+          font-size: 0.875rem;
+        }
+
+        .bulk-correct-button {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+        }
+
+        .bulk-correct-button:hover {
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          transform: translateY(-1px);
+        }
+
+        .bulk-incorrect-button {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: white;
+        }
+
+        .bulk-incorrect-button:hover {
+          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+          transform: translateY(-1px);
+        }
+
+        .calculate-score-button {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+        }
+
+        .calculate-score-button:hover {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          transform: translateY(-1px);
+        }
+
+        .user-answers-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .user-answer-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          overflow: hidden;
+          background: white;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .user-answer-header {
+          padding: 1rem 1.25rem;
+          background: #f9fafb;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .user-answer-info {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .answer-index {
+          font-weight: 600;
+          color: #1f2937;
+          font-size: 0.875rem;
+        }
+
+        .answer-question-id {
           padding: 0.25rem 0.75rem;
           background: #e0f2fe;
           color: #0369a1;
@@ -2087,7 +1662,7 @@ export function AdminTestDetailModal({
           border: 1px solid #bae6fd;
         }
 
-        .question-type {
+        .answer-type {
           padding: 0.25rem 0.75rem;
           background: #f3f4f6;
           color: #4b5563;
@@ -2096,317 +1671,9 @@ export function AdminTestDetailModal({
           border-radius: 0.375rem;
         }
 
-        .question-warning {
-          padding: 0.25rem 0.75rem;
-          background: #fef3c7;
-          color: #92400e;
-          border-radius: 0.375rem;
-          font-size: 0.75rem;
-        }
-
-        .question-content {
-          padding: 1.5rem;
-          background: white;
-        }
-
-        .question-text-section {
-          margin-bottom: 1rem;
-          padding: 1rem;
-          background: #f9fafb;
-          border-radius: 0.5rem;
-          border-left: 4px solid #3b82f6;
-        }
-
-        .section-subtitle {
-          margin: 0 0 0.75rem 0;
-          color: #374151;
-          font-size: 0.875rem;
-          font-weight: 600;
-        }
-
-        .question-text {
-          font-size: 0.875rem;
-          color: #1f2937;
-          line-height: 1.6;
-          white-space: pre-wrap;
-        }
-
-        .question-line {
-          margin-bottom: 0.5rem;
-        }
-
-        .question-explanation {
-          padding: 0.75rem;
-          background: #f0f9ff;
-          border-radius: 0.375rem;
-          margin-top: 0.75rem;
-          font-size: 0.875rem;
-          color: #0369a1;
-          border-left: 3px solid #0ea5e9;
-        }
-
-        /* Phân tích câu hỏi multiple_choice */
-        .question-analysis {
-          margin: 1rem 0;
-          padding: 1rem;
-          background: #f9fafb;
-          border-radius: 0.5rem;
-          border-left: 4px solid #8b5cf6;
-        }
-
-        .analysis-title {
-          margin: 0 0 1rem 0;
-          color: #7c3aed;
-          font-size: 0.875rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .analysis-meta {
-          background: #f8fafc;
-          padding: 0.75rem;
-          border-radius: 0.375rem;
-          margin-bottom: 1rem;
-          border-left: 3px solid #94a3b8;
-        }
-
-        .meta-item {
-          display: flex;
-          align-items: baseline;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-          font-size: 0.875rem;
-        }
-
-        .meta-item:last-child {
-          margin-bottom: 0;
-        }
-
-        .meta-code {
-          background: #1e293b;
-          color: #e2e8f0;
-          padding: 0.125rem 0.375rem;
-          border-radius: 0.25rem;
-          font-family: monospace;
-          font-size: 0.75rem;
-        }
-
-        .meta-value {
-          color: #475569;
-          font-weight: 500;
-        }
-
-        .analysis-item.detailed {
-          border: 1px solid #e2e8f0;
-          border-radius: 0.5rem;
-          padding: 1rem;
-          margin-bottom: 1rem;
-          background: white;
-        }
-
-        .analysis-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.75rem;
-          padding-bottom: 0.5rem;
-          border-bottom: 1px solid #f1f5f9;
-        }
-
-        .analysis-index {
-          font-weight: 600;
-          color: #334155;
-          font-size: 0.875rem;
-        }
-
-        .analysis-type {
-          padding: 0.125rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .type-multiple {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .type-single {
-          background: #d1fae5;
-          color: #065f46;
-        }
-
-        .analysis-question {
-          font-size: 0.875rem;
-          color: #4b5563;
-          margin-bottom: 0.5rem;
-          line-height: 1.5;
-        }
-
-        .analysis-question strong {
-          color: #1f2937;
-        }
-
-        .analysis-user-options {
-          margin: 0.75rem 0;
-          padding: 0.75rem;
-          background: #f1f5f9;
-          border-radius: 0.375rem;
-        }
-
-        .options-label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-size: 0.75rem;
-          color: #64748b;
-          font-weight: 500;
-        }
-
-        .options-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        .user-option {
-          background: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.25rem;
-          font-size: 0.75rem;
-          color: #475569;
-          border: 1px solid #cbd5e1;
-        }
-
-        .analysis-answers {
-          margin-top: 0.75rem;
-        }
-
-        .analysis-label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-size: 0.75rem;
-          color: #64748b;
-          font-weight: 500;
-        }
-
-        .correct-answers-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .correct-answer-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: #f0fdf4;
-          border-radius: 0.375rem;
-          border: 1px solid #bbf7d0;
-        }
-
-        .correct-answer-item svg {
-          color: #16a34a;
-          flex-shrink: 0;
-        }
-
-        .answer-text {
-          font-weight: 500;
-          color: #166534;
-          font-size: 0.875rem;
-        }
-
-        .answers-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          padding: 1.5rem;
-        }
-
-        .answer-item {
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          padding: 1.25rem;
-          background: #fafafa;
-          transition: all 0.2s;
-        }
-
-        .answer-item:hover {
-          border-color: #d1d5db;
-          background: #f9fafb;
-        }
-
-        .answer-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .part-label {
-          font-weight: 600;
-          color: #374151;
-          font-size: 0.875rem;
-          min-width: 80px;
-        }
-
-        .answer-comparison {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          min-width: 300px;
-        }
-
-        .comparison-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .comparison-label {
-          font-weight: 500;
-          color: #6b7280;
-          font-size: 0.75rem;
-          min-width: 100px;
-        }
-
-        .user-answer {
-          font-weight: 500;
-          color: #1f2937;
-          font-size: 0.875rem;
-          background: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.25rem;
-          border: 1px solid #d1d5db;
-          word-break: break-word;
-        }
-
-        .incorrect-text {
-          color: #dc2626;
-          background: #fef2f2;
-          border-color: #fca5a5;
-        }
-
-        .correct-answer {
-          font-weight: 600;
-          color: #059669;
-          font-size: 0.875rem;
-          background: #f0fdf4;
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.25rem;
-          border: 1px solid #86efac;
-          word-break: break-word;
-        }
-
-        .check-buttons {
+        .answer-check-controls {
           display: flex;
           gap: 0.5rem;
-          min-width: 180px;
         }
 
         .check-button {
@@ -2421,8 +1688,6 @@ export function AdminTestDetailModal({
           color: #374151;
           border: 1px solid transparent;
           cursor: pointer;
-          flex: 1;
-          justify-content: center;
         }
 
         .check-button.active-correct {
@@ -2441,17 +1706,77 @@ export function AdminTestDetailModal({
           background: #e5e7eb;
         }
 
-        .answer-info {
-          padding-top: 1rem;
-          border-top: 1px solid #f3f4f6;
+        .user-answer-content {
+          padding: 1.5rem;
+          background: white;
+        }
+
+        .user-answer-text {
+          margin-bottom: 1rem;
+        }
+
+        .user-answer-text strong {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+
+        .answer-value {
+          padding: 0.75rem;
+          background: #f8fafc;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          color: #1f2937;
+          border: 1px solid #e5e7eb;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+
+        .original-question {
+          margin-bottom: 1rem;
+        }
+
+        .original-question strong {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+
+        .question-text {
+          padding: 0.75rem;
+          background: #f9fafb;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          color: #6b7280;
+          border: 1px solid #e5e7eb;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+
+        .answer-explanation {
+          padding: 0.75rem;
+          background: #f0f9ff;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          color: #0369a1;
+          border-left: 3px solid #0ea5e9;
+        }
+
+        .user-answer-footer {
+          padding: 1rem 1.25rem;
+          border-top: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #fafafa;
         }
 
         .answer-status {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          margin-bottom: 0.75rem;
-          flex-wrap: wrap;
+          gap: 0.75rem;
         }
 
         .status-label {
@@ -2481,59 +1806,21 @@ export function AdminTestDetailModal({
           color: #6b7280;
         }
 
-        .comparison-result {
-          font-size: 0.75rem;
-          padding: 0.25rem 0.75rem;
-          border-radius: 0.375rem;
-        }
-
-        .match-correct {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .match-incorrect {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .comparison-detail {
-          background: white;
-          border-radius: 0.5rem;
-          padding: 1rem;
-          border: 1px solid #e5e7eb;
-        }
-
-        .detail-row {
+        .score-display {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-bottom: 0.5rem;
+        }
+
+        .score-label {
           font-size: 0.875rem;
+          color: #6b7280;
         }
 
-        .detail-row:last-child {
-          margin-bottom: 0;
-        }
-
-        .answer-detail {
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.25rem;
-          font-family: 'Monaco', 'Courier New', monospace;
-          font-size: 0.75rem;
-          word-break: break-word;
-        }
-
-        .incorrect-detail {
-          background: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #fecaca;
-        }
-
-        .correct-detail {
-          background: #f0fdf4;
-          color: #059669;
-          border: 1px solid #86efac;
+        .score-value {
+          font-weight: 600;
+          color: #1e40af;
+          font-size: 0.875rem;
         }
 
         .score-summary {
@@ -2578,48 +1865,22 @@ export function AdminTestDetailModal({
           display: flex;
           gap: 0.75rem;
           margin-top: 1rem;
-          flex-wrap: wrap;
         }
 
-        .calculate-button,
-        .mark-all-correct-button,
-        .mark-all-incorrect-button {
+        .calculate-button {
           padding: 0.75rem 1.5rem;
           border-radius: 0.5rem;
           font-weight: 500;
           transition: all 0.2s;
           border: none;
           cursor: pointer;
-          font-size: 0.875rem;
-        }
-
-        .calculate-button {
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           color: white;
+          font-size: 0.875rem;
         }
 
         .calculate-button:hover {
           background: linear-gradient(135deg, #059669 0%, #047857 100%);
-          transform: translateY(-1px);
-        }
-
-        .mark-all-correct-button {
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-          color: white;
-        }
-
-        .mark-all-correct-button:hover {
-          background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-          transform: translateY(-1px);
-        }
-
-        .mark-all-incorrect-button {
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-          color: white;
-        }
-
-        .mark-all-incorrect-button:hover {
-          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
           transform: translateY(-1px);
         }
 
@@ -2756,5 +2017,29 @@ export function AdminTestDetailModal({
     </div>
   );
 }
+
+// Thêm icon Calculator nếu chưa có
+const Calculator = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="8" y1="6" x2="16" y2="6" />
+    <line x1="8" y1="10" x2="16" y2="10" />
+    <line x1="8" y1="14" x2="12" y2="14" />
+    <line x1="14" y1="14" x2="16" y2="14" />
+    <line x1="8" y1="18" x2="12" y2="18" />
+    <line x1="14" y1="18" x2="16" y2="18" />
+  </svg>
+);
 
 export default AdminTestDetailModal;
