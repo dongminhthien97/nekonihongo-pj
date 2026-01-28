@@ -328,7 +328,7 @@ public class MiniTestService {
     }
 
     /**
-     * Xóa submission của user hiện tại
+     * Xóa submission (dùng cho user thường) - CHỈ TRỪ ĐIỂM KHI BÀI CHƯA FEEDBACK
      */
     @Transactional
     public SubmitTestResponseDTO deleteUserSubmission(Long submissionId) {
@@ -344,24 +344,28 @@ public class MiniTestService {
                         .build();
             }
 
-            // Nếu đã chấm điểm, trừ điểm của user
-            // FIX: Kiểm tra null trước khi so sánh với > 0
+            // CHỈ trừ điểm khi bài CHƯA được feedback (pending) và có điểm > 0
+            // Nếu bài đã feedback (feedbacked) thì KHÔNG trừ điểm vì điểm đã được cộng rồi
             Integer entityScore = entity.getScore();
-            if (entityScore != null && entityScore > 0) {
+            if (entityScore != null && entityScore > 0 && entity.getStatus() == Status.pending) {
                 Optional<User> userOpt = userRepository.findById(userId);
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
-                    int currentPoints = user.getPoints(); // VÌ points là int nên không cần kiểm tra null
+                    int currentPoints = user.getPoints();
                     int newPoints = Math.max(currentPoints - entityScore, 0);
                     user.setPoints(newPoints);
                     userRepository.save(user);
-                    log.info("Subtracted {} points from user {} after deleting submission",
+                    log.info("Subtracted {} points from user {} after deleting pending submission",
                             entityScore, userId);
                 }
+            } else if (entityScore != null && entityScore > 0 && entity.getStatus() == Status.feedbacked) {
+                log.info("Submission {} is feedbacked, NOT subtracting {} points from user {}",
+                        submissionId, entityScore, userId);
             }
 
             submissionRepository.delete(entity);
-            log.info("User {} deleted submission {}", userId, submissionId);
+            log.info("User {} deleted submission {} (status: {}, score: {})",
+                    userId, submissionId, entity.getStatus(), entityScore);
 
             return SubmitTestResponseDTO.builder()
                     .success(true)
@@ -443,6 +447,56 @@ public class MiniTestService {
         } catch (Exception e) {
             log.error("Error getting user info for submission {}", submissionId, e);
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Xóa submission (dùng cho ADMIN) - CHỈ TRỪ ĐIỂM KHI BÀI CHƯA FEEDBACK
+     */
+    @Transactional
+    public SubmitTestResponseDTO deleteSubmissionByAdmin(Long submissionId) {
+        try {
+            MiniTestSubmission entity = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bài nộp"));
+
+            Long userId = entity.getUserId();
+            log.info("Admin deleting submission {} for user {} (status: {}, score: {})",
+                    submissionId, userId, entity.getStatus(), entity.getScore());
+
+            // CHỈ trừ điểm khi bài CHƯA được feedback (pending) và có điểm > 0
+            // Nếu bài đã feedback (feedbacked) thì KHÔNG trừ điểm vì điểm đã được cộng rồi
+            Integer entityScore = entity.getScore();
+            if (entityScore != null && entityScore > 0 && entity.getStatus() == Status.pending) {
+                Optional<User> userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    int currentPoints = user.getPoints();
+                    int newPoints = Math.max(currentPoints - entityScore, 0);
+                    user.setPoints(newPoints);
+                    userRepository.save(user);
+                    log.info("Admin subtracted {} points from user {} after deleting pending submission",
+                            entityScore, userId);
+                }
+            } else if (entityScore != null && entityScore > 0 && entity.getStatus() == Status.feedbacked) {
+                log.info("Admin: Submission {} is feedbacked, NOT subtracting {} points from user {}",
+                        submissionId, entityScore, userId);
+            }
+
+            submissionRepository.delete(entity);
+            log.info("Admin successfully deleted submission {} (status: {}, score: {})",
+                    submissionId, entity.getStatus(), entityScore);
+
+            return SubmitTestResponseDTO.builder()
+                    .success(true)
+                    .message("Đã xóa bài nộp thành công")
+                    .submissionId(submissionId)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error admin deleting submission {}", submissionId, e);
+            return SubmitTestResponseDTO.builder()
+                    .success(false)
+                    .message("Lỗi khi xóa bài nộp: " + e.getMessage())
+                    .build();
         }
     }
 

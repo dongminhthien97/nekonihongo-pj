@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -572,39 +573,176 @@ public class AdminMiniTestController {
 
     /**
      * DELETE /api/admin/mini-test/submission/{id}
-     * Admin: Xóa bài nộp
+     * Admin: Xóa bài nộp (dùng phương thức dành cho admin)
      */
     @DeleteMapping("/submission/{id}")
     public ResponseEntity<?> deleteSubmission(@PathVariable(name = "id") Long id) {
         try {
-            var result = miniTestService.deleteUserSubmission(id);
+            // Sử dụng phương thức dành cho admin, không kiểm tra quyền sở hữu
+            var result = miniTestService.deleteSubmissionByAdmin(id);
 
-            // Tạo response an toàn với HashMap
             Map<String, Object> response = new HashMap<>();
             response.put("success", result.isSuccess());
             response.put("message", result.getMessage());
 
-            // Chỉ thêm submissionId nếu không null
             if (result.getSubmissionId() != null) {
                 response.put("submissionId", result.getSubmissionId());
             }
 
-            return ResponseEntity.ok(response);
+            if (result.isSuccess()) {
+                log.info("Admin successfully deleted submission {}", id);
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("Admin failed to delete submission {}: {}", id, result.getMessage());
+                return ResponseEntity.badRequest().body(response);
+            }
         } catch (Exception e) {
             log.error("Error deleting submission: {}", id, e);
 
-            // Sử dụng HashMap thay vì Map.of() để tránh NullPointerException
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-
-            // Xử lý message an toàn
-            String errorMsg = e.getMessage();
-            if (errorMsg == null) {
-                errorMsg = "Không xác định";
-            }
-            errorResponse.put("message", "Lỗi server: " + errorMsg);
+            errorResponse.put("message", "Lỗi server: " +
+                    (e.getMessage() != null ? e.getMessage() : "Không xác định"));
 
             return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    /**
+     * POST /api/admin/mini-test/batch-delete
+     * Admin: Xóa nhiều bài nộp cùng lúc
+     */
+    @PostMapping("/batch-delete")
+    public ResponseEntity<?> batchDeleteSubmissions(@RequestBody Map<String, Object> request) {
+        try {
+            // Lấy danh sách ID từ request
+            List<Integer> ids = (List<Integer>) request.get("ids");
+
+            if (ids == null || ids.isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Danh sách ID không được để trống");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            List<Long> successIds = new ArrayList<>();
+            List<Long> failedIds = new ArrayList<>();
+            Map<Long, String> errorMessages = new HashMap<>();
+
+            // Xóa từng bài nộp
+            for (Integer id : ids) {
+                try {
+                    Long submissionId = id.longValue();
+                    var result = miniTestService.deleteSubmissionByAdmin(submissionId);
+
+                    if (result.isSuccess()) {
+                        successIds.add(submissionId);
+                        log.info("Successfully deleted submission: {}", submissionId);
+                    } else {
+                        failedIds.add(submissionId);
+                        errorMessages.put(submissionId, result.getMessage());
+                        log.warn("Failed to delete submission {}: {}", submissionId, result.getMessage());
+                    }
+                } catch (Exception e) {
+                    Long submissionId = id.longValue();
+                    failedIds.add(submissionId);
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : "Lỗi không xác định";
+                    errorMessages.put(submissionId, errorMsg);
+                    log.error("Error deleting submission {}: {}", id, errorMsg);
+                }
+            }
+
+            // Tạo response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", String.format("Đã xử lý %d bài nộp", ids.size()));
+            response.put("total", ids.size());
+            response.put("successCount", successIds.size());
+            response.put("failedCount", failedIds.size());
+
+            if (!successIds.isEmpty()) {
+                response.put("successIds", successIds);
+            }
+
+            if (!failedIds.isEmpty()) {
+                response.put("failedIds", failedIds);
+                response.put("errors", errorMessages);
+            }
+
+            log.info("Batch delete completed: {} success, {} failed", successIds.size(), failedIds.size());
+            return ResponseEntity.ok(response);
+
+        } catch (ClassCastException e) {
+            log.error("Invalid request format for batch delete", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Định dạng request không hợp lệ. IDs phải là mảng số nguyên");
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error in batch delete: ", e);
+            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+        }
+    }
+
+    /**
+     * DELETE /api/admin/mini-test/batch-delete
+     * Alternative: Sử dụng DELETE method với query parameter
+     */
+    @DeleteMapping("/batch-delete")
+    public ResponseEntity<?> batchDeleteByQueryParam(@RequestParam(name = "ids") List<Long> ids) {
+        try {
+            if (ids == null || ids.isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Danh sách ID không được để trống");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            List<Long> successIds = new ArrayList<>();
+            List<Long> failedIds = new ArrayList<>();
+            Map<Long, String> errorMessages = new HashMap<>();
+
+            for (Long submissionId : ids) {
+                try {
+                    var result = miniTestService.deleteSubmissionByAdmin(submissionId);
+
+                    if (result.isSuccess()) {
+                        successIds.add(submissionId);
+                        log.info("Successfully deleted submission: {}", submissionId);
+                    } else {
+                        failedIds.add(submissionId);
+                        errorMessages.put(submissionId, result.getMessage());
+                        log.warn("Failed to delete submission {}: {}", submissionId, result.getMessage());
+                    }
+                } catch (Exception e) {
+                    failedIds.add(submissionId);
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : "Lỗi không xác định";
+                    errorMessages.put(submissionId, errorMsg);
+                    log.error("Error deleting submission {}: {}", submissionId, errorMsg);
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", String.format("Đã xử lý %d bài nộp", ids.size()));
+            response.put("total", ids.size());
+            response.put("successCount", successIds.size());
+            response.put("failedCount", failedIds.size());
+
+            if (!successIds.isEmpty()) {
+                response.put("successIds", successIds);
+            }
+
+            if (!failedIds.isEmpty()) {
+                response.put("failedIds", failedIds);
+                response.put("errors", errorMessages);
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error in batch delete: ", e);
+            return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
