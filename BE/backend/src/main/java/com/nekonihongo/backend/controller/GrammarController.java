@@ -119,8 +119,37 @@ public class GrammarController {
                 return ApiResponse.success("Lấy bài học ngữ pháp thành công!", dto);
         }
 
+        // API chung cho JLPT (tất cả các level)
+        @GetMapping("/jlpt/{level}")
+        public ApiResponse<List<GrammarPatternDTO>> getJlptGrammarByLevel(@PathVariable("level") String level) {
+                List<GrammarPatternDTO> patterns = grammarService.getGrammarPatternsByLevel(level.toUpperCase());
+                return ApiResponse.success("Lấy danh sách ngữ pháp JLPT " + level + " thành công!", patterns);
+        }
+
+        @GetMapping("/jlpt/{level}/count")
+        public ApiResponse<Long> getJlptGrammarCount(@PathVariable("level") String level) {
+                Long count = grammarService.getGrammarCountByLevel(level.toUpperCase());
+                return ApiResponse.success("Lấy số lượng ngữ pháp JLPT " + level + " thành công!", count);
+        }
+
+        // API lấy tất cả ngữ pháp JLPT (tất cả level)
+        @GetMapping("/jlpt/all")
+        public ApiResponse<List<GrammarPatternDTO>> getAllJlptGrammar() {
+                List<GrammarPatternDTO> patterns = grammarService.getAllGrammarPatterns();
+                return ApiResponse.success("Lấy tất cả ngữ pháp JLPT thành công!", patterns);
+        }
+
+        // API lấy số lượng ngữ pháp của tất cả các level
+        @GetMapping("/jlpt/counts/all")
+        public ApiResponse<Map<String, Long>> getGrammarCountsAllLevels() {
+                Map<String, Long> counts = grammarService.getGrammarCountsByAllLevels();
+                return ApiResponse.success("Lấy số lượng ngữ pháp tất cả level thành công!", counts);
+        }
+
+        // API giữ lại cho tương thích (redirect đến API mới)
         @GetMapping("/n5")
-        public List<GrammarPatternDTO> getN5Grammar() {
-                return grammarService.getN5GrammarPatterns();
+        public ApiResponse<List<GrammarPatternDTO>> getN5Grammar() {
+                List<GrammarPatternDTO> patterns = grammarService.getGrammarPatternsByLevel("N5");
+                return ApiResponse.success("Lấy danh sách ngữ pháp N5 thành công!", patterns);
         }
 }

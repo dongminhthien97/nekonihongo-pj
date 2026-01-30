@@ -1,4 +1,3 @@
-// src/main/java/com/nekonihongo/backend/controller/UserController.java
 package com.nekonihongo.backend.controller;
 
 import com.nekonihongo.backend.dto.*;
@@ -26,7 +25,6 @@ public class UserController {
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
 
-    /* ====================== ADMIN ROUTES ====================== */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/admin/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
@@ -71,16 +69,13 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRequest request,
-            Authentication authentication) { // ← Thêm Authentication để lấy current admin
+            Authentication authentication) {
 
-        // Lấy current admin username từ token
         String currentUsername = authentication.getName();
 
-        // Load user cần update để check self-update
         User existingUser = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
 
-        // NGĂN ADMIN TỰ KHÓA CHÍNH MÌNH (tránh bug không login được)
         if (existingUser.getUsername().equals(currentUsername)
                 && request.getStatus() != null
                 && request.getStatus() != User.Status.ACTIVE) {
@@ -98,7 +93,6 @@ public class UserController {
                 .streak(request.getStreak() != null ? request.getStreak() : existingUser.getStreak())
                 .longestStreak(request.getLongestStreak() != null ? request.getLongestStreak()
                         : existingUser.getLongestStreak())
-                // THÊM STATUS
                 .status(request.getStatus() != null ? request.getStatus() : existingUser.getStatus())
                 .build();
 
@@ -127,13 +121,12 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Xóa log hoạt động thành công!", null));
     }
 
-    /* ====================== USER ROUTES ====================== */
     @PatchMapping("/api/user/me/avatar")
     public ResponseEntity<ApiResponse<UserResponse>> updateAvatar(
             Authentication authentication,
             @RequestBody Map<String, String> body) {
 
-        String identifier = authentication.getName(); // username/email từ token
+        String identifier = authentication.getName();
         User currentUser = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(identifier, identifier)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
 
@@ -150,7 +143,7 @@ public class UserController {
 
     @GetMapping("/api/user/me")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
-        String identifier = authentication.getName(); // lấy username/email từ principal
+        String identifier = authentication.getName();
         User currentUser = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(identifier, identifier)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
 

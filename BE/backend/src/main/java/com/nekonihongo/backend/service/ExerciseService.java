@@ -7,7 +7,6 @@ import com.nekonihongo.backend.enums.CategoryType;
 import com.nekonihongo.backend.enums.JlptLevelType;
 import com.nekonihongo.backend.repository.*;
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
@@ -27,7 +25,6 @@ public class ExerciseService {
     private final LevelCalculationService levelService;
     private final ActivityLogService activityLogService;
     private final ActivityLogRepository activityLogRepository;
-    /* ========== GET EXERCISES (KEEP EXISTING LOGIC) ========== */
 
     public List<ExerciseDTO> getN5VocabularyExercises() {
         List<Exercise> exercises = exerciseRepository
@@ -61,66 +58,40 @@ public class ExerciseService {
 
     @Transactional
     public void importN5VocabularyExercises(List<Object> jsonData) {
-        // Logic import từ JSON (giữ nguyên)
     }
 
     @Transactional
     public SubmitExerciseResult submitExercise(Long userId, SubmitExerciseRequest request) {
-        log.info("====== EXERCISE SUBMIT START ======");
-        log.info("User ID: {}, Request: {}", userId, request);
-
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User not found with ID: {}", userId);
-                    return new RuntimeException("User not found");
-                });
-
-        log.info("User: {} (Points: {}, Level: {})",
-                user.getUsername(), user.getPoints(), user.getLevel());
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         int oldPoints = user.getPoints();
         int oldLevel = user.getLevel();
 
-        // 1. Lấy thông tin bài tập
         String exerciseTitle = getExerciseTitle(request);
-        log.info("Exercise title: {}", exerciseTitle);
 
-        // 2. Tính điểm
         int pointsEarned = calculatePointsEarned(
                 request.getCorrectAnswers(),
                 request.getTotalQuestions(),
                 request.getDifficultyLevel());
-        log.info("Points earned: {}", pointsEarned);
 
-        // 3. Cập nhật điểm
         int newPoints = oldPoints + pointsEarned;
         user.setPoints(newPoints);
-        log.info("New points: {}", newPoints);
 
-        // 4. Kiểm tra và cập nhật level
         int newLevel = levelService.calculateLevel(newPoints);
         boolean leveledUp = newLevel > oldLevel;
-        log.info("New level: {}, Leveled up: {}", newLevel, leveledUp);
 
         if (leveledUp) {
             user.setLevel(newLevel);
-            log.info("LEVEL UP! {} -> {}", oldLevel, newLevel);
         }
 
-        // 5. Cập nhật last login
         user.setLastLoginDate(LocalDateTime.now());
-
-        // 6. LƯU USER TRƯỚC KHI LOG ACTIVITY
         userRepository.save(user);
-        log.info("User saved to database");
 
-        // 7. LOG ACTIVITY - QUAN TRỌNG NHẤT
         logActivityWithRetry(user, request, exerciseTitle, pointsEarned, newPoints, leveledUp, oldLevel, newLevel);
 
-        // 8. Lấy thông tin level
         LevelCalculationService.LevelInfo levelInfo = levelService.getLevelInfo(newPoints);
 
-        // 9. Trả kết quả
         SubmitExerciseResult result = SubmitExerciseResult.builder()
                 .userId(userId)
                 .pointsEarned(pointsEarned)
@@ -133,32 +104,24 @@ public class ExerciseService {
                 .message(getLevelUpMessage(leveledUp, oldLevel, newLevel))
                 .build();
 
-        log.info("====== EXERCISE SUBMIT END ======");
         return result;
     }
-
-    /* ========== HELPER METHODS ========== */
 
     private String getExerciseTitle(SubmitExerciseRequest request) {
         String exerciseTitle = "Unknown Exercise";
 
-        // Ưu tiên exerciseId
         if (request.getExerciseId() != null) {
             try {
                 Exercise exercise = exerciseRepository.findById(request.getExerciseId()).orElse(null);
                 if (exercise != null) {
                     exerciseTitle = exercise.getTitle();
-                    log.info("Found exercise by ID {}: {}", request.getExerciseId(), exerciseTitle);
                 }
             } catch (Exception e) {
-                log.warn("Could not find exercise with id: {}", request.getExerciseId());
             }
         }
 
-        // Fallback: dùng title từ request
         if (request.getExerciseTitle() != null && !request.getExerciseTitle().isEmpty()) {
             exerciseTitle = request.getExerciseTitle();
-            log.info("Using exercise title from request: {}", exerciseTitle);
         }
 
         return exerciseTitle;
@@ -175,7 +138,6 @@ public class ExerciseService {
             int newLevel) {
 
         try {
-            // Build action message
             String action = buildActivityLogAction(
                     user.getUsername(),
                     exerciseTitle,
@@ -188,28 +150,18 @@ public class ExerciseService {
                     oldLevel,
                     newLevel);
 
-            log.info("📝 Logging activity: {}", action);
-
-            // Gọi activity log service với retry logic
             for (int attempt = 1; attempt <= 3; attempt++) {
                 try {
-                    log.info("📝 Attempt {} to log activity...", attempt);
                     activityLogService.logActivity(user.getId(), action);
-                    log.info("✅ Activity logged successfully on attempt {}", attempt);
-                    return; // Thành công, thoát
+                    return;
                 } catch (Exception e) {
-                    log.warn("⚠️ Attempt {} failed: {}", attempt, e.getMessage());
                     if (attempt == 3) {
-                        log.error("❌ All attempts to log activity failed!");
                     }
-                    // Chờ 100ms trước khi retry
                     Thread.sleep(100);
                 }
             }
 
         } catch (Exception e) {
-            log.error("❌ CRITICAL: Failed to log activity after all retries: {}", e.getMessage());
-            // KHÔNG throw exception ở đây - không làm gián đoạn flow chính
         }
     }
 
@@ -254,11 +206,11 @@ public class ExerciseService {
         int basePoints = (int) Math.round(percentage * 10);
 
         double multiplier = switch (difficultyLevel) {
-            case 1 -> 1.0; // Dễ
-            case 2 -> 1.2; // Trung bình
-            case 3 -> 1.5; // Khó
-            case 4 -> 2.0; // Rất khó
-            case 5 -> 3.0; // Thử thách
+            case 1 -> 1.0;
+            case 2 -> 1.2;
+            case 3 -> 1.5;
+            case 4 -> 2.0;
+            case 5 -> 3.0;
             default -> 1.0;
         };
 
@@ -277,12 +229,8 @@ public class ExerciseService {
         return String.format("Chúc mừng! Bạn đã lên Level %d! 🎉", newLevel);
     }
 
-    /* ========== DIRECT LOGGING METHOD (fallback) ========== */
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logActivityDirectly(Long userId, String action) {
-        log.info("🔄 DIRECT LOGGING for user {}: {}", userId, action);
-
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found for logging"));
@@ -293,22 +241,12 @@ public class ExerciseService {
                     .timestamp(LocalDateTime.now())
                     .build();
 
-            // Sử dụng repository trực tiếp
             activityLogRepository.save(activityLog);
-            activityLogRepository.flush(); // Force immediate save
-
-            log.info("✅ DIRECT LOG saved with ID: {}", activityLog.getId());
-
+            activityLogRepository.flush();
         } catch (Exception e) {
-            log.error("❌ DIRECT LOGGING failed: {}", e.getMessage(), e);
             throw e;
         }
     }
-
-    // Cần inject repository nếu dùng method trên
-    // private final ActivityLogRepository activityLogRepository;
-
-    /* ========== DTOs ========== */
 
     @Data
     @Builder
@@ -337,7 +275,6 @@ public class ExerciseService {
         private String message;
     }
 
-    // Map to DTO method
     private ExerciseDTO mapToDTO(Exercise exercise) {
         List<Question> questions = questionRepository
                 .findByExercise_IdOrderByDisplayOrder(exercise.getId());

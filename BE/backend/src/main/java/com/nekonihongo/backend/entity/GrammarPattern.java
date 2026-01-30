@@ -17,6 +17,9 @@ public class GrammarPattern {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 10)
+    private String level; // "N5", "N4", "N3", "N2", "N1"
+
     @Column(nullable = false, length = 300)
     private String pattern; // "~ は ~"
 

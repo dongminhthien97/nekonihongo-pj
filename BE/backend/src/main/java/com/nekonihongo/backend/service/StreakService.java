@@ -3,7 +3,6 @@ package com.nekonihongo.backend.service;
 import com.nekonihongo.backend.entity.User;
 import com.nekonihongo.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +12,6 @@ import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class StreakService {
 
     private final UserRepository userRepository;
@@ -30,41 +28,26 @@ public class StreakService {
         LocalDate today = LocalDate.now();
 
         if (user.getLastLoginDate() == null) {
-            // Lần đầu đăng nhập
             user.setStreak(1);
             user.setLongestStreak(1);
-            log.info("👤 User {} lần đầu đăng nhập → streak = 1", user.getId());
         } else {
             LocalDate lastLoginDate = user.getLastLoginDate().toLocalDate();
 
             if (lastLoginDate.equals(today)) {
-                // Đã đăng nhập hôm nay, không làm gì
-                log.info("👤 User {} đã đăng nhập hôm nay → streak giữ nguyên = {}",
-                        user.getId(), user.getStreak());
                 return;
             } else if (lastLoginDate.equals(today.minusDays(1))) {
-                // Đăng nhập liên tiếp → tăng streak
                 user.setStreak(user.getStreak() + 1);
-                log.info("🔥 User {} đăng nhập liên tiếp → streak +1 = {}",
-                        user.getId(), user.getStreak());
 
                 if (user.getStreak() > user.getLongestStreak()) {
                     user.setLongestStreak(user.getStreak());
-                    log.info("🏆 User {} đạt kỷ lục mới → longestStreak = {}",
-                            user.getId(), user.getLongestStreak());
                 }
             } else {
-                // Break streak → reset về 1
                 user.setStreak(1);
-                log.info("⚠️ User {} bỏ lỡ nhiều ngày → streak reset = 1", user.getId());
             }
         }
 
         user.setLastLoginDate(LocalDateTime.now());
         userRepository.save(user);
-
-        log.info("✅ Updated login streak cho user {}: streak={}, longest={}",
-                user.getId(), user.getStreak(), user.getLongestStreak());
     }
 
     /**
@@ -107,7 +90,5 @@ public class StreakService {
         user.setStreak(0);
         user.setLastLoginDate(null);
         userRepository.save(user);
-
-        log.info("Reset streak for user {}", user.getId());
     }
 }

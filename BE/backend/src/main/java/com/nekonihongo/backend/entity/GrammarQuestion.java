@@ -33,21 +33,28 @@ public class GrammarQuestion {
     private Integer lessonId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "ENUM('fill_blank', 'multiple_choice', 'rearrange')")
     private QuestionType type;
 
-    // example (例) để nhóm các câu theo 例
+    // example (例) để nhóm các câu theo mẫu ví dụ
     @Column(columnDefinition = "TEXT")
     private String example;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String text;
 
-    @Column(columnDefinition = "JSON")
-    @JdbcTypeCode(SqlTypes.JSON)
+    /**
+     * FIX CHÍNH: Thay đổi từ SqlTypes.JSON sang SqlTypes.LONGVARCHAR
+     * nếu bạn muốn Hibernate tự động chuyển List<String> thành chuỗi JSON và lưu
+     * vào cột TEXT.
+     * Cách này giúp vượt qua lỗi Schema Validation mà không cần sửa Database.
+     */
+    @Column(name = "options", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private List<String> options;
 
-    @Column(name = "correct_answer", nullable = false, length = 255)
+    // Fix: Khớp với cột 'correct_answer' kiểu TEXT trong DB (thay vì length=255)
+    @Column(name = "correct_answer", columnDefinition = "TEXT", nullable = false)
     private String correctAnswer;
 
     @Column
@@ -65,7 +72,7 @@ public class GrammarQuestion {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relationship with GrammarLesson
+    // Relationship với GrammarLesson
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lesson_id", insertable = false, updatable = false)
     @ToString.Exclude

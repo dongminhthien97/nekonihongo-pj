@@ -7,7 +7,6 @@ import com.nekonihongo.backend.entity.User;
 import com.nekonihongo.backend.repository.GrammarQuestionRepository;
 import com.nekonihongo.backend.service.MiniTestService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,15 +27,11 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/api/admin/mini-test", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Slf4j
 public class AdminMiniTestController {
 
     private final MiniTestService miniTestService;
     private final GrammarQuestionRepository grammarQuestionRepository;
 
-    /**
-     * Helper method để tạo error response an toàn
-     */
     private Map<String, Object> createErrorResponse(Exception e) {
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("success", false);
@@ -45,9 +40,6 @@ public class AdminMiniTestController {
         return errorResponse;
     }
 
-    /**
-     * Helper method để tạo success response với HashMap
-     */
     private Map<String, Object> createSuccessResponse(String key, Object value) {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -55,12 +47,6 @@ public class AdminMiniTestController {
         return response;
     }
 
-    /**
-     * GET /api/admin/mini-test (root path)
-     * Admin: Lấy danh sách bài nộp (all hoặc pending dựa trên param filter)
-     * filter=pending → pending
-     * filter=all hoặc default → all submissions
-     */
     @GetMapping("")
     public ResponseEntity<?> getSubmissions(
             @RequestParam(name = "filter", required = false, defaultValue = "all") String filter) {
@@ -81,15 +67,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting submissions with filter: {}", filter, e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/pending-count
-     * Admin: Đếm số bài pending toàn hệ thống
-     */
     @GetMapping("/pending-count")
     public ResponseEntity<?> getPendingCount() {
         try {
@@ -101,15 +82,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting pending count", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/pending
-     * Admin: Lấy danh sách bài pending
-     */
     @GetMapping("/pending")
     public ResponseEntity<?> getPendingSubmissions() {
         try {
@@ -122,15 +98,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting pending submissions", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/submissions
-     * Admin: Lấy tất cả submissions (có phân trang)
-     */
     @GetMapping("/submissions")
     public ResponseEntity<?> getAllSubmissions(
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -146,7 +117,6 @@ public class AdminMiniTestController {
 
             List<MiniTestSubmissionDTO> submissions = miniTestService.getAllSubmissions();
 
-            // Thực hiện phân trang thủ công vì service trả về List
             int start = Math.min(page * size, submissions.size());
             int end = Math.min((page + 1) * size, submissions.size());
             List<MiniTestSubmissionDTO> pagedSubmissions = submissions.subList(start, end);
@@ -160,15 +130,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting all submissions", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/submission/{id}
-     * Admin: Lấy chi tiết bài nộp
-     */
     @GetMapping("/submission/{id}")
     public ResponseEntity<?> getSubmissionById(@PathVariable(name = "id") Long id) {
         try {
@@ -198,15 +163,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting submission by id: {}", id, e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/{submissionId}/details
-     * Admin: Lấy chi tiết bài làm với thông tin user và answers
-     */
     @GetMapping("/{submissionId}/details")
     public ResponseEntity<?> getSubmissionDetails(@PathVariable(name = "submissionId") Long submissionId) {
         try {
@@ -221,7 +181,6 @@ public class AdminMiniTestController {
             MiniTestSubmission submission = submissionOpt.get();
             Optional<User> userOpt = miniTestService.getUserInfoForSubmission(submissionId);
 
-            // Parse answers từ JSON
             List<MiniTestSubmissionDTO.AnswerDTO> answers = miniTestService
                     .parseAnswersToDtoList(submission.getAnswers());
 
@@ -237,7 +196,6 @@ public class AdminMiniTestController {
             submissionData.put("timeSpent", submission.getTimeSpent());
             submissionData.put("answers", answers);
 
-            // User info
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 submissionData.put("userName", user.getFullName() != null ? user.getFullName() : user.getUsername());
@@ -253,27 +211,19 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting submission details: {}", submissionId, e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * POST /api/admin/mini-test/submission/{id}/feedback
-     * Admin: Thêm feedback và điểm cho bài nộp
-     */
     @PostMapping("/submission/{id}/feedback")
     public ResponseEntity<?> addFeedbackWithScore(
             @PathVariable(name = "id") Long submissionId,
             @RequestBody Map<String, Object> feedbackRequest) {
 
         try {
-            log.info("Processing feedback for submission {}: request={}", submissionId, feedbackRequest);
-
             String feedback = (String) feedbackRequest.get("feedback");
             Integer score = null;
 
-            // Lấy điểm nếu có - XỬ LÝ ĐÚNG CÁCH
             if (feedbackRequest.containsKey("score")) {
                 Object scoreObj = feedbackRequest.get("score");
                 if (scoreObj != null) {
@@ -287,53 +237,36 @@ public class AdminMiniTestController {
                             try {
                                 score = Integer.parseInt(scoreStr);
                             } catch (NumberFormatException e) {
-                                log.warn("Invalid score format: {}", scoreStr);
                                 Map<String, Object> errorResponse = new HashMap<>();
                                 errorResponse.put("success", false);
                                 errorResponse.put("message", "Định dạng điểm không hợp lệ. Phải là số nguyên.");
                                 return ResponseEntity.badRequest().body(errorResponse);
                             }
                         } else {
-                            // Nếu chuỗi rỗng, score = 0
                             score = 0;
                         }
                     } else if (scoreObj instanceof Number) {
                         score = ((Number) scoreObj).intValue();
                     }
                 } else {
-                    // scoreObj là null, set score = 0
                     score = 0;
                 }
             } else {
-                // Không có key "score" trong request, set score = 0
                 score = 0;
             }
 
-            // Validation feedback
             if (feedback == null || feedback.trim().isEmpty()) {
-                log.warn("Empty feedback for submission {}", submissionId);
-                feedback = "Đã xem"; // Default feedback nếu không có
+                feedback = "Đã xem";
             } else {
                 feedback = feedback.trim();
             }
 
-            // Validate score - CHO PHÉP score = 0
             if (score == null) {
-                score = 0; // Default to 0 if null
+                score = 0;
             }
 
-            if (score < 0) {
-                log.warn("Negative score {} for submission {}", score, submissionId);
-                // Vẫn cho phép, nhưng cảnh báo
-            }
-
-            log.info("Calling scoreAndFeedback: submissionId={}, score={}, feedbackLength={}",
-                    submissionId, score, feedback.length());
-
-            // Gọi service
             var result = miniTestService.scoreAndFeedback(submissionId, feedback, score);
 
-            // Tạo response an toàn
             Map<String, Object> response = new HashMap<>();
             response.put("success", result.isSuccess());
             response.put("message", result.getMessage());
@@ -352,9 +285,6 @@ public class AdminMiniTestController {
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            log.error("Error adding feedback for submission: {}", submissionId, e);
-
-            // Tạo error response an toàn
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Lỗi server: " +
@@ -364,22 +294,15 @@ public class AdminMiniTestController {
         }
     }
 
-    /**
-     * POST /api/admin/mini-test/submission/{id}/manual-score
-     * Admin: Chấm điểm thủ công (tick đúng/sai từng câu)
-     */
     @PostMapping("/submission/{id}/manual-score")
     public ResponseEntity<?> submitManualScore(
             @PathVariable(name = "id") Long submissionId,
             @RequestBody Map<String, Object> scoreRequest) {
 
         try {
-            log.info("Processing manual score for submission {}: request={}", submissionId, scoreRequest);
-
             String feedback = (String) scoreRequest.get("feedback");
             Integer totalScore = null;
 
-            // Lấy điểm tổng
             if (scoreRequest.containsKey("score")) {
                 Object scoreObj = scoreRequest.get("score");
                 if (scoreObj != null) {
@@ -393,7 +316,6 @@ public class AdminMiniTestController {
                             try {
                                 totalScore = Integer.parseInt(scoreStr);
                             } catch (NumberFormatException e) {
-                                log.warn("Invalid score format: {}", scoreStr);
                                 Map<String, Object> errorResponse = new HashMap<>();
                                 errorResponse.put("success", false);
                                 errorResponse.put("message", "Định dạng điểm không hợp lệ. Phải là số nguyên.");
@@ -412,15 +334,12 @@ public class AdminMiniTestController {
                 totalScore = 0;
             }
 
-            // Validation feedback
             if (feedback == null || feedback.trim().isEmpty()) {
-                log.warn("Empty feedback for submission {}", submissionId);
                 feedback = "Đã chấm điểm thủ công";
             } else {
                 feedback = feedback.trim();
             }
 
-            // Validate score
             if (totalScore == null || totalScore < 0) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
@@ -428,7 +347,6 @@ public class AdminMiniTestController {
                 return ResponseEntity.badRequest().body(errorResponse);
             }
 
-            // Update submission
             var result = miniTestService.scoreAndFeedback(submissionId, feedback, totalScore);
 
             Map<String, Object> response = new HashMap<>();
@@ -439,15 +357,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error submitting manual score: {}", submissionId, e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/lesson/{lessonId}/stats
-     * Admin: Thống kê bài nộp theo lesson
-     */
     @GetMapping("/lesson/{lessonId}/stats")
     public ResponseEntity<?> getLessonStats(@PathVariable(name = "lessonId") Integer lessonId) {
         try {
@@ -467,15 +380,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting lesson stats for lesson: {}", lessonId, e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * GET /api/admin/mini-test/search
-     * Admin: Tìm kiếm submissions
-     */
     @GetMapping("/search")
     public ResponseEntity<?> searchSubmissions(
             @RequestParam(name = "keyword", required = false) String keyword,
@@ -485,15 +393,12 @@ public class AdminMiniTestController {
             @RequestParam(name = "size", defaultValue = "20") int size) {
 
         try {
-            // Lấy tất cả submissions trước
             List<MiniTestSubmissionDTO> allSubmissions = miniTestService.getAllSubmissions();
 
-            // Áp dụng filter
             List<MiniTestSubmissionDTO> filteredSubmissions = allSubmissions.stream()
                     .filter(submission -> {
                         boolean matches = true;
 
-                        // Filter by keyword
                         if (keyword != null && !keyword.isEmpty()) {
                             String keywordLower = keyword.toLowerCase();
                             matches = (submission.getUserName() != null
@@ -505,12 +410,10 @@ public class AdminMiniTestController {
                                     || String.valueOf(submission.getLessonId()).contains(keyword);
                         }
 
-                        // Filter by status
                         if (status != null && !status.isEmpty()) {
                             matches = matches && submission.getStatus().equalsIgnoreCase(status);
                         }
 
-                        // Filter by lessonId
                         if (lessonId != null) {
                             matches = matches && submission.getLessonId().equals(lessonId.longValue());
                         }
@@ -519,7 +422,6 @@ public class AdminMiniTestController {
                     })
                     .collect(Collectors.toList());
 
-            // Phân trang
             int start = Math.min(page * size, filteredSubmissions.size());
             int end = Math.min((page + 1) * size, filteredSubmissions.size());
             List<MiniTestSubmissionDTO> pagedSubmissions = filteredSubmissions.subList(start, end);
@@ -533,15 +435,10 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error searching submissions: ", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * POST /api/admin/mini-test/mark-all-read
-     * Admin: Đánh dấu tất cả bài pending là đã đọc (feedback)
-     */
     @PostMapping("/mark-all-read")
     public ResponseEntity<?> markAllAsRead() {
         try {
@@ -557,8 +454,6 @@ public class AdminMiniTestController {
                 }
             }
 
-            log.info("Marked {} pending submissions as read", markedCount);
-
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Đã đánh dấu " + markedCount + " bài là đã đọc");
@@ -566,19 +461,13 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error marking all as read: ", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * DELETE /api/admin/mini-test/submission/{id}
-     * Admin: Xóa bài nộp (dùng phương thức dành cho admin)
-     */
     @DeleteMapping("/submission/{id}")
     public ResponseEntity<?> deleteSubmission(@PathVariable(name = "id") Long id) {
         try {
-            // Sử dụng phương thức dành cho admin, không kiểm tra quyền sở hữu
             var result = miniTestService.deleteSubmissionByAdmin(id);
 
             Map<String, Object> response = new HashMap<>();
@@ -590,15 +479,11 @@ public class AdminMiniTestController {
             }
 
             if (result.isSuccess()) {
-                log.info("Admin successfully deleted submission {}", id);
                 return ResponseEntity.ok(response);
             } else {
-                log.warn("Admin failed to delete submission {}: {}", id, result.getMessage());
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            log.error("Error deleting submission: {}", id, e);
-
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Lỗi server: " +
@@ -608,14 +493,9 @@ public class AdminMiniTestController {
         }
     }
 
-    /**
-     * POST /api/admin/mini-test/batch-delete
-     * Admin: Xóa nhiều bài nộp cùng lúc
-     */
     @PostMapping("/batch-delete")
     public ResponseEntity<?> batchDeleteSubmissions(@RequestBody Map<String, Object> request) {
         try {
-            // Lấy danh sách ID từ request
             List<Integer> ids = (List<Integer>) request.get("ids");
 
             if (ids == null || ids.isEmpty()) {
@@ -629,7 +509,6 @@ public class AdminMiniTestController {
             List<Long> failedIds = new ArrayList<>();
             Map<Long, String> errorMessages = new HashMap<>();
 
-            // Xóa từng bài nộp
             for (Integer id : ids) {
                 try {
                     Long submissionId = id.longValue();
@@ -637,22 +516,18 @@ public class AdminMiniTestController {
 
                     if (result.isSuccess()) {
                         successIds.add(submissionId);
-                        log.info("Successfully deleted submission: {}", submissionId);
                     } else {
                         failedIds.add(submissionId);
                         errorMessages.put(submissionId, result.getMessage());
-                        log.warn("Failed to delete submission {}: {}", submissionId, result.getMessage());
                     }
                 } catch (Exception e) {
                     Long submissionId = id.longValue();
                     failedIds.add(submissionId);
                     String errorMsg = e.getMessage() != null ? e.getMessage() : "Lỗi không xác định";
                     errorMessages.put(submissionId, errorMsg);
-                    log.error("Error deleting submission {}: {}", id, errorMsg);
                 }
             }
 
-            // Tạo response
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", String.format("Đã xử lý %d bài nộp", ids.size()));
@@ -669,25 +544,18 @@ public class AdminMiniTestController {
                 response.put("errors", errorMessages);
             }
 
-            log.info("Batch delete completed: {} success, {} failed", successIds.size(), failedIds.size());
             return ResponseEntity.ok(response);
 
         } catch (ClassCastException e) {
-            log.error("Invalid request format for batch delete", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Định dạng request không hợp lệ. IDs phải là mảng số nguyên");
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            log.error("Error in batch delete: ", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
 
-    /**
-     * DELETE /api/admin/mini-test/batch-delete
-     * Alternative: Sử dụng DELETE method với query parameter
-     */
     @DeleteMapping("/batch-delete")
     public ResponseEntity<?> batchDeleteByQueryParam(@RequestParam(name = "ids") List<Long> ids) {
         try {
@@ -708,17 +576,14 @@ public class AdminMiniTestController {
 
                     if (result.isSuccess()) {
                         successIds.add(submissionId);
-                        log.info("Successfully deleted submission: {}", submissionId);
                     } else {
                         failedIds.add(submissionId);
                         errorMessages.put(submissionId, result.getMessage());
-                        log.warn("Failed to delete submission {}: {}", submissionId, result.getMessage());
                     }
                 } catch (Exception e) {
                     failedIds.add(submissionId);
                     String errorMsg = e.getMessage() != null ? e.getMessage() : "Lỗi không xác định";
                     errorMessages.put(submissionId, errorMsg);
-                    log.error("Error deleting submission {}: {}", submissionId, errorMsg);
                 }
             }
 
@@ -741,7 +606,6 @@ public class AdminMiniTestController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Error in batch delete: ", e);
             return ResponseEntity.internalServerError().body(createErrorResponse(e));
         }
     }
@@ -763,8 +627,6 @@ public class AdminMiniTestController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error getting max score for lesson {}: ", lessonId, e);
-
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Error getting max score: " +
