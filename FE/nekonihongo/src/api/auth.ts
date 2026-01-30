@@ -6,18 +6,14 @@ const api = axios.create({
   withCredentials: false,
 });
 
-// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log("Đã gắn token vào request:", config.url);
-  } else {
-    console.warn("Không có token – request không auth:", config.url);
   }
   return config;
-  });
+});
 
 export async function loginRequest(email: string, password: string) {
   try {
@@ -27,7 +23,7 @@ export async function loginRequest(email: string, password: string) {
       { headers: { "Content-Type": "application/json" } }
     );
 
-    return res.data; // { token, refreshToken, user }
+    return res.data;
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
@@ -41,9 +37,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("401 detected globally – chuyển về login");
       localStorage.clear();
-      window.location.href = "/login"; // hoặc dùng navigate nếu có router
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }

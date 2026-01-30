@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 interface Lesson {
   id: number;
   title: string;

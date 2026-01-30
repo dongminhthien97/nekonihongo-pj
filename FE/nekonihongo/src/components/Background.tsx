@@ -16,7 +16,9 @@ export function Background() {
                     src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_61.jpg"
                     alt="Yuumi"
                     className="w-full h-full object-cover"
-                    style={{ filter: "brightness(0.92) contrast(1.15) saturate(1.3)" }}
+                    style={{
+                      filter: "brightness(0.92) contrast(1.15) saturate(1.3)",
+                    }}
                   />
                 </div>
                 <div className="w-screen h-screen flex-shrink-0">
@@ -24,7 +26,9 @@ export function Background() {
                     src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yuumi_49.jpg"
                     alt="Yuumi"
                     className="w-full h-full object-cover"
-                    style={{ filter: "brightness(0.92) contrast(1.15) saturate(1.3)" }}
+                    style={{
+                      filter: "brightness(0.92) contrast(1.15) saturate(1.3)",
+                    }}
                   />
                 </div>
                 <div className="w-screen h-screen flex-shrink-0">
@@ -32,7 +36,9 @@ export function Background() {
                     src="https://www.lolvvv.com/_next/image?url=https%3A%2F%2Fddragon.leagueoflegends.com%2Fcdn%2Fimg%2Fchampion%2Fsplash%2FYuumi_50.jpg&w=1200&q=75"
                     alt="Yuumi"
                     className="w-full h-full object-cover"
-                    style={{ filter: "brightness(0.92) contrast(1.15) saturate(1.3)" }}
+                    style={{
+                      filter: "brightness(0.92) contrast(1.15) saturate(1.3)",
+                    }}
                   />
                 </div>
                 <div className="w-screen h-screen flex-shrink-0">
@@ -40,7 +46,9 @@ export function Background() {
                     src="https://www.lolvvv.com/_next/image?url=https%3A%2F%2Fddragon.leagueoflegends.com%2Fcdn%2Fimg%2Fchampion%2Fsplash%2FYuumi_0.jpg&w=1200&q=75"
                     alt="Yuumi"
                     className="w-full h-full object-cover"
-                    style={{ filter: "brightness(0.92) contrast(1.15) saturate(1.3)" }}
+                    style={{
+                      filter: "brightness(0.92) contrast(1.15) saturate(1.3)",
+                    }}
                   />
                 </div>
               </div>

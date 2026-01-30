@@ -34,7 +34,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
     const unicode = kanji.kanji.charCodeAt(0).toString(16).padStart(5, "0");
 
     fetch(
-      `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${unicode}.svg`
+      `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${unicode}.svg`,
     )
       .then((r) => {
         if (r.ok) return r.text();
@@ -77,7 +77,7 @@ export function KanjiDetailModal({ kanji, onClose }: KanjiDetailModalProps) {
       })
       .catch(() => {
         console.warn(
-          `[KanjiVG] Không load SVG cho "${kanji.kanji}". Dùng placeholder.`
+          `[KanjiVG] Không load SVG cho "${kanji.kanji}". Dùng placeholder.`,
         );
         const placeholder = createSVGPlaceholder(kanji.strokes || 4);
         containerRef.current!.innerHTML = placeholder;

@@ -1,9 +1,6 @@
 // VocabularyPage.tsx
 import { useState, useMemo, useEffect } from "react";
 import { Search, ChevronLeft, ChevronRight, Cat, Sparkles } from "lucide-react";
-import { Navigation } from "./Navigation";
-import { Footer } from "./Footer";
-import { Background } from "./Background";
 import api from "../api/auth";
 import { NekoLoading } from "../components/NekoLoading";
 import { NekoAlertModal } from "../components/NekoAlertModal";
@@ -70,7 +67,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
         // Các lỗi khác (500, mạng, v.v.) → fallback local data + thông báo
         setLessons(localVocabularyLessons || []);
         setError(
-          "Không thể kết nối đến server! Mèo đã tải dữ liệu mẫu cho bạn rồi"
+          "Không thể kết nối đến server! Mèo đã tải dữ liệu mẫu cho bạn rồi",
         );
       } finally {
         // Đảm bảo loading tắt sau đúng 1.5s dù có lỗi hay không
@@ -122,7 +119,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
       JSON.stringify({
         words: selectedLesson.words,
         originPage: originPage, // ← Cũng thêm để đồng bộ (tùy chọn)
-      })
+      }),
     );
     requestAnimationFrame(() => onNavigate("flashcard"));
   };
@@ -132,7 +129,7 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
     const fetchSearch = async () => {
       try {
         const res = await api.get(
-          `/vocabulary/search?q=${encodeURIComponent(searchQuery)}`
+          `/vocabulary/search?q=${encodeURIComponent(searchQuery)}`,
         );
         return res.data.data || [];
       } catch {
@@ -162,14 +159,14 @@ export function VocabularyPage({ onNavigate }: VocabularyPageProps) {
   const totalLessonPages = Math.ceil(lessons.length / LESSONS_PER_PAGE);
   const currentLessons = lessons.slice(
     (lessonPage - 1) * LESSONS_PER_PAGE,
-    lessonPage * LESSONS_PER_PAGE
+    lessonPage * LESSONS_PER_PAGE,
   );
 
   // Phân trang từ vựng
   const currentWords = selectedLesson
     ? selectedLesson.words.slice(
         (wordPage - 1) * WORDS_PER_PAGE,
-        wordPage * WORDS_PER_PAGE
+        wordPage * WORDS_PER_PAGE,
       )
     : [];
   const totalWordPages = selectedLesson

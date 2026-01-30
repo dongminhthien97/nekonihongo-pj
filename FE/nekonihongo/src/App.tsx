@@ -14,13 +14,10 @@ import { DashboardAdmin } from "./pages/admin/DashboardAdmin";
 import { MyPageUser } from "./pages/user/MyPageUser";
 import { FlashcardKanji } from "./components/FlashcardKanji";
 import { VocabularySelector } from "./components/VocabularySelector";
-import { VocabularyN5 } from "./components/VocabularyN5";
 import { ExerciseSelector } from "./components/ExerciseSelector";
 import { Toaster } from "react-hot-toast";
-import { GrammarN5ListPage } from "./components/GrammarN5ListPage";
 import { GrammarSelector } from "./components/GrammarSelector";
 import { KanjiSelector } from "./components/KanjiSelector";
-import { KanjiN5ListPage } from "./components/KanjiN5ListPage";
 import { Background } from "./components/Background";
 import { Navigation } from "./components/Navigation";
 import { Footer } from "./components/Footer";
@@ -35,6 +32,29 @@ import { TestManagementPage } from "./pages/admin/TestManagementPage";
 
 // NEW: IMPORT TRANG LƯU TRỮ MINI TEST CỦA USER
 import { UserMiniTestSubmissions } from "./pages/user/UserMiniTestSubmissions";
+
+// IMPORT CÁC COMPONENT VOCABULARY JLPT
+import { VocabularyJLPT as VocabJLPTComponent } from "./components/VocabularyJLPT";
+import { VocabularyN5 } from "./components/VocabularyN5";
+import { VocabularyN4 } from "./components/VocabularyN4";
+import { VocabularyN3 } from "./components/VocabularyN3";
+import { VocabularyN2 } from "./components/VocabularyN2";
+import { VocabularyN1 } from "./components/VocabularyN1";
+// IMPORT CÁC COMPONENT GRAMMAR JLPT
+import { JlptGrammar as JlptGrammarComponent } from "./components/JlptGrammar";
+import { JlptGrammarN5 } from "./components/JlptGrammarN5";
+import { JlptGrammarN4 } from "./components/JlptGrammarN4";
+import { JlptGrammarN3 } from "./components/JlptGrammarN3";
+import { JlptGrammarN2 } from "./components/JlptGrammarN2";
+import { JlptGrammarN1 } from "./components/JlptGrammarN1";
+
+// IMPORT CÁC COMPONENT KANJI JLPT MỚI
+import { JlptKanjiN5 } from "./components/JlptKanjiN5";
+import { JlptKanjiN4 } from "./components/JlptKanjiN4";
+import { JlptKanjiN3 } from "./components/JlptKanjiN3";
+import { JlptKanjiN2 } from "./components/JlptKanjiN2";
+import { JlptKanjiN1 } from "./components/JlptKanjiN1";
+import { JlptKanjiPage } from "./components/JlptKanjiPage";
 
 function AppContent() {
   const { user, hasSeenSplash, loading, markSplashAsSeen } = useAuth();
@@ -103,21 +123,25 @@ function AppContent() {
   if (!hasSeenSplash) {
     return <SplashScreen onComplete={markSplashAsSeen} />;
   }
+
   const isMyPage =
     currentPage === "mypage" ||
     currentPage === "admin" ||
     currentPage === "user" ||
     currentPage === "user-mini-test-submissions";
-  const isUserMiniTestSubmissions = "user-mini-test-submissions";
+
+  const isUserMiniTestSubmissions =
+    currentPage === "user-mini-test-submissions";
+
   // 4. Đã thấy splash → vào app chính
   return (
     <div className="min-h-screen page-transition">
-      {!isMyPage && <Background />}
-      {!isUserMiniTestSubmissions && <Background />}
+      {!isMyPage && !isUserMiniTestSubmissions && <Background />}
       <div className="relative z-10 min-h-screen">
-        {!isMyPage && (
+        {!isMyPage && !isUserMiniTestSubmissions && (
           <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
         )}
+
         {/* Các trang */}
         {currentPage === "landing" && (
           <LandingPage onNavigate={handleNavigate} />
@@ -164,8 +188,48 @@ function AppContent() {
         {currentPage === "vocabulary-n5" && (
           <VocabularyN5 onNavigate={handleNavigate} />
         )}
+        {currentPage === "vocabulary-n4" && (
+          <VocabularyN4 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "vocabulary-n3" && (
+          <VocabularyN3 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "vocabulary-n2" && (
+          <VocabularyN2 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "vocabulary-n1" && (
+          <VocabularyN1 onNavigate={handleNavigate} />
+        )}
+        {/* Hoặc sử dụng component chung với tham số */}
+        {currentPage === "vocabulary-jlpt" && (
+          <VocabJLPTComponent
+            level={pageParams?.level || "N5"}
+            onNavigate={handleNavigate}
+          />
+        )}
+        {/* THÊM CÁC TRANG GRAMMAR JLPT */}
         {currentPage === "grammar-n5" && (
-          <GrammarN5ListPage onNavigate={handleNavigate} />
+          <JlptGrammarN5 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-n4" && (
+          <JlptGrammarN4 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-n3" && (
+          <JlptGrammarN3 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-n2" && (
+          <JlptGrammarN2 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "grammar-n1" && (
+          <JlptGrammarN1 onNavigate={handleNavigate} />
+        )}
+
+        {/* Hoặc sử dụng component chung với tham số */}
+        {currentPage === "grammar-jlpt" && (
+          <JlptGrammarComponent
+            level={pageParams?.level || "N5"}
+            onNavigate={handleNavigate}
+          />
         )}
         {/* Trang chọn loại bài tập */}
         {currentPage === "exercise-selector" && (
@@ -187,12 +251,39 @@ function AppContent() {
           currentPage === "exercise-kanji-n5") && (
           <ExercisePage onNavigate={handleNavigate} />
         )}
+
         {currentPage === "kanji-selector" && (
           <KanjiSelector onNavigate={handleNavigate} />
         )}
+
+        {/* CÁC TRANG KANJI JLPT MỚI */}
         {currentPage === "kanji-n5" && (
-          <KanjiN5ListPage onNavigate={handleNavigate} />
+          <JlptKanjiN5 onNavigate={handleNavigate} />
         )}
+        {currentPage === "jlpt-kanji-n5" && (
+          <JlptKanjiN5 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "jlpt-kanji-n4" && (
+          <JlptKanjiN4 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "jlpt-kanji-n3" && (
+          <JlptKanjiN3 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "jlpt-kanji-n2" && (
+          <JlptKanjiN2 onNavigate={handleNavigate} />
+        )}
+        {currentPage === "jlpt-kanji-n1" && (
+          <JlptKanjiN1 onNavigate={handleNavigate} />
+        )}
+
+        {/* Component chung cho Kanji JLPT với tham số level */}
+        {currentPage === "jlpt-kanji" && (
+          <JlptKanjiPage
+            level={pageParams?.level || "N5"}
+            onNavigate={handleNavigate}
+          />
+        )}
+
         {currentPage === "historytracking" && (
           <HistoryTracking onNavigate={handleNavigate} />
         )}
@@ -242,7 +333,8 @@ function AppContent() {
             },
           }}
         />
-        <Footer />
+
+        {!isMyPage && !isUserMiniTestSubmissions && <Footer />}
       </div>
     </div>
   );

@@ -56,7 +56,7 @@ export function FlashcardKanji({
       if (!data) {
         console.warn("Không có dữ liệu flashcard Kanji trong localStorage");
         setErrorMessage(
-          "Không có dữ liệu flashcard Kanji! Mèo đưa bạn về trang Kanji nhé..."
+          "Không có dữ liệu flashcard Kanji! Mèo đưa bạn về trang Kanji nhé...",
         );
         setShowErrorModal(true);
         return;
@@ -73,7 +73,7 @@ export function FlashcardKanji({
       } catch (err) {
         setErrorTitle("Meow meow...");
         setErrorMessage(
-          "Dữ liệu flashcard Kanji bị lỗi rồi! Mèo đưa bạn về trang Kanji nhé..."
+          "Dữ liệu flashcard Kanji bị lỗi rồi! Mèo đưa bạn về trang Kanji nhé...",
         );
         setShowErrorModal(true);
       }
@@ -161,7 +161,7 @@ export function FlashcardKanji({
       const shuffled = [...remaining].sort(() => Math.random() - 0.5);
       newCompounds = shuffled.slice(0, 10);
       setContinueMessage(
-        "Mèo đã chọn 10 từ ghép mới hoàn toàn khác lần trước cho bạn rồi đấy!"
+        "Mèo đã chọn 10 từ ghép mới hoàn toàn khác lần trước cho bạn rồi đấy!",
       );
       setShowContinueMessage(true);
     } else if (remaining.length > 0) {
@@ -173,7 +173,7 @@ export function FlashcardKanji({
         .slice(0, needed);
       newCompounds.push(...old);
       setContinueMessage(
-        "Chỉ còn ít từ mới thôi, mèo bù thêm vài từ cũ để bạn ôn lại nhé!"
+        "Chỉ còn ít từ mới thôi, mèo bù thêm vài từ cũ để bạn ôn lại nhé!",
       );
       setShowContinueMessage(true);
     } else {

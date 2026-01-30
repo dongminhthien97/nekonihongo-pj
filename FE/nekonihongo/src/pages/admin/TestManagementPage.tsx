@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Check,
   Square,
+  Home,
 } from "lucide-react";
 import api from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
@@ -83,7 +84,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   const [scoringModalPos, setScoringModalPos] = useState({ x: 50, y: 50 });
   const [answersModalPos, setAnswersModalPos] = useState({ x: 550, y: 50 });
 
-  // State cho batch delete
   const [selectedTests, setSelectedTests] = useState<number[]>([]);
   const [isSelectAll, setIsSelectAll] = useState(false);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
@@ -105,14 +105,12 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   useEffect(() => {
     let filtered = tests;
 
-    // Apply status filter
     if (filter === "pending") {
       filtered = filtered.filter((t) => t.status === "pending");
     } else if (filter === "feedbacked") {
       filtered = filtered.filter((t) => t.status === "feedbacked");
     }
 
-    // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
@@ -128,7 +126,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     setCurrentPage(1);
   }, [tests, filter, search]);
 
-  // Reset selected tests when tests change
   useEffect(() => {
     setSelectedTests([]);
     setIsSelectAll(false);
@@ -157,9 +154,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       });
 
       setUserInfoMap((prev) => ({ ...prev, ...userMap }));
-    } catch (error) {
-      console.error("Error fetching user info:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchTests = async () => {
@@ -247,9 +242,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
               );
               answers = testAnswers;
             }
-          } catch (e) {
-            console.error(`Error parsing answers:`, e);
-          }
+          } catch (e) {}
         }
 
         let status: "pending" | "feedbacked" = "pending";
@@ -305,7 +298,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         fetchUserInfo(userIds);
       }
     } catch (error: any) {
-      console.error("Error fetching tests:", error);
       toast.error(
         error.response?.data?.message || "Lỗi khi tải danh sách bài test",
       );
@@ -320,12 +312,10 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       const response = await api.get("/admin/mini-test/pending-count");
       setUnreadCount(response.data.count || response.data || 0);
     } catch (error) {
-      console.error("Error fetching unread count:", error);
       setUnreadCount(0);
     }
   };
 
-  // Handle batch selection
   const handleSelectTest = (testId: number) => {
     setSelectedTests((prev) => {
       if (prev.includes(testId)) {
@@ -334,7 +324,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         return newSelected;
       } else {
         const newSelected = [...prev, testId];
-        // If all items on current page are selected, also check select all
         if (newSelected.length === paginatedTests.length) {
           setIsSelectAll(true);
         }
@@ -371,18 +360,14 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     try {
       setIsBatchDeleting(true);
 
-      // Gọi API batch delete
       const response = await api.post("/admin/mini-test/batch-delete", {
         ids: selectedTests,
       });
-
-      console.log("Batch delete response:", response.data);
 
       if (response.data.success) {
         const successCount = response.data.successCount || 0;
         const failedCount = response.data.failedCount || 0;
 
-        // Remove successfully deleted tests from state
         if (successCount > 0) {
           const successIds = response.data.successIds || [];
           setTests((prevTests) =>
@@ -392,29 +377,21 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             prevTests.filter((test) => !successIds.includes(test.id)),
           );
 
-          // Remove from selected tests
           setSelectedTests((prev) =>
             prev.filter((id) => !successIds.includes(id)),
           );
         }
 
-        // Show appropriate message
         if (successCount > 0 && failedCount === 0) {
           toast.success(`Đã xóa thành công ${successCount} bài test`);
         } else if (successCount > 0 && failedCount > 0) {
           toast.success(
             `Đã xóa thành công ${successCount} bài test, ${failedCount} bài không thể xóa`,
           );
-
-          // Log errors for failed deletions
-          if (response.data.errors) {
-            console.warn("Failed deletions:", response.data.errors);
-          }
         } else {
           toast.error("Không thể xóa các bài test đã chọn");
         }
 
-        // Fetch unread count
         await fetchUnreadCount();
       } else {
         toast.error(
@@ -422,16 +399,12 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         );
       }
     } catch (error: any) {
-      console.error("Error in batch delete:", error);
-
       let errorMessage = "Có lỗi xảy ra khi xóa nhiều bài test";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
 
       toast.error(errorMessage);
-
-      // Fetch lại dữ liệu để đồng bộ
       fetchTests();
     } finally {
       setIsBatchDeleting(false);
@@ -448,67 +421,33 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     }
 
     try {
-      console.log(`Attempting to delete test ID: ${testId}`);
-
-      // Gọi API delete
       const response = await api.delete(
         `/admin/mini-test/submission/${testId}`,
       );
 
-      console.log("Delete API response:", response);
-      console.log("Response data:", response.data);
-
-      // Kiểm tra cấu trúc response
       if (response.data && response.data.success === true) {
-        console.log("Delete successful, updating UI...");
+        setTests((prevTests) => prevTests.filter((test) => test.id !== testId));
+        setFilteredTests((prevTests) =>
+          prevTests.filter((test) => test.id !== testId),
+        );
 
-        // Cập nhật state
-        setTests((prevTests) => {
-          const newTests = prevTests.filter((test) => test.id !== testId);
-          console.log(
-            `Updated tests: ${prevTests.length} -> ${newTests.length}`,
-          );
-          return newTests;
-        });
-
-        setFilteredTests((prevTests) => {
-          const newTests = prevTests.filter((test) => test.id !== testId);
-          console.log(
-            `Updated filteredTests: ${prevTests.length} -> ${newTests.length}`,
-          );
-          return newTests;
-        });
-
-        // Remove from selected tests if it was selected
         setSelectedTests((prev) => prev.filter((id) => id !== testId));
 
-        // Đóng modal nếu đang mở
         if (selectedTest && selectedTest.id === testId) {
           setSelectedTest(null);
           setShowScoringModal(false);
           setShowAnswersModal(false);
         }
 
-        // Cập nhật unread count
         await fetchUnreadCount();
 
         toast.success(response.data.message || "Đã xóa bài test thành công!");
       } else {
-        // Backend trả về success: false
-        console.error("Backend returned success: false", response.data);
         throw new Error(
           response.data?.message || "Xóa thất bại (không rõ lý do)",
         );
       }
     } catch (error: any) {
-      console.error("Error deleting test:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-
       let errorMessage = "Có lỗi xảy ra khi xóa bài test";
 
       if (error.response) {
@@ -516,7 +455,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           errorMessage = "Không có quyền xóa bài test này";
         } else if (error.response.status === 404) {
           errorMessage = "Bài test không tồn tại hoặc đã bị xóa";
-          // Vẫn cập nhật UI
           setTests((prevTests) =>
             prevTests.filter((test) => test.id !== testId),
           );
@@ -532,8 +470,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       }
 
       toast.error(errorMessage);
-
-      // Fetch lại để đồng bộ dữ liệu
       fetchTests();
     }
   };
@@ -567,9 +503,7 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           message: `Giáo viên đã chấm điểm bài test của bạn: ${payload.score} điểm. Hãy kiểm tra phản hồi chi tiết!`,
           related_id: testId,
         });
-      } catch (notifError) {
-        console.warn("Notification failed:", notifError);
-      }
+      } catch (notifError) {}
 
       fetchTests();
       fetchUnreadCount();
@@ -578,7 +512,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       );
       return Promise.resolve();
     } catch (error: any) {
-      console.error("Error submitting feedback:", error);
       toast.error(
         error.response?.data?.message || "Có lỗi xảy ra khi gửi phản hồi",
       );
@@ -587,7 +520,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
   };
 
   const exportToCSV = () => {
-    // Thêm BOM để đảm bảo hiển thị tiếng Việt trong Excel
     const BOM = "\uFEFF";
 
     const headers = [
@@ -621,7 +553,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       ...data.map((row) =>
         row
           .map((cell) => {
-            // Escape quotes và wrap trong quotes nếu chứa dấu phẩy hoặc xuống dòng
             if (
               typeof cell === "string" &&
               (cell.includes(",") || cell.includes("\n") || cell.includes('"'))
@@ -634,7 +565,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       ),
     ].join("\n");
 
-    // Tạo blob với UTF-8 encoding
     const blob = new Blob([BOM + csvContent], {
       type: "text/csv;charset=utf-8;",
     });
@@ -643,7 +573,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     const a = document.createElement("a");
     a.href = url;
 
-    // Đặt tên file với ngày tháng tiếng Việt
     const now = new Date();
     const dateStr = now.toLocaleDateString("vi-VN").replace(/\//g, "-");
     const timeStr = now.toLocaleTimeString("vi-VN").replace(/:/g, "-");
@@ -657,13 +586,11 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     toast.success("Đã xuất file CSV thành công!");
   };
 
-  // Hàm hỗ trợ định dạng ngày tháng cho CSV
   const formatDateForCSV = (dateString: string) => {
     if (!dateString) return "";
 
     const date = new Date(dateString);
 
-    // Định dạng: DD/MM/YYYY HH:MM
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
@@ -673,7 +600,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  // Pagination
   const totalPages = Math.ceil(filteredTests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTests = filteredTests.slice(
@@ -683,7 +609,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
 
   return (
     <div className="test-management-page">
-      {/* Background overlay for modals */}
       {(showScoringModal || showAnswersModal) && (
         <div
           className="modal-overlay"
@@ -695,17 +620,24 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
       )}
 
       <div className="page-container">
-        {/* Header Section */}
         <header className="page-header">
           <div className="header-content">
-            <div>
+            <div className="header-left">
+              <button
+                className="back-button"
+                onClick={() => onNavigate("landing")}
+              >
+                <Home size={20} />
+                <span>Trang chính</span>
+              </button>
+            </div>
+            <div className="header-center">
               <h1 className="page-title">Quản lý Mini Test</h1>
               <p className="page-subtitle">
                 Xem và phản hồi bài test của học viên
               </p>
             </div>
             <div className="header-actions">
-              {/* Batch delete button - only show if items are selected */}
               {selectedTests.length > 0 && (
                 <button
                   className="batch-delete-button"
@@ -729,7 +661,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             </div>
           </div>
 
-          {/* Stats Overview */}
           <div className="stats-grid">
             <div className="stat-card total">
               <div className="stat-content">
@@ -770,7 +701,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             </div>
           </div>
 
-          {/* Filters & Search */}
           <div className="controls-section">
             <div className="filter-tabs">
               <button
@@ -808,7 +738,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="main-content">
           {loading ? (
             <div className="loading-container">
@@ -817,7 +746,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
             </div>
           ) : filteredTests.length > 0 ? (
             <>
-              {/* Batch selection info bar */}
               {selectedTests.length > 0 && (
                 <div className="selection-info-bar">
                   <div className="selection-info-content">
@@ -975,7 +903,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
                 </table>
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="pagination">
                   <button
@@ -1040,7 +967,6 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
         </main>
       </div>
 
-      {/* Modals */}
       {showScoringModal && (
         <AdminTestDetailModal
           test={selectedTest}
@@ -1096,6 +1022,39 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 1.5rem;
+        }
+
+        .header-left {
+          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
+        }
+
+        .header-center {
+          flex: 1;
+          text-align: center;
+        }
+
+        .header-right {
+          flex: 0 0 auto;
+        }
+
+        .back-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.625rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          transition: all 0.2s;
+          border: none;
+          cursor: pointer;
+          background: #10b981;
+          color: white;
+        }
+
+        .back-button:hover {
+          background: #059669;
         }
 
         .page-title {
@@ -1695,9 +1654,27 @@ export function TestManagementPage({ onNavigate }: TestManagementPageProps) {
 
           .batch-delete-button,
           .export-button,
-          .refresh-button {
+          .refresh-button,
+          .back-button {
             font-size: 0.75rem;
             padding: 0.5rem 0.75rem;
+          }
+
+          .header-content {
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .header-left,
+          .header-center,
+          .header-actions {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .back-button {
+            justify-content: center;
+            width: 100%;
           }
         }
       `}</style>

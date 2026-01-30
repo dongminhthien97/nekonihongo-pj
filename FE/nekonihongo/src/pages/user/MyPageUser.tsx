@@ -285,13 +285,18 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
       </div>
 
       <style>{`
+        /* Thêm font-family hỗ trợ tiếng Việt */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+        
         .neko-mypage-wrapper {
           min-height: 100vh;
           background: #fdf2f8;
           background-image: radial-gradient(#fbcfe8 0.5px, transparent 0.5px);
           background-size: 24px 24px;
           padding: 2rem 1rem;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          font-family: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
 
         .neko-mypage-container {
@@ -311,6 +316,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           font-size: 2.5rem;
           font-weight: 800;
           color: #6b21a8;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-btn-back {
@@ -325,6 +331,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           display: flex;
           align-items: center;
           gap: 8px;
+          font-family: inherit;
         }
 
         .neko-btn-back:hover {
@@ -389,6 +396,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           display: flex;
           align-items: center;
           justify-content: center;
+          font-family: inherit;
         }
 
         .neko-user-name {
@@ -396,6 +404,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           color: #1e1b4b;
           margin: 0.5rem 0;
           font-weight: 800;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-user-badges {
@@ -412,6 +421,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border-radius: 99px;
           font-weight: 700;
           font-size: 1rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-badge-level {
@@ -421,6 +431,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border-radius: 99px;
           font-weight: 700;
           font-size: 1rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         /* DASHBOARD GRID */
@@ -460,6 +471,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-card-body p {
@@ -467,6 +479,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           font-weight: 700;
           color: #4b5563;
           margin: 0;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         /* CTA CARD (Submission) */
@@ -484,6 +497,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           transition: all 0.3s;
           box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
           text-align: left;
+          font-family: inherit;
         }
 
         .neko-cta-card:hover {
@@ -505,12 +519,14 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           margin: 0;
           font-size: 1.4rem;
           font-weight: 800;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-cta-text p {
           margin: 0;
           opacity: 0.9;
           font-size: 1rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-notif-pill {
@@ -519,6 +535,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border-radius: 12px;
           font-weight: 800;
           border: 2px solid rgba(255,255,255,0.3);
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         /* STATS RIGHT COLUMN */
@@ -543,12 +560,14 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           color: #6b21a8;
           font-weight: 800;
           font-size: 1.3rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-stat-value {
           font-weight: 900;
           color: #7c3aed;
           font-size: 1.4rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-progress-outer {
@@ -570,6 +589,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           font-size: 0.95rem;
           color: #6b7280;
           font-weight: 600;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-stats-row {
@@ -592,12 +612,14 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           font-size: 0.9rem;
           font-weight: 700;
           color: #6b7280;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         .neko-mini-value {
           font-size: 1.8rem;
           font-weight: 900;
           color: #1e1b4b;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
         }
 
         /* EDIT AVATAR INPUT */
@@ -621,6 +643,8 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border: 2px solid #e9d5ff;
           border-radius: 10px;
           margin-bottom: 1rem;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
+          font-size: 1rem;
         }
 
         .neko-edit-actions {
@@ -637,6 +661,7 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border-radius: 10px;
           font-weight: 700;
           cursor: pointer;
+          font-family: inherit;
         }
 
         .neko-btn-cancel {
@@ -648,6 +673,17 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           border-radius: 10px;
           font-weight: 700;
           cursor: pointer;
+          font-family: inherit;
+        }
+
+        .neko-streak-info p {
+          margin: 0.5rem 0;
+          font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
+        }
+
+        .neko-last-login {
+          color: #6b7280;
+          font-size: 0.9rem;
         }
 
         /* RESPONSIVE */
@@ -660,6 +696,12 @@ export function MyPageUser({ onNavigate }: MyPageUserProps) {
           }
           .neko-page-title {
             font-size: 1.8rem;
+          }
+          .neko-user-name {
+            font-size: 1.8rem;
+          }
+          .neko-avatar-edit-modal {
+            width: 250px;
           }
         }
       `}</style>

@@ -3,7 +3,6 @@ import {
   BookOpen,
   FileText,
   Languages,
-  CreditCard,
   Dumbbell,
   LogOut,
   Bell,

@@ -77,7 +77,7 @@ export function ExercisePage({
 }) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
-    null
+    null,
   );
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
@@ -120,7 +120,7 @@ export function ExercisePage({
           setExercises([]);
           toast(
             "Bài tập này sẽ sớm ra mắt nhé! Mèo đang chuẩn bị rất kỹ đây 😺",
-            { icon: "⏳", duration: 1000 }
+            { icon: "⏳", duration: 1000 },
           );
         }
       } catch (err: any) {
@@ -128,7 +128,7 @@ export function ExercisePage({
         if (err.response?.status === 401) {
           toast.error(
             "Phiên đăng nhập hết hạn rồi... Mèo đưa bạn về đăng nhập nhé 😿",
-            { duration: 6000 }
+            { duration: 6000 },
           );
           setTimeout(() => onNavigate("login"), 3000);
         } else {
@@ -161,7 +161,7 @@ export function ExercisePage({
             throw new Error("no_questions");
           }
           const shuffled = [...exercise.questions].sort(
-            () => Math.random() - 0.5
+            () => Math.random() - 0.5,
           );
           setSelectedExercise(exercise);
           setShuffledQuestions(shuffled);
@@ -180,7 +180,7 @@ export function ExercisePage({
       {
         success: { duration: 1000 },
         error: { duration: 3000 },
-      }
+      },
     );
   };
 
@@ -202,7 +202,7 @@ export function ExercisePage({
 
     toast.success(
       `Nộp bài thành công! Bạn được ${correctCount}/${shuffledQuestions.length} điểm! 🎉`,
-      { duration: 2000 }
+      { duration: 2000 },
     );
 
     if (authUser?.id && selectedExercise) {
@@ -213,7 +213,7 @@ export function ExercisePage({
         {
           icon: "🔒",
           duration: 4000,
-        }
+        },
       );
     }
   };
@@ -221,7 +221,7 @@ export function ExercisePage({
   const handleRetry = () => {
     if (selectedExercise) {
       const shuffled = [...selectedExercise.questions].sort(
-        () => Math.random() - 0.5
+        () => Math.random() - 0.5,
       );
       setShuffledQuestions(shuffled);
       setUserAnswers(new Array(selectedExercise.questions.length).fill(null));
@@ -254,7 +254,7 @@ export function ExercisePage({
 
   const determineDifficultyLevel = (
     category: string,
-    level: string
+    level: string,
   ): number => {
     const levelMap: Record<string, number> = {
       n5: 1,
@@ -270,7 +270,7 @@ export function ExercisePage({
 
   const submitExerciseResults = async (
     correctCount: number,
-    totalQuestions: number
+    totalQuestions: number,
   ) => {
     if (!authUser?.id || !selectedExercise) {
       toast.error("Không thể lưu kết quả. Vui lòng đăng nhập lại! 🔒");
@@ -293,20 +293,8 @@ export function ExercisePage({
         exerciseTitle: selectedExercise.title || `Bài tập ${category} ${level}`,
       };
 
-      console.log("[DEBUG] Submitting exercise request:", {
-        userId: authUser.id,
-        username: authUser.username,
-        request: request,
-        timestamp: new Date().toISOString(),
-      });
-
       const response = await api.post("/exercises/submit", request);
       const result: ExerciseResult = response.data.data;
-
-      console.log("[DEBUG] Submit response:", {
-        result: result,
-        activityLogged: result ? "Should be logged" : "No result",
-      });
 
       // Toast level up hoặc normal
       if (result.leveledUp) {
@@ -321,7 +309,7 @@ export function ExercisePage({
             </div>
             <div className="text-xs mt-2">{result.message}</div>
           </div>,
-          { duration: 5000 }
+          { duration: 5000 },
         );
       } else {
         toast.success(
@@ -331,7 +319,7 @@ export function ExercisePage({
               +{result.pointsEarned} điểm • Tổng: {result.totalPoints} điểm
             </div>
           </div>,
-          { duration: 3000 }
+          { duration: 3000 },
         );
       }
 
@@ -366,7 +354,7 @@ export function ExercisePage({
         console.error("[DEBUG] Error response data:", error.response.data);
         console.error(
           "[DEBUG] Error response headers:",
-          error.response.headers
+          error.response.headers,
         );
       }
 
@@ -433,8 +421,8 @@ export function ExercisePage({
                   {category === "grammar"
                     ? "Ngữ pháp"
                     : category === "kanji"
-                    ? "Kanji"
-                    : "Từ vựng"}{" "}
+                      ? "Kanji"
+                      : "Từ vựng"}{" "}
                   {level.toUpperCase()}
                 </h2>
               </div>
@@ -543,7 +531,7 @@ export function ExercisePage({
             <div className="space-y-6">
               {shuffledQuestions.map((question, qIndex) => {
                 const correctIndex = ["A", "B", "C", "D"].indexOf(
-                  question.correctOption
+                  question.correctOption,
                 );
                 return (
                   <div
@@ -673,7 +661,7 @@ export function ExercisePage({
               {shuffledQuestions.map((question, index) => {
                 const userAnswerIndex = userAnswers[index];
                 const correctIndex = ["A", "B", "C", "D"].indexOf(
-                  question.correctOption
+                  question.correctOption,
                 );
                 const isCorrect = userAnswerIndex === correctIndex;
 

@@ -16,6 +16,8 @@ import {
   Grid,
   List,
   BarChart,
+  Home,
+  X,
 } from "lucide-react";
 
 interface Submission {
@@ -44,6 +46,11 @@ export function UserMiniTestSubmissions({
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    message: "",
+    title: "",
+  });
 
   useEffect(() => {
     fetchSubmissions();
@@ -142,7 +149,11 @@ export function UserMiniTestSubmissions({
                     .filter((ans) => ans.question_id > 0);
                 }
               } catch (parseError) {
-                console.error("Error parsing JSON string:", parseError);
+                setErrorModal({
+                  open: true,
+                  title: "Lỗi Parse Dữ Liệu",
+                  message: "Không thể phân tích dữ liệu câu trả lời từ server.",
+                });
               }
             } else if (typeof s.answers === "object" && s.answers !== null) {
               answers = Object.entries(s.answers)
@@ -215,21 +226,37 @@ export function UserMiniTestSubmissions({
       setDebugInfo(`Đã tải ${normalized.length} bài nộp`);
       setSubmissions(normalized);
     } catch (err: any) {
-      console.error("Error fetching submissions:", err);
-
       if (err.response) {
         setDebugInfo(`Lỗi ${err.response.status}`);
         if (err.response.status === 404) {
-          toast.error("Không tìm thấy endpoint!");
+          setErrorModal({
+            open: true,
+            title: "Không tìm thấy endpoint",
+            message:
+              "Endpoint API không tồn tại hoặc bị lỗi. Vui lòng thử lại sau!",
+          });
         } else if (err.response.status === 500) {
-          toast.error("Lỗi server. Vui lòng thử lại sau!");
+          setErrorModal({
+            open: true,
+            title: "Lỗi Server",
+            message: "Lỗi server. Vui lòng thử lại sau!",
+          });
         }
       } else if (err.request) {
         setDebugInfo("Không nhận được phản hồi");
-        toast.error("Không thể kết nối đến server!");
+        setErrorModal({
+          open: true,
+          title: "Lỗi Kết Nối",
+          message:
+            "Không thể kết nối đến server! Vui lòng kiểm tra kết nối mạng.",
+        });
       } else {
         setDebugInfo(`Lỗi: ${err.message}`);
-        toast.error("Lỗi kết nối!");
+        setErrorModal({
+          open: true,
+          title: "Lỗi Kết Nối",
+          message: "Lỗi kết nối! Vui lòng thử lại.",
+        });
       }
 
       setSubmissions([]);
@@ -257,8 +284,11 @@ export function UserMiniTestSubmissions({
       fetchSubmissions();
       if (selected?.id === id) setSelected(null);
     } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Xóa thất bại!");
+      setErrorModal({
+        open: true,
+        title: "Lỗi Xóa Bài Nộp",
+        message: "Không thể xóa bài nộp. Vui lòng thử lại sau!",
+      });
     }
   };
 
@@ -304,18 +334,35 @@ export function UserMiniTestSubmissions({
     }
   };
 
+  const handleGoHome = () => {
+    onNavigate("landing");
+  };
+
+  const closeErrorModal = () => {
+    setErrorModal({ open: false, message: "", title: "" });
+  };
+
   return (
     <div className="submissions-container">
       <div className="submissions-wrapper">
         {/* Header Section */}
         <div className="submissions-header">
           <div className="submissions-header-content">
-            <button
-              onClick={() => onNavigate("user")}
-              className="submissions-back-button"
-            >
-              <ChevronLeft />
-            </button>
+            <div className="header-left-controls">
+              <button
+                onClick={() => onNavigate("user")}
+                className="submissions-back-button"
+              >
+                <ChevronLeft />
+              </button>
+              <button
+                onClick={handleGoHome}
+                className="submissions-home-button"
+                title="Về trang chủ"
+              >
+                <Home />
+              </button>
+            </div>
             <div className="submissions-title-section">
               <h1 className="submissions-main-title">Bài Mini Test của tôi</h1>
               <p className="submissions-subtitle">
@@ -613,6 +660,38 @@ export function UserMiniTestSubmissions({
         )}
       </div>
 
+      {/* Error Modal */}
+      {errorModal.open && (
+        <div className="error-modal-overlay">
+          <div className="error-modal">
+            <div className="error-modal-header">
+              <AlertCircle className="error-modal-icon" />
+              <h3 className="error-modal-title">{errorModal.title}</h3>
+              <button onClick={closeErrorModal} className="error-modal-close">
+                <X />
+              </button>
+            </div>
+            <div className="error-modal-body">
+              <p>{errorModal.message}</p>
+            </div>
+            <div className="error-modal-footer">
+              <button onClick={closeErrorModal} className="error-modal-button">
+                Đóng
+              </button>
+              <button
+                onClick={() => {
+                  closeErrorModal();
+                  fetchSubmissions();
+                }}
+                className="error-modal-button retry"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Detail Modal */}
       {selected && (
         <div className="detail-modal-overlay">
@@ -744,6 +823,43 @@ export function UserMiniTestSubmissions({
         .submissions-wrapper {
           max-width: 1200px;
           margin: 0 auto;
+        }
+
+        /* Header Controls */
+        .header-left-controls {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .submissions-home-button {
+          padding: 0.75rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .submissions-home-button:hover {
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px) scale(1.05);
+          background: #667eea;
+          color: white;
+        }
+
+        .submissions-home-button svg {
+          width: 24px;
+          height: 24px;
+          color: #4b5563;
+          transition: color 0.3s ease;
+        }
+
+        .submissions-home-button:hover svg {
+          color: white;
         }
 
         /* Loading State */
@@ -1584,6 +1700,124 @@ export function UserMiniTestSubmissions({
           box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
+        /* Error Modal */
+        .error-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          z-index: 10000;
+          animation: modalFadeIn 0.4s ease;
+        }
+
+        .error-modal {
+          background: white;
+          border-radius: 24px;
+          max-width: 500px;
+          width: 100%;
+          overflow: hidden;
+          animation: modalSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .error-modal-header {
+          padding: 1.5rem;
+          background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          border-bottom: 2px solid #fecaca;
+        }
+
+        .error-modal-icon {
+          width: 32px;
+          height: 32px;
+          color: #dc2626;
+          flex-shrink: 0;
+        }
+
+        .error-modal-title {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #7c2d12;
+          margin: 0;
+          flex: 1;
+        }
+
+        .error-modal-close {
+          padding: 0.5rem;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: #7c2d12;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .error-modal-close:hover {
+          background: rgba(220, 38, 38, 0.1);
+          transform: rotate(90deg);
+        }
+
+        .error-modal-close svg {
+          width: 24px;
+          height: 24px;
+        }
+
+        .error-modal-body {
+          padding: 2rem;
+          color: #4b5563;
+          font-size: 1.125rem;
+          line-height: 1.6;
+        }
+
+        .error-modal-footer {
+          padding: 1.5rem;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        }
+
+        .error-modal-button {
+          padding: 1rem 2rem;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          font-size: 1rem;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .error-modal-button {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .error-modal-button.retry {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-modal-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-modal-button.retry:hover {
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
         /* Detail Modal */
         .detail-modal-overlay {
           position: fixed;
@@ -2025,6 +2259,14 @@ export function UserMiniTestSubmissions({
           .modal-close-action {
             width: 100%;
           }
+
+          .error-modal-footer {
+            flex-direction: column;
+          }
+
+          .error-modal-button {
+            width: 100%;
+          }
         }
 
         @media (max-width: 640px) {
@@ -2032,6 +2274,10 @@ export function UserMiniTestSubmissions({
             flex-direction: column;
             align-items: stretch;
             gap: 1rem;
+          }
+          
+          .header-left-controls {
+            align-self: flex-start;
           }
           
           .submissions-view-toggle {

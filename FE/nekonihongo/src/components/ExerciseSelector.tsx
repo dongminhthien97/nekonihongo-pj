@@ -21,13 +21,13 @@ export function ExerciseSelector({
 }: {
   onNavigate: (
     page: string,
-    params?: { category?: string; level?: string }
+    params?: { category?: string; level?: string },
   ) => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
+    null,
   );
   // Lấy data từ DB
   useEffect(() => {
@@ -44,8 +44,8 @@ export function ExerciseSelector({
         // Sắp xếp N5 → N1 (giảm dần)
         setLevels(
           levelRes.data.sort((a: Level, b: Level) =>
-            b.level.localeCompare(a.level)
-          )
+            b.level.localeCompare(a.level),
+          ),
         );
       } catch (err) {
         toast.error("Không tải được dữ liệu. Mèo đang sửa đây... 😿");
@@ -116,8 +116,8 @@ export function ExerciseSelector({
                     cat.name === "VOCABULARY"
                       ? "rainbow-gradient"
                       : cat.name === "GRAMMAR"
-                      ? "ocean-gradient"
-                      : "nature-gradient"
+                        ? "ocean-gradient"
+                        : "nature-gradient"
                   }`}
                 />
                 <div className="subtle-overlay">
@@ -130,8 +130,8 @@ export function ExerciseSelector({
                     {cat.name === "VOCABULARY"
                       ? "📚"
                       : cat.name === "GRAMMAR"
-                      ? "✍️"
-                      : "🖌️"}
+                        ? "✍️"
+                        : "🖌️"}
                   </div>
 
                   <h2 className="card-title">{cat.displayName}</h2>
@@ -190,12 +190,12 @@ export function ExerciseSelector({
                         {level.level === "N5"
                           ? "Cơ bản nhất"
                           : level.level === "N4"
-                          ? "Nền tảng vững"
-                          : level.level === "N3"
-                          ? "Trung cấp"
-                          : level.level === "N2"
-                          ? "Nâng cao"
-                          : "Thành thạo"}
+                            ? "Nền tảng vững"
+                            : level.level === "N3"
+                              ? "Trung cấp"
+                              : level.level === "N2"
+                                ? "Nâng cao"
+                                : "Thành thạo"}
                       </p>
                       <div className="text-lg font-bold text-white">
                         {isAvailable ? "Bắt đầu ngay →" : "Sắp ra mắt..."}

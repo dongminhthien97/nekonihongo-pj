@@ -50,13 +50,10 @@ interface DragItem {
 const renderWithFurigana = (text: string) => {
   if (!text) return null;
 
-  // Tránh parse các đoạn đã là HTML
   if (text.includes("<")) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   }
 
-  // Regex tìm tất cả các cụm furigana: 漢字(よみがな)
-  // Hỗ trợ cả ngoặc tròn thường () và ngoặc tròn to （）
   const furiganaRegex =
     /([\u4e00-\u9faf\u3005\u30a0-\u30ff\u3040-\u309f]+)[(（]([\u3040-\u309f\u30a0-\u30ff\s]+)[)）]/g;
 
@@ -65,7 +62,6 @@ const renderWithFurigana = (text: string) => {
   let match: RegExpExecArray | null;
 
   while ((match = furiganaRegex.exec(text)) !== null) {
-    // Thêm phần text trước furigana
     if (match.index > lastIndex) {
       parts.push(
         <span key={`text-${lastIndex}`}>
@@ -74,7 +70,6 @@ const renderWithFurigana = (text: string) => {
       );
     }
 
-    // Thêm phần furigana
     const kanji = match[1];
     const reading = match[2];
     parts.push(
@@ -87,14 +82,12 @@ const renderWithFurigana = (text: string) => {
     lastIndex = match.index + match[0].length;
   }
 
-  // Thêm phần text còn lại
   if (lastIndex < text.length) {
     parts.push(
       <span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>,
     );
   }
 
-  // Nếu không tìm thấy furigana nào, trả về text gốc
   if (parts.length === 0) {
     return <span>{text}</span>;
   }
@@ -104,21 +97,18 @@ const renderWithFurigana = (text: string) => {
 
 // --- HELPER: Parse Multiple Choice Options ---
 const parseMultipleChoiceOptions = (text: string) => {
-  // Tìm tất cả các đoạn trong ngoặc tròn ( ) hoặc ngoặc vuông ［ ］
   const bracketRegex = /（(.*?)）|［(.*?)］/g;
   const matches = [];
   let match;
 
   while ((match = bracketRegex.exec(text)) !== null) {
-    const content = match[1] || match[2]; // Lấy nội dung trong ngoặc
+    const content = match[1] || match[2];
     if (content) {
-      // Tách các option bằng dấu 、 hoặc ,
       const options = content
         .split(/[、,]/)
         .map((opt) => opt.trim())
         .filter(Boolean);
       if (options.length >= 2) {
-        // Ít nhất 2 option mới là multiple choice
         matches.push({
           fullMatch: match[0],
           options: options,
@@ -162,7 +152,6 @@ export function MiniTestModal({
   const [draggingItem, setDraggingItem] = useState<DragItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Lưu trữ draft answers tạm thời khi hiển thị validation modal
   const [draftAnswers, setDraftAnswers] = useState<
     Record<number, Record<number, string>>
   >({});
@@ -227,14 +216,12 @@ export function MiniTestModal({
           }));
           setQuestions(formatted);
 
-          // Khởi tạo rearrange items nếu có
           const initialRearrange: Record<number, string[]> = {};
           formatted.forEach((q: Question) => {
             if (
               q.question_type === "rearrange" ||
               q.question_type === "reorder"
             ) {
-              // Phân tích raw_text để lấy các từ cần sắp xếp
               const lines = q.raw_text.split("\n");
               for (const line of lines) {
                 if (
@@ -316,45 +303,25 @@ export function MiniTestModal({
   };
 
   // --- VALIDATION ---
-  // --- VALIDATION ---
   const validateAnswers = () => {
     const emptyAnswers: number[] = [];
 
-    console.log("=== BẮT ĐẦU VALIDATE ===");
-
     questions.forEach((q) => {
-      // Skip validation for rearrange questions
       if (q.question_type === "rearrange" || q.question_type === "reorder") {
-        console.log(`Câu ${q.id}: Bỏ qua vì là rearrange/reorder`);
         return;
       }
 
       const qAnsObj = answers[q.id] || {};
-      console.log(`\nCâu ${q.id} - Loại: ${q.question_type}`);
-      console.log(`Answers object:`, qAnsObj);
 
       if (q.question_type === "multiple_choice") {
-        console.log(`Multiple choice - Raw text: ${q.raw_text}`);
-
-        // Parse các lựa chọn từ raw_text
         const lines = q.raw_text.split("\n").filter((l) => l.trim());
-        console.log(`Số dòng: ${lines.length}`);
 
         lines.forEach((line, lineIdx) => {
           const matches = parseMultipleChoiceOptions(line);
-          console.log(`Dòng ${lineIdx}: ${matches.length} matches`);
 
           matches.forEach((match, matchIdx) => {
-            // Tạo index duy nhất giống như trong render
             const uniqueIndex = parseInt(`${q.id}${lineIdx}${matchIdx}`);
-            console.log(
-              `  Match ${matchIdx}: index=${uniqueIndex}, value="${qAnsObj[uniqueIndex]}"`,
-            );
-
             if (!qAnsObj[uniqueIndex] || qAnsObj[uniqueIndex].trim() === "") {
-              console.log(
-                `  → THIẾU: Không có giá trị cho index ${uniqueIndex}`,
-              );
               if (!emptyAnswers.includes(q.id)) {
                 emptyAnswers.push(q.id);
               }
@@ -362,58 +329,25 @@ export function MiniTestModal({
           });
         });
       } else if (q.question_type === "fill_blank") {
-        console.log(`Fill blank - Raw text: ${q.raw_text}`);
-
-        // Đếm số chỗ trống trong toàn bộ raw_text
         const blankRegex = /（\s*）|＿{2,}|_{2,}|【\s*】|\[ \]|___+/g;
-        const allMatches = q.raw_text.match(blankRegex) || [];
-        console.log(`Tổng số chỗ trống trong raw_text: ${allMatches.length}`);
-
-        // Kiểm tra từng ô input đã được tạo
         const lines = q.raw_text.split("\n").filter((l) => l.trim());
-        let totalBlanksChecked = 0;
 
         lines.forEach((line, lineIdx) => {
           const lineMatches = line.match(blankRegex) || [];
-          console.log(`Dòng ${lineIdx}: ${lineMatches.length} chỗ trống`);
 
           lineMatches.forEach((match, matchIdx) => {
             const uniqueIndex = parseInt(`${q.id}${lineIdx}${matchIdx}`);
-            console.log(
-              `  Ô ${totalBlanksChecked + 1}: index=${uniqueIndex}, value="${qAnsObj[uniqueIndex]}"`,
-            );
-
             if (!qAnsObj[uniqueIndex] || qAnsObj[uniqueIndex].trim() === "") {
-              console.log(
-                `  → THIẾU: Không có giá trị cho index ${uniqueIndex}`,
-              );
               if (!emptyAnswers.includes(q.id)) {
                 emptyAnswers.push(q.id);
               }
             }
-
-            totalBlanksChecked++;
           });
         });
-
-        console.log(`Tổng số ô đã kiểm tra: ${totalBlanksChecked}`);
-
-        // In tất cả các index có trong answers cho câu hỏi này
-        const allIndices = Object.keys(qAnsObj).map(Number);
-        console.log(`Tất cả index trong answers: ${allIndices.join(", ")}`);
       }
     });
 
-    console.log("\n=== KẾT THÚC VALIDATE ===");
-    console.log(`Câu hỏi thiếu: ${emptyAnswers.join(", ")}`);
-
     return emptyAnswers;
-  };
-
-  const countBlanks = (text: string) => {
-    // Improved regex to match more blank patterns
-    const blankMatches = text.match(/（\s*）|＿{2,}|_{2,}|【\s*】|\[ \]|___+/g);
-    return blankMatches ? blankMatches.length : 0;
   };
 
   // --- DRAG & DROP HANDLERS ---
@@ -456,7 +390,6 @@ export function MiniTestModal({
       [questionId]: newItems,
     });
 
-    // Update answers for rearrange questions
     setAnswers((prev) => ({
       ...prev,
       [questionId]: { 0: newItems.join(" ") },
@@ -466,10 +399,7 @@ export function MiniTestModal({
   // --- HANDLERS ---
   const handleAnswerChange = (qId: number, index: number, value: string) => {
     setAnswers((prev) => {
-      // Tạo bản sao của state hiện tại
       const currentQuestionAnswers = { ...(prev[qId] || {}) };
-
-      // Chỉ cập nhật giá trị cho ô input cụ thể
       return {
         ...prev,
         [qId]: {
@@ -500,7 +430,6 @@ export function MiniTestModal({
             return index !== -1 ? index + 1 : "Unknown";
           });
 
-          // Lưu draft answers và hiển thị modal cảnh báo
           setDraftAnswers({ ...answers });
           setEmptyQuestions(emptyQuestions);
           setValidationMessage(
@@ -516,12 +445,10 @@ export function MiniTestModal({
       const formattedAnswers: Record<string, string[]> = {};
       questions.forEach((q) => {
         if (q.question_type === "rearrange" || q.question_type === "reorder") {
-          // For rearrange questions, use the joined string of items
           const items = rearrangeItems[q.id] || [];
           formattedAnswers[q.id.toString()] = [items.join(" ")];
         } else {
           const qAnsObj = answers[q.id] || {};
-          // Lấy tất cả các giá trị theo thứ tự index
           const sortedIndices = Object.keys(qAnsObj)
             .map(Number)
             .sort((a, b) => a - b);
@@ -633,10 +560,8 @@ export function MiniTestModal({
 
   const handleConfirmValidation = () => {
     setShowValidationModal(false);
-    // Khôi phục draft answers
     setAnswers(draftAnswers);
 
-    // Scroll đến câu hỏi đầu tiên bị thiếu
     setTimeout(() => {
       const firstEmptyQuestion = document.querySelector(
         `[data-question-id="${emptyQuestions[0]}"]`,
@@ -656,7 +581,6 @@ export function MiniTestModal({
 
   // --- RENDERERS ---
   const renderInteractiveContent = (question: Question) => {
-    // For rearrange/reorder questions
     if (
       question.question_type === "rearrange" ||
       question.question_type === "reorder"
@@ -715,10 +639,8 @@ export function MiniTestModal({
       <div className="question-content-container">
         {lines.map((line, lineIdx) => {
           if (question.question_type === "fill_blank") {
-            // Sử dụng regex để tìm tất cả các chỗ trống trong dòng này
             const blankRegex = /（\s*）|＿{2,}|_{2,}|【\s*】|\[ \]|___+/g;
 
-            // Tạo các phần tử cho dòng này
             const parts: Array<
               | { type: "text"; content: string }
               | { type: "input"; index: number; content: string }
@@ -726,13 +648,11 @@ export function MiniTestModal({
 
             let match;
             let lastIndex = 0;
-            let blankCount = 0; // Đếm số ô trống trong dòng này
+            let blankCount = 0;
 
-            // Reset regex
             blankRegex.lastIndex = 0;
 
             while ((match = blankRegex.exec(line)) !== null) {
-              // Thêm phần text trước chỗ trống
               if (match.index > lastIndex) {
                 parts.push({
                   type: "text",
@@ -740,8 +660,6 @@ export function MiniTestModal({
                 });
               }
 
-              // Thêm ô input với index duy nhất dựa trên vị trí trong toàn bộ câu hỏi
-              // Sử dụng sự kết hợp của question.id, lineIdx và blankCount để tạo index duy nhất
               const uniqueIndex = parseInt(
                 `${question.id}${lineIdx}${blankCount}`,
               );
@@ -756,7 +674,6 @@ export function MiniTestModal({
               lastIndex = match.index + match[0].length;
             }
 
-            // Thêm phần text còn lại
             if (lastIndex < line.length) {
               parts.push({
                 type: "text",
@@ -774,7 +691,6 @@ export function MiniTestModal({
                       </span>
                     );
                   } else {
-                    // Đây là ô input
                     const inputIndex = part.index;
                     const currentValue =
                       answers[question.id]?.[inputIndex] || "";
@@ -803,11 +719,9 @@ export function MiniTestModal({
           }
 
           if (question.question_type === "multiple_choice") {
-            // Parse multiple choice options from the line
             const matches = parseMultipleChoiceOptions(line);
 
             if (matches.length === 0) {
-              // No multiple choice brackets found, render as normal text
               return (
                 <div key={lineIdx} className="multiple-choice-line">
                   {renderWithFurigana(line)}
@@ -815,13 +729,11 @@ export function MiniTestModal({
               );
             }
 
-            // Split the line by matches to render text and options
             let lastIndex = 0;
             const elements: JSX.Element[] = [];
-            let choiceIndex = 0; // Index cho các lựa chọn trong câu hỏi này
+            let choiceIndex = 0;
 
             matches.forEach((match, matchIndex) => {
-              // Add text before the match
               if (match.startIndex > lastIndex) {
                 const textBefore = line.substring(lastIndex, match.startIndex);
                 elements.push(
@@ -831,8 +743,6 @@ export function MiniTestModal({
                 );
               }
 
-              // Add the multiple choice options
-              // Tạo index duy nhất cho mỗi nhóm lựa chọn
               const uniqueChoiceIndex = parseInt(
                 `${question.id}${lineIdx}${choiceIndex}`,
               );
@@ -869,7 +779,6 @@ export function MiniTestModal({
               lastIndex = match.endIndex;
             });
 
-            // Add remaining text after the last match
             if (lastIndex < line.length) {
               const textAfter = line.substring(lastIndex);
               elements.push(
@@ -886,7 +795,6 @@ export function MiniTestModal({
             );
           }
 
-          // Default fallback
           return (
             <div key={lineIdx} className="fill-blank-line">
               {renderWithFurigana(line)}
