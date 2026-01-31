@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "exercise")
 @Getter
@@ -35,16 +37,18 @@ public class Exercise {
     private String description;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalQuestions = 10;
 
     @Column(nullable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    // @PrePersist
+    // protected void onCreate() {
+    // createdAt = LocalDateTime.now();
+    // }
 }

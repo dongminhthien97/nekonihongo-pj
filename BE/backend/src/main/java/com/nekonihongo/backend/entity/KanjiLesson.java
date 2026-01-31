@@ -23,13 +23,16 @@ public class KanjiLesson {
     private String title;
 
     @Column(nullable = false)
+    @Builder.Default
     private String icon = "Cat";
 
     @Column(name = "display_order", nullable = false)
+    @Builder.Default
     private Integer displayOrder = 0;
 
     @OneToMany(mappedBy = "lesson", cascade = { CascadeType.ALL }, // ← Fix: thêm {} để thành array
             orphanRemoval = true)
     @OrderBy("displayOrder ASC")
+    @Builder.Default
     private List<Kanji> kanjiList = new ArrayList<>();
 }

@@ -4,6 +4,8 @@ package com.nekonihongo.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "katakana")
@@ -29,13 +31,15 @@ public class Katakana {
     private Integer strokeOrder;
 
     @Column(name = "created_at")
+    @CreationTimestamp
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @UpdateTimestamp
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // @PreUpdate
+    // protected void onUpdate() {
+    // updatedAt = LocalDateTime.now();
+    // }
 }

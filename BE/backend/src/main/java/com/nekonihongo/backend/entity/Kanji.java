@@ -42,11 +42,12 @@ public class Kanji {
     private Integer strokes;
 
     @Column(name = "display_order", nullable = false)
+    @Builder.Default
     private Integer displayOrder = 0;
 
     @OneToMany(mappedBy = "kanji", cascade = { CascadeType.ALL }, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
+    @Builder.Default
     private List<KanjiCompound> compounds = new ArrayList<>();
 
-    // ĐÃ XÓA: List<KanjiStrokePath> strokePaths và svgPaths
 }

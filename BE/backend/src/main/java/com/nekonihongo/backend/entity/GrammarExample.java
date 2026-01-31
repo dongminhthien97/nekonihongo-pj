@@ -28,5 +28,6 @@ public class GrammarExample {
     private String vietnamese;
 
     @Column(name = "display_order")
+    @Builder.Default
     private Integer displayOrder = 0;
 }
