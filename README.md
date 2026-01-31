@@ -1,2 +1,0 @@
-# nekonihongo-pj
-# nekonihongo-pj

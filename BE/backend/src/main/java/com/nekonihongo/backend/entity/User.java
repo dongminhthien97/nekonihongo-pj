@@ -1,3 +1,4 @@
+//User.java
 package com.nekonihongo.backend.entity;
 
 import jakarta.persistence.*;
@@ -36,16 +37,20 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER;
 
     // ⭐ CORE STATS - Chỉ giữ 3 trường chính ⭐
     @Column(nullable = false)
+    @Builder.Default
     private int level = 1;
 
     @Column(nullable = false)
+    @Builder.Default
     private int points = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private int streak = 0;
 
     // Thêm 2 trường để tính streak
@@ -53,6 +58,7 @@ public class User {
     private LocalDateTime lastLoginDate;
 
     @Column(name = "longest_streak", nullable = true)
+    @Builder.Default
     private int longestStreak = 0;
 
     @CreationTimestamp
@@ -62,6 +68,7 @@ public class User {
     // ⭐ THÊM TRƯỜNG STATUS ⭐
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Status status = Status.ACTIVE;
 
     public enum Role {

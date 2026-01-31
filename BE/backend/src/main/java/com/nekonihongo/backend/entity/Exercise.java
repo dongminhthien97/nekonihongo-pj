@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "exercise")
 @Getter
@@ -24,7 +26,7 @@ public class Exercise {
 
     @ManyToOne
     @JoinColumn(name = "level_id")
-    private JlptLevel level; // NULL nếu không phải JLPT
+    private JlptLevel level;
 
     @Column(nullable = false)
     private Integer lessonNumber;
@@ -35,16 +37,13 @@ public class Exercise {
     private String description;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalQuestions = 10;
 
+    @CreationTimestamp
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

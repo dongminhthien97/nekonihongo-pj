@@ -3,7 +3,7 @@ package com.nekonihongo.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import lombok.Builder.Default;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,9 +34,11 @@ public class GrammarPoint {
     private String explanation;
 
     @Column(name = "display_order", nullable = false)
+    @Builder.Default
     private Integer displayOrder = 0; // mặc định 0
 
     @OneToMany(mappedBy = "point", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
+    @Builder.Default
     private List<GrammarExample> examples = new ArrayList<>();
 }
