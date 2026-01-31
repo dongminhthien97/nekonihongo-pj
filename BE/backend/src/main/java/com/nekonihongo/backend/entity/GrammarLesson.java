@@ -30,13 +30,13 @@ public class GrammarLesson {
     @Builder.Default
     private String icon = "Cat";
 
-    @Column(name = "created_at")
     @CreationTimestamp
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
     @UpdateTimestamp
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GrammarPoint> points;

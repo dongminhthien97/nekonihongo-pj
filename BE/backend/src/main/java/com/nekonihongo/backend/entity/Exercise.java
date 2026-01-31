@@ -26,7 +26,7 @@ public class Exercise {
 
     @ManyToOne
     @JoinColumn(name = "level_id")
-    private JlptLevel level; // NULL nếu không phải JLPT
+    private JlptLevel level;
 
     @Column(nullable = false)
     private Integer lessonNumber;
@@ -40,15 +40,10 @@ public class Exercise {
     @Builder.Default
     private Integer totalQuestions = 10;
 
-    @Column(nullable = false)
     @CreationTimestamp
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
-
-    // @PrePersist
-    // protected void onCreate() {
-    // createdAt = LocalDateTime.now();
-    // }
 }
