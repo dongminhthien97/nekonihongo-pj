@@ -211,3 +211,185 @@ Caused by: org.hibernate.tool.schema.spi.SchemaManagementException: Schema-valid
 	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:409) ~[spring-orm-6.1.13.jar!/:6.1.13]
 	... 112 common frames omitted
 
+2026-01-31T17:40:30.707+07:00  INFO 38464 --- [Test worker] c.n.backend.BackendApplicationTests      : Starting BackendApplicationTests using Java 17.0.12 with PID 38464 (started by DTP in D:\nekonihongo-pj\BE\backend)
+2026-01-31T17:40:30.707+07:00 DEBUG 38464 --- [Test worker] c.n.backend.BackendApplicationTests      : Running with Spring Boot v4.0.0, Spring v7.0.1
+2026-01-31T17:40:30.707+07:00  INFO 38464 --- [Test worker] c.n.backend.BackendApplicationTests      : No active profile set, falling back to 1 default profile: "default"
+2026-01-31T17:40:30.723+07:00 DEBUG 38464 --- [Test worker] o.s.w.c.s.GenericWebApplicationContext   : Refreshing org.springframework.web.context.support.GenericWebApplicationContext@3e33d73e
+2026-01-31T17:40:31.141+07:00  INFO 38464 --- [Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-31T17:40:31.191+07:00  INFO 38464 --- [Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 16 JPA repository interfaces.
+2026-01-31T17:40:31.500+07:00  INFO 38464 --- [Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-31T17:40:31.559+07:00  INFO 38464 --- [Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 7.1.8.Final
+2026-01-31T17:40:31.838+07:00  INFO 38464 --- [Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-31T17:40:31.852+07:00  INFO 38464 --- [Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-31T17:40:31.925+07:00  INFO 38464 --- [Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@282aea3c
+2026-01-31T17:40:31.926+07:00  INFO 38464 --- [Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-31T17:40:31.946+07:00  WARN 38464 --- [Test worker] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-31T17:40:31.953+07:00  INFO 38464 --- [Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/neko_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.44
+	Default catalog/schema: neko_db/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DatasourceConnectionProviderImpl
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-31T17:40:32.510+07:00  INFO 38464 --- [Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-31T17:40:32.539+07:00  INFO 38464 --- [Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:40:32.607+07:00  INFO 38464 --- [Test worker] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-31T17:40:33.686+07:00  WARN 38464 --- [Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-31T17:40:33.782+07:00  INFO 38464 --- [Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsServiceImpl
+2026-01-31T17:40:33.869+07:00 DEBUG 38464 --- [Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-01-31T17:40:33.957+07:00 DEBUG 38464 --- [Test worker] s.w.s.m.m.a.RequestMappingHandlerMapping : 81 mappings in 'requestMappingHandlerMapping'
+2026-01-31T17:40:33.972+07:00 DEBUG 38464 --- [Test worker] o.s.w.s.c.annotation.WebMvcConfigurer    : Default resource handling disabled
+2026-01-31T17:40:33.978+07:00 DEBUG 38464 --- [Test worker] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-01-31T17:40:34.005+07:00 DEBUG 38464 --- [Test worker] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-01-31T17:40:34.031+07:00 DEBUG 38464 --- [Test worker] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-01-31T17:40:34.137+07:00  INFO 38464 --- [Test worker] c.n.backend.BackendApplicationTests      : Started BackendApplicationTests in 3.561 seconds (process running for 4.257)
+2026-01-31T17:40:34.334+07:00 DEBUG 38464 --- [SpringApplicationShutdownHook] o.s.w.c.s.GenericWebApplicationContext   : Closing org.springframework.web.context.support.GenericWebApplicationContext@3e33d73e, started on Sat Jan 31 17:40:30 ICT 2026
+2026-01-31T17:40:34.337+07:00  INFO 38464 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:40:34.338+07:00  INFO 38464 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-31T17:40:34.342+07:00  INFO 38464 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-01-31T17:43:16.570+07:00  INFO 36980 --- [main] c.n.backend.BackendApplication           : Starting BackendApplication v1.0.0 using Java 17.0.12 with PID 36980 (D:\nekonihongo-pj\BE\backend\build\libs\backend-1.0.0.jar started by DTP in D:\nekonihongo-pj\BE\backend)
+2026-01-31T17:43:16.575+07:00 DEBUG 36980 --- [main] c.n.backend.BackendApplication           : Running with Spring Boot v4.0.0, Spring v7.0.1
+2026-01-31T17:43:16.576+07:00  INFO 36980 --- [main] c.n.backend.BackendApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-01-31T17:43:17.124+07:00  INFO 36980 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-31T17:43:17.176+07:00  INFO 36980 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 45 ms. Found 16 JPA repository interfaces.
+2026-01-31T17:43:17.616+07:00  INFO 36980 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-01-31T17:43:17.639+07:00  INFO 36980 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-31T17:43:17.639+07:00  INFO 36980 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.14]
+2026-01-31T17:43:17.673+07:00  INFO 36980 --- [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1064 ms
+2026-01-31T17:43:17.819+07:00  INFO 36980 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-31T17:43:17.868+07:00  INFO 36980 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 7.1.8.Final
+2026-01-31T17:43:18.128+07:00  INFO 36980 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-31T17:43:18.147+07:00  INFO 36980 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-31T17:43:18.224+07:00  INFO 36980 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@1f521c69
+2026-01-31T17:43:18.225+07:00  INFO 36980 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-31T17:43:18.249+07:00  WARN 36980 --- [main] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-31T17:43:18.260+07:00  INFO 36980 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/neko_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.44
+	Default catalog/schema: neko_db/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DatasourceConnectionProviderImpl
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-31T17:43:18.915+07:00  INFO 36980 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-31T17:43:18.946+07:00  INFO 36980 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:43:18.991+07:00  INFO 36980 --- [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-31T17:43:19.341+07:00 DEBUG 36980 --- [main] c.n.b.config.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2026-01-31T17:43:20.026+07:00  WARN 36980 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-31T17:43:20.083+07:00  INFO 36980 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsServiceImpl
+2026-01-31T17:43:20.166+07:00 DEBUG 36980 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-01-31T17:43:20.254+07:00 DEBUG 36980 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 81 mappings in 'requestMappingHandlerMapping'
+2026-01-31T17:43:20.268+07:00 DEBUG 36980 --- [main] o.s.w.s.c.annotation.WebMvcConfigurer    : Default resource handling disabled
+2026-01-31T17:43:20.274+07:00 DEBUG 36980 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-01-31T17:43:20.292+07:00 DEBUG 36980 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-01-31T17:43:20.313+07:00 DEBUG 36980 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-01-31T17:43:20.396+07:00  INFO 36980 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-01-31T17:43:20.403+07:00  INFO 36980 --- [main] c.n.backend.BackendApplication           : Started BackendApplication in 4.12 seconds (process running for 4.469)
+2026-01-31T17:43:23.188+07:00  INFO 36980 --- [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-01-31T17:43:23.238+07:00  INFO 36980 --- [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-01-31T17:43:23.242+07:00  INFO 36980 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:43:23.244+07:00  INFO 36980 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-31T17:43:23.248+07:00  INFO 36980 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-01-31T17:43:32.985+07:00  INFO 43720 --- [main] c.n.backend.BackendApplication           : Starting BackendApplication v1.0.0 using Java 17.0.12 with PID 43720 (D:\nekonihongo-pj\BE\backend\build\libs\backend-1.0.0.jar started by DTP in D:\nekonihongo-pj\BE\backend)
+2026-01-31T17:43:32.988+07:00 DEBUG 43720 --- [main] c.n.backend.BackendApplication           : Running with Spring Boot v4.0.0, Spring v7.0.1
+2026-01-31T17:43:32.988+07:00  INFO 43720 --- [main] c.n.backend.BackendApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-01-31T17:43:33.570+07:00  INFO 43720 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-31T17:43:33.624+07:00  INFO 43720 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 47 ms. Found 16 JPA repository interfaces.
+2026-01-31T17:43:34.089+07:00  INFO 43720 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-01-31T17:43:34.107+07:00  INFO 43720 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-31T17:43:34.107+07:00  INFO 43720 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.14]
+2026-01-31T17:43:34.138+07:00  INFO 43720 --- [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1120 ms
+2026-01-31T17:43:34.279+07:00  INFO 43720 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-31T17:43:34.345+07:00  INFO 43720 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 7.1.8.Final
+2026-01-31T17:43:34.599+07:00  INFO 43720 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-31T17:43:34.620+07:00  INFO 43720 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-31T17:43:34.701+07:00  INFO 43720 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@25110bb9
+2026-01-31T17:43:34.702+07:00  INFO 43720 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-31T17:43:34.725+07:00  WARN 43720 --- [main] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-31T17:43:34.734+07:00  INFO 43720 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/neko_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.44
+	Default catalog/schema: neko_db/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DatasourceConnectionProviderImpl
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-31T17:43:35.408+07:00  INFO 43720 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-31T17:43:35.439+07:00  INFO 43720 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:43:35.483+07:00  INFO 43720 --- [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-31T17:43:35.845+07:00 DEBUG 43720 --- [main] c.n.b.config.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2026-01-31T17:43:36.600+07:00  WARN 43720 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-31T17:43:36.653+07:00  INFO 43720 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsServiceImpl
+2026-01-31T17:43:36.733+07:00 DEBUG 43720 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-01-31T17:43:36.817+07:00 DEBUG 43720 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 81 mappings in 'requestMappingHandlerMapping'
+2026-01-31T17:43:36.827+07:00 DEBUG 43720 --- [main] o.s.w.s.c.annotation.WebMvcConfigurer    : Default resource handling disabled
+2026-01-31T17:43:36.833+07:00 DEBUG 43720 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-01-31T17:43:36.855+07:00 DEBUG 43720 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-01-31T17:43:36.881+07:00 DEBUG 43720 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-01-31T17:43:36.967+07:00  INFO 43720 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-01-31T17:43:36.975+07:00  INFO 43720 --- [main] c.n.backend.BackendApplication           : Started BackendApplication in 4.265 seconds (process running for 4.581)
+2026-01-31T17:44:02.318+07:00  INFO 43720 --- [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-01-31T17:44:02.358+07:00  INFO 43720 --- [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-01-31T17:44:02.362+07:00  INFO 43720 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:44:02.363+07:00  INFO 43720 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-31T17:44:02.367+07:00  INFO 43720 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-01-31T17:45:08.393+07:00  INFO 33748 --- [main] c.n.backend.BackendApplication           : Starting BackendApplication v1.0.0 using Java 17.0.12 with PID 33748 (D:\nekonihongo-pj\BE\backend\build\libs\backend-1.0.0.jar started by DTP in D:\nekonihongo-pj\BE\backend)
+2026-01-31T17:45:08.399+07:00 DEBUG 33748 --- [main] c.n.backend.BackendApplication           : Running with Spring Boot v4.0.0, Spring v7.0.1
+2026-01-31T17:45:08.399+07:00  INFO 33748 --- [main] c.n.backend.BackendApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-01-31T17:45:08.959+07:00  INFO 33748 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-31T17:45:09.017+07:00  INFO 33748 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 50 ms. Found 16 JPA repository interfaces.
+2026-01-31T17:45:09.493+07:00  INFO 33748 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-01-31T17:45:09.508+07:00  INFO 33748 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-31T17:45:09.509+07:00  INFO 33748 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.14]
+2026-01-31T17:45:09.533+07:00  INFO 33748 --- [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1097 ms
+2026-01-31T17:45:09.672+07:00  INFO 33748 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-31T17:45:09.716+07:00  INFO 33748 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 7.1.8.Final
+2026-01-31T17:45:09.991+07:00  INFO 33748 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-31T17:45:10.010+07:00  INFO 33748 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-31T17:45:10.088+07:00  INFO 33748 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@1f521c69
+2026-01-31T17:45:10.089+07:00  INFO 33748 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-31T17:45:10.117+07:00  WARN 33748 --- [main] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-31T17:45:10.128+07:00  INFO 33748 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/neko_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.44
+	Default catalog/schema: neko_db/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DatasourceConnectionProviderImpl
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-31T17:45:10.800+07:00  INFO 33748 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-31T17:45:10.832+07:00  INFO 33748 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:45:10.874+07:00  INFO 33748 --- [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-31T17:45:11.272+07:00 DEBUG 33748 --- [main] c.n.b.config.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2026-01-31T17:45:11.932+07:00  WARN 33748 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-31T17:45:11.973+07:00  INFO 33748 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsServiceImpl
+2026-01-31T17:45:12.049+07:00 DEBUG 33748 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-01-31T17:45:12.155+07:00 DEBUG 33748 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 81 mappings in 'requestMappingHandlerMapping'
+2026-01-31T17:45:12.180+07:00 DEBUG 33748 --- [main] o.s.w.s.c.annotation.WebMvcConfigurer    : Default resource handling disabled
+2026-01-31T17:45:12.189+07:00 DEBUG 33748 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2026-01-31T17:45:12.221+07:00 DEBUG 33748 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-01-31T17:45:12.248+07:00 DEBUG 33748 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-01-31T17:45:12.332+07:00  INFO 33748 --- [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-01-31T17:45:12.339+07:00  INFO 33748 --- [main] c.n.backend.BackendApplication           : Started BackendApplication in 4.231 seconds (process running for 4.534)
+2026-01-31T17:45:14.836+07:00  INFO 33748 --- [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-01-31T17:45:14.874+07:00  INFO 33748 --- [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-01-31T17:45:14.878+07:00  INFO 33748 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-01-31T17:45:14.880+07:00  INFO 33748 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-01-31T17:45:14.885+07:00  INFO 33748 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
