@@ -3,6 +3,8 @@ package com.nekonihongo.backend.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,7 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -104,15 +106,33 @@ public class SecurityConfig {
                 return http.build();
         }
 
+        // @Bean
+        // public CorsConfigurationSource corsConfigurationSource() {
+        // CorsConfiguration config = new CorsConfiguration();
+        // config.setAllowCredentials(true);
+        // // Cho phép cả Vite (5173) và React (3000)
+        // config.setAllowedOrigins(List.of(
+        // "http://localhost:5173",
+        // "http://localhost:3000",
+        // "http://127.0.0.1:5173"));
+        // config.setAllowedHeaders(List.of("*"));
+        // config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE",
+        // "OPTIONS"));
+
+        // UrlBasedCorsConfigurationSource source = new
+        // UrlBasedCorsConfigurationSource();
+        // source.registerCorsConfiguration("/**", config);
+        // return source;
+        // }
+
+        @Value("${app.cors.allowed-origins}")
+        private String allowedOrigins;
+
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
                 config.setAllowCredentials(true);
-                // Cho phép cả Vite (5173) và React (3000)
-                config.setAllowedOrigins(List.of(
-                                "http://localhost:5173",
-                                "http://localhost:3000",
-                                "http://127.0.0.1:5173"));
+                config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
@@ -123,8 +143,6 @@ public class SecurityConfig {
 
         @Bean
         public PasswordEncoder passwordEncoder() {
-                // ⚠️ Chỉ dùng NoOpPasswordEncoder cho dev/test
-                // Trong production nên dùng BCryptPasswordEncoder
-                return NoOpPasswordEncoder.getInstance();
+                return new BCryptPasswordEncoder();
         }
 }
