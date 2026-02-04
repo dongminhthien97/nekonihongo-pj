@@ -57,28 +57,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = null;
 
         try {
+            if (!jwtService.isTokenValid(jwt)) {
+                sendUnauthorized(response);
+                return;
+            }
             email = jwtService.extractEmail(jwt);
         } catch (Exception e) {
-            // Invalid token format
+            sendUnauthorized(response);
+            return;
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                if (jwtService.isTokenValid(jwt)) {
-                    var authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+                var authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
+                sendUnauthorized(response);
+                return;
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void sendUnauthorized(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write(
+                "{\"error\":\"Unauthorized\",\"message\":\"Token khong hop le hoac het han\"}");
     }
 }

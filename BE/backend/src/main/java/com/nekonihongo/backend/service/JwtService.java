@@ -20,6 +20,9 @@ public class JwtService {
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
+    @Value("${jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
+
     // Tạo key từ secret (chuẩn JJWT 0.12+)
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
@@ -41,7 +44,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000))
+                .expiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
                 .signWith(getSigningKey())
                 .compact();
     }

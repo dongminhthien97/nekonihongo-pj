@@ -57,6 +57,7 @@ public class SecurityConfig {
                                                                 "/v3/api-docs/**", "/swagger-resources/**",
                                                                 "/webjars/**")
                                                 .permitAll()
+                                                .requestMatchers("/auth/**").permitAll()
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/grammar/**").permitAll()
@@ -106,7 +107,12 @@ public class SecurityConfig {
                         origins = List.of("http://localhost:5173");
                 }
 
-                config.setAllowedOrigins(origins);
+                boolean hasPattern = origins.stream().anyMatch(o -> o.contains("*"));
+                if (hasPattern) {
+                        config.setAllowedOriginPatterns(origins);
+                } else {
+                        config.setAllowedOrigins(origins);
+                }
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);
