@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -53,36 +52,16 @@ public class SecurityConfig {
                                                                         "{\"error\":\"Forbidden\",\"message\":\"Bạn không có quyền truy cập\"}");
                                                 }))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
-                                                                "/v3/api-docs/**", "/swagger-resources/**",
-                                                                "/webjars/**")
-                                                .permitAll()
-                                                .requestMatchers("/auth/**").permitAll()
-                                                .requestMatchers("/api/auth/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/grammar/**").permitAll()
-                                                .requestMatchers("/api/vocabulary/**").permitAll()
-                                                .requestMatchers("/api/vocabulary/n5/**").permitAll()
-                                                .requestMatchers("/api/kanji/n5/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/kanji/lessons").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/exercises/**").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
-                                                .requestMatchers("/api/hiragana/**").permitAll()
-                                                .requestMatchers("/api/katakana/**").permitAll()
-                                                .requestMatchers("/api/admin/mini-test/**").permitAll()
-                                                .requestMatchers("/api/user/mini-test/**").permitAll()
-                                                .requestMatchers("/api/grammar-tests/**").permitAll()
-                                                .requestMatchers("/api/grammar/mini-test/**").permitAll()
-                                                .requestMatchers("/api/admin/questions/**").permitAll()
                                                 .requestMatchers(
-                                                                "/api/admin/questions/lesson/{lessonId}/correct-answers")
+                                                                "/auth/**",
+                                                                "/api/auth/**",
+                                                                "/api/**/preview/**",
+                                                                "/api/**/public/**",
+                                                                "/health",
+                                                                "/actuator/health",
+                                                                "/swagger-ui/**",
+                                                                "/v3/api-docs/**")
                                                 .permitAll()
-                                                .requestMatchers("/api/grammar/jlpt/**").permitAll()
-                                                .requestMatchers("/api/kanji/jlpt/{level}/**").permitAll()
-                                                .requestMatchers("/api/kanji/jlpt/{level}/count").permitAll()
-                                                .requestMatchers("/api/user/progress/vocabulary").authenticated()
-                                                .requestMatchers("/api/user/me/**").authenticated()
-                                                .requestMatchers("/api/user/**").authenticated()
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
@@ -104,7 +83,7 @@ public class SecurityConfig {
 
                 if (origins.isEmpty()) {
                         // fallback an toàn: chỉ cho phép localhost dev nếu không có env set
-                        origins = List.of("http://localhost:5173");
+                        origins = List.of("https://nekonihongos.vercel.app");
                 }
 
                 boolean hasPattern = origins.stream().anyMatch(o -> o.contains("*"));
@@ -115,7 +94,7 @@ public class SecurityConfig {
                 }
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
-                config.setAllowCredentials(true);
+                config.setAllowCredentials(false);
                 config.setMaxAge(3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

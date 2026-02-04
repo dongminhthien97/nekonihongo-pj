@@ -15,8 +15,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.util.AntPathMatcher;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -24,20 +26,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    private static final List<String> PUBLIC_PATTERNS = List.of(
+            "/auth/**",
+            "/api/auth/**",
+            "/api/**/preview/**",
+            "/api/**/public/**",
+            "/health",
+            "/actuator/health",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/error",
+            "/favicon.ico"
+    );
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        return path.startsWith("/api/auth/") ||
-                path.startsWith("/api/grammar/") ||
-                path.startsWith("/api/vocabulary/") ||
-                path.startsWith("/swagger-ui/") ||
-                path.startsWith("/v3/api-docs") ||
-                path.startsWith("/swagger-resources") ||
-                path.startsWith("/webjars/") ||
-                path.equals("/error") ||
-                path.equals("/favicon.ico");
+        return PUBLIC_PATTERNS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     @Override

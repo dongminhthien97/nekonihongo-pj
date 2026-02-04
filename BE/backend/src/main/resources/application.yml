@@ -1,0 +1,73 @@
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+    whitelabel:
+      enabled: false
+  servlet:
+    session:
+      cookie:
+        secure: true
+        http-only: true
+        same-site: strict
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  web:
+    resources:
+      add-mappings: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized
+
+jwt:
+  secret: ${JWT_SECRET:ZGV2LW9ubHktc2VjcmV0LWRvLW5vdC11c2UtaW4tcHJvZA==}
+  expiration-ms: ${JWT_EXPIRE_MS:86400000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRE_MS:2592000000}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://nekonihongos.vercel.app}
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.nekonihongo.backend: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.web: WARN
+    org.springframework.transaction: WARN
+    org.springframework.orm.jpa: WARN
