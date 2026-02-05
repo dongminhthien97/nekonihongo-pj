@@ -17,27 +17,30 @@ server:
 spring:
   profiles:
     default: prod
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+    open-in-view: false
+
     hibernate:
       ddl-auto: validate
-    show-sql: false
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
     properties:
       hibernate:
         format_sql: false
-    open-in-view: false
+
   devtools:
     restart:
       enabled: false
     livereload:
       enabled: false
+
   web:
     resources:
       add-mappings: true
-  jpa:
-    hibernate:
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
 management:
   endpoints:
