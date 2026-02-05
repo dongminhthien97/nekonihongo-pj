@@ -1,3 +1,4 @@
+// src/main/java/com/nekonihongo/backend/service/AuthService.java
 package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.AuthRequest;
@@ -8,8 +9,8 @@ import com.nekonihongo.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 
@@ -25,60 +26,55 @@ public class AuthService {
 
         public AuthResponse login(AuthRequest request) {
 
-                try {
-                        // 1. Tìm user theo email
-                        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
-                                        .orElseThrow(() -> new BadCredentialsException("Email hoặc mật khẩu sai!"));
+                // 1️⃣ Tìm user theo email
+                User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                                .orElseThrow(() -> {
+                                        log.warn("LOGIN FAILED - user not found [{}]", request.getEmail());
+                                        return new BadCredentialsException("Email hoặc mật khẩu sai!");
+                                });
 
-                        // 2. Check trạng thái tài khoản
-                        if (user.getStatus() != User.Status.ACTIVE) {
-                                throw new BadCredentialsException("Tài khoản đã bị khóa hoặc vô hiệu hóa");
-                        }
+                // 🔍 DEBUG LOG – xem password trong DB thực tế là gì
+                log.warn("LOGIN ATTEMPT email={}, dbPassword={}",
+                                request.getEmail(), user.getPassword());
 
-                        // 3. Check password (BCrypt)
-                        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                                throw new BadCredentialsException("Email hoặc mật khẩu sai!");
-                        }
-
-                        // 4. Update streak (đã save trong service)
-                        streakService.updateLoginStreak(user);
-
-                        // 5. JWT claims
-                        var claims = new HashMap<String, Object>();
-                        claims.put("role", user.getRole().name());
-                        claims.put("userId", user.getId());
-
-                        // 6. Generate token
-                        String token = jwtService.generateToken(user.getEmail(), claims);
-                        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
-
-                        // 7. Response
-                        return AuthResponse.builder()
-                                        .token(token)
-                                        .refreshToken(refreshToken)
-                                        .user(
-                                                        UserResponse.builder()
-                                                                        .id(user.getId())
-                                                                        .email(user.getEmail())
-                                                                        .username(user.getUsername())
-                                                                        .fullName(user.getFullName())
-                                                                        .avatarUrl(user.getAvatarUrl())
-                                                                        .role(user.getRole().name().toLowerCase())
-                                                                        .level(user.getLevel())
-                                                                        .points(user.getPoints())
-                                                                        .streak(user.getStreak())
-                                                                        .longestStreak(user.getLongestStreak())
-                                                                        .lastLoginDate(user.getLastLoginDate())
-                                                                        .joinDate(user.getJoinDate())
-                                                                        .build())
-                                        .build();
-
-                } catch (BadCredentialsException e) {
-                        log.warn("LOGIN FAILED [{}] - {}", request.getEmail(), e.getMessage());
-                        throw e;
-                } catch (Exception e) {
-                        log.error("LOGIN ERROR [{}]", request.getEmail(), e);
-                        throw new RuntimeException("Lỗi hệ thống khi đăng nhập");
+                // 2️⃣ Check password
+                if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                        log.warn("LOGIN FAILED - password mismatch [{}]", request.getEmail());
+                        throw new BadCredentialsException("Email hoặc mật khẩu sai!");
                 }
+
+                // 3️⃣ Update streak
+                streakService.updateLoginStreak(user);
+                userRepository.save(user);
+
+                // 4️⃣ Claims cho JWT
+                var claims = new HashMap<String, Object>();
+                claims.put("role", user.getRole().name());
+                claims.put("userId", user.getId());
+
+                // 5️⃣ Generate token
+                String token = jwtService.generateToken(user.getEmail(), claims);
+                String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+                // 6️⃣ Response
+                return AuthResponse.builder()
+                                .token(token)
+                                .refreshToken(refreshToken)
+                                .user(
+                                                UserResponse.builder()
+                                                                .id(user.getId())
+                                                                .email(user.getEmail())
+                                                                .username(user.getUsername())
+                                                                .fullName(user.getFullName())
+                                                                .avatarUrl(user.getAvatarUrl())
+                                                                .role(user.getRole().name().toLowerCase())
+                                                                .level(user.getLevel())
+                                                                .points(user.getPoints())
+                                                                .streak(user.getStreak())
+                                                                .longestStreak(user.getLongestStreak())
+                                                                .lastLoginDate(user.getLastLoginDate())
+                                                                .joinDate(user.getJoinDate())
+                                                                .build())
+                                .build();
         }
 }
