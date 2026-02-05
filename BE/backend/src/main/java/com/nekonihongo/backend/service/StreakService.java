@@ -27,21 +27,34 @@ public class StreakService {
     public void updateLoginStreak(User user) {
         LocalDate today = LocalDate.now();
 
+        // normalize dữ liệu an toàn cho int
+        if (user.getStreak() < 0) {
+            user.setStreak(0);
+        }
+        if (user.getLongestStreak() < 0) {
+            user.setLongestStreak(0);
+        }
+
         if (user.getLastLoginDate() == null) {
             user.setStreak(1);
             user.setLongestStreak(1);
         } else {
             LocalDate lastLoginDate = user.getLastLoginDate().toLocalDate();
 
+            // Đã login hôm nay → không làm gì
             if (lastLoginDate.equals(today)) {
                 return;
-            } else if (lastLoginDate.equals(today.minusDays(1))) {
+            }
+
+            // Login liên tiếp
+            if (lastLoginDate.equals(today.minusDays(1))) {
                 user.setStreak(user.getStreak() + 1);
 
                 if (user.getStreak() > user.getLongestStreak()) {
                     user.setLongestStreak(user.getStreak());
                 }
             } else {
+                // Bỏ lỡ >= 2 ngày
                 user.setStreak(1);
             }
         }
@@ -79,7 +92,8 @@ public class StreakService {
             return 0;
         }
 
-        return (int) ChronoUnit.DAYS.between(lastLogin, today) - 1;
+        long days = ChronoUnit.DAYS.between(lastLogin, today) - 1;
+        return (int) Math.max(days, 0);
     }
 
     /**
