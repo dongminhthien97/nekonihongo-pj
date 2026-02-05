@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,15 +30,20 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
 
-        // Nếu biến môi trường không set, mặc định là chuỗi rỗng
+        // ENV: app.cors.allowed-origins=https://xxx,https://yyy
         @Value("${app.cors.allowed-origins:}")
         private String allowedOriginsProperty;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
+                                // REST API → disable CSRF
                                 .csrf(csrf -> csrf.disable())
+
+                                // Enable CORS
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                                // Exception handling
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint((req, res, authException) -> {
                                                         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -51,7 +57,13 @@ public class SecurityConfig {
                                                         res.getWriter().write(
                                                                         "{\"error\":\"Forbidden\",\"message\":\"Bạn không có quyền truy cập\"}");
                                                 }))
+
+                                // Authorization
                                 .authorizeHttpRequests(auth -> auth
+                                                // ⭐ BẮT BUỘC: cho phép CORS preflight
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                                                // Public endpoints
                                                 .requestMatchers(
                                                                 "/auth/**",
                                                                 "/api/auth/**",
@@ -67,10 +79,18 @@ public class SecurityConfig {
                                                                 "/swagger-ui/**",
                                                                 "/v3/api-docs/**")
                                                 .permitAll()
+
+                                                // Admin
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                                                // Others
                                                 .anyRequest().authenticated())
+
+                                // Stateless session
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                                // JWT filter
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
@@ -80,24 +100,27 @@ public class SecurityConfig {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
 
-                // parse danh sách origin từ property, phân tách bằng dấu phẩy
                 List<String> origins = Arrays.stream(allowedOriginsProperty.split(","))
                                 .map(String::trim)
                                 .filter(s -> !s.isEmpty())
                                 .collect(Collectors.toList());
 
+                // fallback nếu ENV chưa set
                 if (origins.isEmpty()) {
-                        // fallback an toàn: chỉ cho phép localhost dev nếu không có env set
-                        origins = List.of("https://nekonihongos.vercel.app");
+                        origins = List.of(
+                                        "https://nekonihongos.vercel.app",
+                                        "https://nekonihongo-nwlqjjt7a-dongminhthien97s-projects.vercel.app");
                 }
 
-                boolean hasPattern = origins.stream().anyMatch(o -> o.contains("*"));
-                if (hasPattern) {
+                // Có wildcard hay không
+                if (origins.stream().anyMatch(o -> o.contains("*"))) {
                         config.setAllowedOriginPatterns(origins);
                 } else {
                         config.setAllowedOrigins(origins);
                 }
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+                config.setAllowedMethods(List.of(
+                                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(false);
                 config.setMaxAge(3600L);

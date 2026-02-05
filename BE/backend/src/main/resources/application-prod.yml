@@ -15,4 +15,4 @@ jwt:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://nekonihongos.vercel.app}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://nekonihongos.vercel.app,https://nekonihongo-nwlqjjt7a-dongminhthien97s-projects.vercel.app}
