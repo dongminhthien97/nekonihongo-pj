@@ -55,8 +55,11 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/auth/**",
                                                                 "/api/auth/**",
-                                                                "/api/**/preview/**",
-                                                                "/api/**/public/**",
+                                                                "/api/**/preview", // Thay thế preview
+                                                                "/api/**/preview/**", // Nếu cần deep path (vẫn hợp lệ
+                                                                                      // nếu tách riêng)
+                                                                "/api/**/public", // Thay thế public
+                                                                "/api/**/public/**", // Nếu cần deep path
                                                                 "/health",
                                                                 "/actuator/health",
                                                                 "/swagger-ui/**",
