@@ -21,7 +21,7 @@ public class Category {
     @Column(unique = true, nullable = false)
     private CategoryType name; // ← dùng enum từ file riêng
 
-    @Column(nullable = false)
+    @Column(name = "display_name", nullable = false)
     private String displayName;
 
     private String description;
