@@ -20,7 +20,7 @@ public class Question {
     @JoinColumn(name = "exercise_id", nullable = false)
     private Exercise exercise;
 
-    @Column(nullable = false)
+    @Column(name = "display_order", nullable = false)
     private Integer displayOrder;
 
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
