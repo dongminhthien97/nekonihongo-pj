@@ -21,6 +21,6 @@ public class JlptLevel {
     @Column(unique = true, nullable = false)
     private JlptLevelType level;
 
-    @Column(nullable = false)
+    @Column(name = "display_name", nullable = false)
     private String displayName;
 }
