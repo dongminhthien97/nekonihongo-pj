@@ -29,6 +29,6 @@ public class GrammarPattern {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String example; // "山田（やまだ）さんは日本語（にほんご）が上手（じょうず）です。"
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "example_meaning", nullable = false, columnDefinition = "TEXT")
     private String exampleMeaning; // "Anh Yamada giỏi tiếng Nhật"
 }
