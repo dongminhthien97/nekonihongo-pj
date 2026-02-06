@@ -193,7 +193,7 @@ export function MiniTestModal({
 
         try {
           const checkRes = await api.get(
-            `/grammar-tests/check?lesson_id=${lessonId}`,
+            `grammar-tests/check?lesson_id=${lessonId}`,
           );
           if (checkRes.data.hasSubmitted) {
             setHasPriorHistory(true);
@@ -201,7 +201,7 @@ export function MiniTestModal({
         } catch (checkErr) {}
 
         const qRes = await api.get(
-          `/grammar/mini-test/questions?lesson_id=${lessonId}`,
+          `grammar/mini-test/questions?lesson_id=${lessonId}`,
         );
 
         if (qRes.data.success && Array.isArray(qRes.data.data)) {

@@ -444,15 +444,12 @@ public class MiniTestService {
             JsonNode valueNode = entry.getValue();
 
             try {
-                int sectionNumber;
                 try {
-                    sectionNumber = Integer.parseInt(sectionKey);
+                    Integer.parseInt(sectionKey);
                 } catch (NumberFormatException e) {
-                    sectionNumber = globalQuestionNumber;
                 }
 
                 if (valueNode.isArray()) {
-                    int questionInSection = 1;
                     for (JsonNode answerNode : valueNode) {
                         Long questionId = (long) globalQuestionNumber;
                         String userAnswer;
@@ -481,7 +478,6 @@ public class MiniTestService {
                         }
 
                         globalQuestionNumber++;
-                        questionInSection++;
                     }
                 } else if (valueNode.isObject()) {
                     Long questionId = extractQuestionIdFromKey(sectionKey, valueNode);
@@ -688,10 +684,8 @@ public class MiniTestService {
         for (MiniTestSubmission sub : allSubmissions) {
             try {
                 if (sub.getAnswers() != null && !sub.getAnswers().isEmpty()) {
-                    try {
-                        JsonNode node = objectMapper.readTree(sub.getAnswers());
-                        List<MiniTestSubmissionDTO.AnswerDTO> parsed = parseAnswersJson(sub.getAnswers());
-                    } catch (Exception e) {
+                    if (sub.getAnswers() != null && !sub.getAnswers().isEmpty()) {
+                        parseAnswersJson(sub.getAnswers());
                     }
                 }
             } catch (Exception e) {

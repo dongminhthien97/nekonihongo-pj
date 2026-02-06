@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import api from "../../api/auth";
 import {
   X,
   Check,
@@ -240,67 +241,11 @@ export function AdminTestDetailModal({
     setFetchError(null);
 
     try {
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("Bạn chưa đăng nhập. Vui lòng đăng nhập và thử lại.");
-      }
-
-      const headers: HeadersInit = {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
-      const apiUrl = `/api/grammar/mini-test/questions?lesson_id=${test.lessonId}`;
-
-      const response = await fetch(apiUrl, {
-        headers,
-        credentials: "include",
-        method: "GET",
-      });
-
-      if (!response.ok) {
-        const fallbackUrl = `/grammar/mini-test/questions?lesson_id=${test.lessonId}`;
-
-        const fallbackResponse = await fetch(fallbackUrl, {
-          headers,
-          credentials: "include",
-          method: "GET",
-        });
-
-        if (!fallbackResponse.ok) {
-          throw new Error(
-            `Không thể kết nối đến server. Status: ${response.status}`,
-          );
-        }
-
-        const contentType = fallbackResponse.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await fallbackResponse.text();
-          throw new Error("Server trả về dữ liệu không đúng định dạng JSON");
-        }
-
-        const responseData = await fallbackResponse.json();
-
-        const processedData = processGrammarQuestionsData(responseData);
-        if (!processedData || processedData.length === 0) {
-          throw new Error("Không tìm thấy câu hỏi trong phản hồi");
-        }
-
-        setGrammarQuestions(processedData);
-        toast.success(`Đã tải ${processedData.length} câu hỏi từ server`);
-        return;
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        throw new Error("Server trả về dữ liệu không đúng định dạng JSON");
-      }
-
-      const responseData = await response.json();
-
+      const response = await api.get(`grammar/mini-test/questions?lesson_id=${test.lessonId}`);
+      
+      const responseData = response.data;
       const processedData = processGrammarQuestionsData(responseData);
+      
       if (!processedData || processedData.length === 0) {
         throw new Error("Không tìm thấy câu hỏi trong phản hồi");
       }
@@ -308,7 +253,7 @@ export function AdminTestDetailModal({
       setGrammarQuestions(processedData);
       toast.success(`Đã tải ${processedData.length} câu hỏi từ server`);
     } catch (error: any) {
-      const errorMessage = error.message || "Không thể kết nối đến server";
+      const errorMessage = error.response?.data?.message || error.message || "Không thể tải câu hỏi";
       setFetchError(errorMessage);
       toast.error(`Lỗi: ${errorMessage}`);
       showError("Lỗi khi tải câu hỏi", errorMessage);
