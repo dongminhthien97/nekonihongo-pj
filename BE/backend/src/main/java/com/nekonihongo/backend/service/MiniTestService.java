@@ -631,15 +631,15 @@ public class MiniTestService {
         }
 
         if (principal instanceof UserDetails userDetails) {
-            String username = userDetails.getUsername();
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + username));
+            String identifier = userDetails.getUsername();
+            User user = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(identifier, identifier)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + identifier));
             return user.getId();
         }
 
-        if (principal instanceof String username) {
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + username));
+        if (principal instanceof String identifier) {
+            User user = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(identifier, identifier)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + identifier));
             return user.getId();
         }
 
