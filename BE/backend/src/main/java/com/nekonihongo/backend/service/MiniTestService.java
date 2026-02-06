@@ -621,7 +621,7 @@ public class MiniTestService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            throw new RuntimeException("Không xác thực được user");
+            throw new ResourceNotFoundException("Không xác thực được user");
         }
 
         Object principal = auth.getPrincipal();
@@ -633,17 +633,17 @@ public class MiniTestService {
         if (principal instanceof UserDetails userDetails) {
             String username = userDetails.getUsername();
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
         if (principal instanceof String username) {
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user từ token: " + username));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user từ token: " + username));
             return user.getId();
         }
 
-        throw new RuntimeException("Loại principal không hỗ trợ: " + principal.getClass().getName());
+        throw new IllegalArgumentException("Loại principal không hỗ trợ: " + principal.getClass().getName());
     }
 
     public Map<String, Object> parseAnswersFromJson(String answersJson) {
