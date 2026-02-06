@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -68,6 +69,24 @@ public class GlobalExceptionHandler {
                                 HttpStatus.BAD_REQUEST,
                                 message,
                                 request.getRequestURI()));
+        }
+
+        @ExceptionHandler(BadCredentialsException.class)
+        public ResponseEntity<?> handleBadCredentials(
+                        BadCredentialsException ex,
+                        HttpServletRequest request) {
+
+                log.warn(
+                                "AUTH FAILED | path={} | method={} | message={}",
+                                request.getRequestURI(),
+                                request.getMethod(),
+                                ex.getMessage());
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                                errorBody(
+                                                HttpStatus.UNAUTHORIZED,
+                                                ex.getMessage(),
+                                                request.getRequestURI()));
         }
 
         @ExceptionHandler(Exception.class)
