@@ -4,6 +4,8 @@ import com.nekonihongo.backend.dto.*;
 import com.nekonihongo.backend.entity.MiniTestSubmission;
 import com.nekonihongo.backend.entity.MiniTestSubmission.Status;
 import com.nekonihongo.backend.entity.User;
+import com.nekonihongo.backend.exception.ResourceNotFoundException;
+import com.nekonihongo.backend.repository.GrammarLessonRepository;
 import com.nekonihongo.backend.repository.MiniTestSubmissionRepository;
 import com.nekonihongo.backend.repository.UserRepository;
 import com.nekonihongo.backend.security.UserPrincipal;
@@ -30,6 +32,7 @@ public class MiniTestService {
     private final MiniTestSubmissionRepository submissionRepository;
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
+    private final GrammarLessonRepository grammarLessonRepository;
 
     public List<MiniTestSubmissionDTO> getAllSubmissions() {
         List<MiniTestSubmission> all = submissionRepository.findAllByOrderBySubmittedAtDesc();
@@ -37,6 +40,18 @@ public class MiniTestService {
     }
 
     public CheckTestResponseDTO checkUserTestStatus(Long userId, Integer lessonId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID không được để trống");
+        }
+        if (lessonId == null) {
+            throw new IllegalArgumentException("Lesson ID không được để trống");
+        }
+
+        // Validate lesson existence
+        if (!grammarLessonRepository.existsById(lessonId)) {
+            throw new ResourceNotFoundException("Không tìm thấy bài học với ID: " + lessonId);
+        }
+
         List<MiniTestSubmission> submissions = submissionRepository
                 .findByUserIdAndLessonIdOrderBySubmittedAtDesc(userId, lessonId);
         boolean hasSubmitted = !submissions.isEmpty();
@@ -50,58 +65,55 @@ public class MiniTestService {
 
     @Transactional
     public SubmitTestResponseDTO submitTest(SubmitTestRequestDTO request) {
-        try {
-            if (request.getUserId() == null) {
-                return SubmitTestResponseDTO.builder()
-                        .success(false)
-                        .message("User ID không được để trống")
-                        .build();
-            }
-
-            if (request.getLessonId() == null) {
-                return SubmitTestResponseDTO.builder()
-                        .success(false)
-                        .message("Lesson ID không được để trống")
-                        .build();
-            }
-
-            String answersJson;
-            try {
-                answersJson = objectMapper.writeValueAsString(request.getAnswers());
-            } catch (JsonProcessingException e) {
-                return SubmitTestResponseDTO.builder()
-                        .success(false)
-                        .message("Lỗi khi xử lý câu trả lời: " + e.getMessage())
-                        .build();
-            }
-
-            MiniTestSubmission submission = MiniTestSubmission.builder()
-                    .userId(request.getUserId())
-                    .lessonId(request.getLessonId())
-                    .answers(answersJson)
-                    .timeSpent(request.getTimeSpent() != null ? request.getTimeSpent() : 0)
-                    .submittedAt(request.getSubmittedAt() != null ? request.getSubmittedAt() : LocalDateTime.now())
-                    .status(Status.pending)
-                    .feedback(null)
-                    .feedbackAt(null)
-                    .score(null)
-                    .build();
-
-            MiniTestSubmission savedSubmission = submissionRepository.save(submission);
-
-            return SubmitTestResponseDTO.builder()
-                    .success(true)
-                    .message("Bài test đã được nộp thành công!")
-                    .testId(savedSubmission.getId())
-                    .submissionId(savedSubmission.getId())
-                    .build();
-
-        } catch (Exception e) {
-            return SubmitTestResponseDTO.builder()
-                    .success(false)
-                    .message("Lỗi hệ thống khi nộp bài: " + e.getMessage())
-                    .build();
+        if (request.getUserId() == null) {
+            throw new IllegalArgumentException("User ID không được để trống");
         }
+
+        if (request.getLessonId() == null) {
+            throw new IllegalArgumentException("Lesson ID không được để trống");
+        }
+
+        // Validate lesson existence
+        if (!grammarLessonRepository.existsById(request.getLessonId())) {
+            throw new ResourceNotFoundException("Không tìm thấy bài học với ID: " + request.getLessonId());
+        }
+
+        // Validate answers
+        if (request.getAnswers() == null || request.getAnswers().isEmpty()) {
+            throw new IllegalArgumentException("Danh sách câu trả lời không được để trống");
+        }
+
+        String answersJson;
+        try {
+            answersJson = objectMapper.writeValueAsString(request.getAnswers());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Lỗi khi xử lý JSON câu trả lời: " + e.getMessage());
+        }
+
+        MiniTestSubmission submission = MiniTestSubmission.builder()
+                .userId(request.getUserId())
+                .lessonId(request.getLessonId())
+                .answers(answersJson)
+                .timeSpent(request.getTimeSpent() != null ? request.getTimeSpent() : 0)
+                .submittedAt(request.getSubmittedAt() != null ? request.getSubmittedAt() : LocalDateTime.now())
+                .status(Status.pending)
+                .feedback(null)
+                .feedbackAt(null)
+                .score(null)
+                .build();
+
+        MiniTestSubmission savedSubmission = submissionRepository.save(submission);
+
+        if (savedSubmission == null || savedSubmission.getId() == null) {
+            throw new RuntimeException("Lỗi khi lưu bài nộp vào cơ sở dữ liệu");
+        }
+
+        return SubmitTestResponseDTO.builder()
+                .success(true)
+                .message("Bài test đã được nộp thành công!")
+                .testId(savedSubmission.getId())
+                .submissionId(savedSubmission.getId())
+                .build();
     }
 
     @Transactional

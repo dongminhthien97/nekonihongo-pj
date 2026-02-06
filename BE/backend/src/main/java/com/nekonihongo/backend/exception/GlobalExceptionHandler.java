@@ -4,18 +4,66 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+        @ExceptionHandler(ResourceNotFoundException.class)
+        public ResponseEntity<?> handleResourceNotFound(
+                        ResourceNotFoundException ex,
+                        HttpServletRequest request) {
+
+                log.warn("RESOURCE NOT FOUND | path={} | message={}",
+                                request.getRequestURI(),
+                                ex.getMessage());
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(
+                                HttpStatus.NOT_FOUND,
+                                ex.getMessage(),
+                                request.getRequestURI()));
+        }
+
+        @ExceptionHandler(MissingServletRequestParameterException.class)
+        public ResponseEntity<?> handleMissingParams(
+                        MissingServletRequestParameterException ex,
+                        HttpServletRequest request) {
+
+                log.warn("BAD REQUEST - Missing parameter | path={} | param={}",
+                                request.getRequestURI(),
+                                ex.getParameterName());
+
+                return ResponseEntity.badRequest().body(errorBody(
+                                HttpStatus.BAD_REQUEST,
+                                "Required parameter is missing: " + ex.getParameterName(),
+                                request.getRequestURI()));
+        }
+
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<?> handleMalformedJson(
+                        HttpMessageNotReadableException ex,
+                        HttpServletRequest request) {
+
+                log.warn("BAD REQUEST - Malformed JSON | path={} | message={}",
+                                request.getRequestURI(),
+                                ex.getMessage());
+
+                return ResponseEntity.badRequest().body(errorBody(
+                                HttpStatus.BAD_REQUEST,
+                                "Malformed JSON request body",
+                                request.getRequestURI()));
+        }
 
         @ExceptionHandler(MethodArgumentTypeMismatchException.class)
         public ResponseEntity<?> handleMethodArgumentTypeMismatch(
@@ -30,7 +78,7 @@ public class GlobalExceptionHandler {
 
                 return ResponseEntity.badRequest().body(errorBody(
                                 HttpStatus.BAD_REQUEST,
-                                "Invalid parameter: " + ex.getName(),
+                                "Invalid parameter type: " + ex.getName(),
                                 request.getRequestURI()));
         }
 
@@ -85,7 +133,7 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                                 errorBody(
                                                 HttpStatus.UNAUTHORIZED,
-                                                ex.getMessage(),
+                                                "Sai tài khoản hoặc mật khẩu",
                                                 request.getRequestURI()));
         }
 
@@ -94,25 +142,27 @@ public class GlobalExceptionHandler {
                         Exception ex,
                         HttpServletRequest request) {
 
-                // 🔥 QUAN TRỌNG: log full stacktrace
                 log.error(
-                                "INTERNAL SERVER ERROR | path={} | method={}",
+                                "INTERNAL SERVER ERROR | path={} | method={} | rootCause={}",
                                 request.getRequestURI(),
                                 request.getMethod(),
+                                ex.getMessage(),
                                 ex);
 
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody(
                                 HttpStatus.INTERNAL_SERVER_ERROR,
-                                "Unexpected error",
+                                "Lỗi hệ thống không mong muốn",
                                 request.getRequestURI()));
         }
 
         private Map<String, Object> errorBody(HttpStatus status, String message, String path) {
-                return Map.of(
-                                "status", status.value(),
-                                "error", status.getReasonPhrase(),
-                                "message", message,
-                                "path", path,
-                                "timestamp", OffsetDateTime.now().toString());
+                Map<String, Object> body = new HashMap<>();
+                body.put("success", false);
+                body.put("status", status.value());
+                body.put("error", status.getReasonPhrase());
+                body.put("message", message);
+                body.put("path", path);
+                body.put("timestamp", OffsetDateTime.now().toString());
+                return body;
         }
 }
