@@ -60,9 +60,11 @@ springdoc:
 logging:
   level:
     root: INFO
-    com.nekonihongo.backend: INFO
-    org.springframework.security: WARN
+    # com.nekonihongo.backend: INFO
+    # org.springframework.security: WARN
     org.hibernate.SQL: WARN
     org.springframework.web: WARN
     org.springframework.transaction: WARN
     org.springframework.orm.jpa: WARN
+    com.nekonihongo.backend: DEBUG
+    org.springframework.security: DEBUG
