@@ -18,6 +18,10 @@ spring:
   profiles:
     default: prod
 
+  sql:
+    init:
+      mode: never
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
@@ -31,12 +35,6 @@ spring:
     properties:
       hibernate:
         format_sql: false
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
 
   devtools:
     restart:
