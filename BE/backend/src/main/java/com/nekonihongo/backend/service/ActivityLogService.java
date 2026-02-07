@@ -85,15 +85,16 @@ public class ActivityLogService {
         log.info("📝 [ActivityLogService] START logging activity for username: {}, action: {}", username, action);
 
         try {
-            User user = userRepository.findByUsername(username)
+            // Support lookup by username OR email (case-insensitive)
+            User user = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(username, username)
                     .orElseThrow(() -> {
-                        log.error("❌ User not found with username: {}", username);
-                        return new RuntimeException("User not found with username: " + username);
+                        log.error("❌ User not found with identifier: {} (tried username/email)", username);
+                        return new RuntimeException("User not found with identifier: " + username);
                     });
 
-            log.info("📝 Found user: {} (id: {})", user.getUsername(), user.getId());
+            log.info("📝 Found user by identifier: {} -> {} (id: {})", username, user.getUsername(), user.getId());
 
-            // Gọi method với userId
+            // Call method with userId
             logActivity(user.getId(), action);
 
         } catch (Exception e) {
