@@ -32,6 +32,12 @@ spring:
       hibernate:
         format_sql: false
 
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
   devtools:
     restart:
       enabled: false
