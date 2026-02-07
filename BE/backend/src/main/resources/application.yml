@@ -22,6 +22,10 @@ spring:
     init:
       mode: never
 
+  mvc:
+    throw-exception-if-no-handler-found: true
+    static-path-pattern: /static/**
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false

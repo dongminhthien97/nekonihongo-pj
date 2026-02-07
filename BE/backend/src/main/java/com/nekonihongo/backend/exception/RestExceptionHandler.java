@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,17 @@ public class RestExceptionHandler {
         body.put("success", false);
         body.put("error", "Not Found");
         body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<?> handleNoHandler(HttpServletRequest req, NoHandlerFoundException ex) {
+        log.info("No handler for {} {} - dispatched URL: {}", req.getMethod(), req.getRequestURI(), ex.getRequestURL());
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", false);
+        body.put("error", "Not Found");
+        body.put("message", "No handler for request");
+        body.put("path", ex.getRequestURL());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
