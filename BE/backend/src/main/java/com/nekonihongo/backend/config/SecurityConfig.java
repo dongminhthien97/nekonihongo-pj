@@ -121,7 +121,9 @@ public class SecurityConfig {
 
                 config.setAllowedMethods(List.of(
                                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(List.of("*"));
+                // Allow specific headers required by FE
+                config.setAllowedHeaders(
+                                List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
                 config.setAllowCredentials(false);
                 config.setMaxAge(3600L);
 

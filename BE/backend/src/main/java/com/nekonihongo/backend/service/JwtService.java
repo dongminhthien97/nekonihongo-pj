@@ -25,8 +25,14 @@ public class JwtService {
 
     // Tạo key từ secret (chuẩn JJWT 0.12+)
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException e) {
+            // Not a valid Base64 string - fall back to raw bytes of the secret
+            byte[] keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
     }
 
     // Tạo token
