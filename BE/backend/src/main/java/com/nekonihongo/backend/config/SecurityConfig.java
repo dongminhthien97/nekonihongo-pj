@@ -109,6 +109,7 @@ public class SecurityConfig {
                 if (origins.isEmpty()) {
                         origins = List.of(
                                         "https://nekonihongos.vercel.app",
+                                        "https://nekonihongos-fnjk77alf-dongminhthien97s-projects.vercel.app",
                                         "https://nekonihongo-nwlqjjt7a-dongminhthien97s-projects.vercel.app");
                 }
 
