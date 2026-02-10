@@ -6,6 +6,8 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "kanji")
@@ -48,6 +50,6 @@ public class Kanji {
     @OneToMany(mappedBy = "kanji", cascade = { CascadeType.ALL }, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
     @Builder.Default
-    private List<KanjiCompound> compounds = new ArrayList<>();
+    private Set<KanjiCompound> compounds = new HashSet<>();
 
 }
