@@ -6,6 +6,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -43,5 +45,5 @@ public class GrammarLesson {
 
     // Thêm relation với questions
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GrammarQuestion> questions;
+    private Set<GrammarQuestion> questions = new HashSet<>();
 }
