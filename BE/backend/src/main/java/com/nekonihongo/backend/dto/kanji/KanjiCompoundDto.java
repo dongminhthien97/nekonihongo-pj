@@ -1,15 +1,18 @@
-// src/main/java/com/nekonihongo/backend/dto/kanji/KanjiCompoundDto.java
 package com.nekonihongo.backend.dto.kanji;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KanjiCompoundDto {
-    private String word; // Từ ghép: 日本
-    private String reading; // Cách đọc: にほん
-    private String meaning; // Nghĩa: Nhật Bản
+public class KanjiCompoundDTO {
+    private Long id;
+    private String word;
+    private String reading;
+    private String meaning;
+    private Integer displayOrder;
 }

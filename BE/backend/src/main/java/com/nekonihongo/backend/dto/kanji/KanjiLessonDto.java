@@ -1,18 +1,20 @@
-// src/main/java/com/nekonihongo/backend/dto/kanji/KanjiLessonDto.java
 package com.nekonihongo.backend.dto.kanji;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KanjiLessonDto {
-    private Integer id;
-    private String title;
+public class KanjiLessonDTO {
+    private Integer lessonId;
+    private String lessonTitle;
     private String icon;
-    private List<KanjiDto> kanjiList;
+    private Integer displayOrder;
+    private List<KanjiDTO> kanji;
 }

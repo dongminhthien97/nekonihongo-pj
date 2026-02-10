@@ -1,0 +1,35 @@
+package com.nekonihongo.backend.controller;
+
+import com.nekonihongo.backend.dto.ApiResponse;
+import com.nekonihongo.backend.dto.kanji.KanjiLessonDTO;
+import com.nekonihongo.backend.service.KanjiLessonService;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/kanji")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class KanjiLessonController {
+
+    private final KanjiLessonService kanjiLessonService;
+
+    @GetMapping("/lessons")
+    public ResponseEntity<List<KanjiLessonDTO>> getAllLessonsWithKanji() {
+        List<KanjiLessonDTO> lessons = kanjiLessonService.getAllLessonsWithKanji();
+        return ResponseEntity.ok(lessons);
+    }
+
+    @GetMapping("/lessons/{id}")
+    public ApiResponse<KanjiLessonDTO> getLessonById(@PathVariable Integer id) {
+        KanjiLessonDTO lesson = kanjiLessonService.getKanjiLessonById(id);
+        if (lesson == null) {
+            return ApiResponse.error("Không tìm thấy bài học Kanji");
+        }
+        return ApiResponse.success("Lấy bài học Kanji thành công!", lesson);
+    }
+}
