@@ -81,10 +81,7 @@ public class SecurityConfig {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
 
-                config.setAllowedOriginPatterns(List.of(
-                                "https://*.vercel.app",
-                                "https://nekonihongos.vercel.app"));
-
+                // Always allow OPTIONS (preflight) requests
                 config.setAllowedMethods(List.of(
                                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
@@ -95,7 +92,19 @@ public class SecurityConfig {
                                 "Origin",
                                 "X-Requested-With"));
 
-                config.setAllowCredentials(true); // 🔥 BẮT BUỘC
+                // Handle allowed origins from environment
+                if (allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty()) {
+                        String[] origins = allowedOriginsProperty.split(",");
+                        config.setAllowedOriginPatterns(List.of(origins));
+                        System.out.println("CORS allowed origins: " + allowedOriginsProperty);
+                } else {
+                        // If no origins specified, allow all but don't set credentials
+                        config.setAllowedOriginPatterns(List.of("*"));
+                        System.out.println("CORS: All origins allowed (no credentials)");
+                }
+
+                // Only allow credentials if specific origins are configured
+                config.setAllowCredentials(allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty());
                 config.setMaxAge(3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

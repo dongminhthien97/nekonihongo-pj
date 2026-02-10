@@ -6,7 +6,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
@@ -22,6 +21,20 @@ public class JwtService {
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
+
+    private static final long CLOCK_SKEW_TOLERANCE_MS = 30000; // ±30 seconds
+
+    // Ensure JWT secret is mandatory and fail fast if missing
+    public void validateJwtSecret() {
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT_SECRET environment variable is required and cannot be empty");
+        }
+        // Log expiration settings for debugging
+        System.out.println("JWT Service initialized:");
+        System.out.println("  - Access token expiration: " + expirationMs + " ms");
+        System.out.println("  - Refresh token expiration: " + refreshExpirationMs + " ms");
+        System.out.println("  - Clock skew tolerance: ±" + CLOCK_SKEW_TOLERANCE_MS + " ms");
+    }
 
     // Tạo key từ secret (chuẩn JJWT 0.12+)
     private SecretKey getSigningKey() {
@@ -73,7 +86,20 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (ExpiredJwtException e) {
+            System.out.println("JWT token is expired: " + e.getMessage());
+            return false;
+        } catch (UnsupportedJwtException e) {
+            System.out.println("JWT token is unsupported: " + e.getMessage());
+            return false;
+        } catch (MalformedJwtException e) {
+            System.out.println("JWT token is malformed: " + e.getMessage());
+            return false;
+        } catch (SignatureException e) {
+            System.out.println("JWT signature is invalid: " + e.getMessage());
+            return false;
+        } catch (IllegalArgumentException e) {
+            System.out.println("JWT token is empty: " + e.getMessage());
             return false;
         }
     }
