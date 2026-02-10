@@ -38,9 +38,17 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
+                                // Disable CSRF for stateless JWT authentication
                                 .csrf(csrf -> csrf.disable())
-                                .cors(Customizer.withDefaults()) // 🔥 QUAN TRỌNG
 
+                                // Disable form login and HTTP basic authentication
+                                .formLogin(form -> form.disable())
+                                .httpBasic(basic -> basic.disable())
+
+                                // Enable CORS
+                                .cors(Customizer.withDefaults())
+
+                                // Configure exception handling
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint((req, res, e) -> {
                                                         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -59,8 +67,12 @@ public class SecurityConfig {
                                                                                         """);
                                                 }))
 
+                                // Configure authorization rules
                                 .authorizeHttpRequests(auth -> auth
+                                                // Always allow OPTIONS (preflight) requests
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                                                // Public endpoints
                                                 .requestMatchers(
                                                                 "/api/auth/**",
                                                                 "/health",
@@ -68,10 +80,20 @@ public class SecurityConfig {
                                                                 "/swagger-ui/**",
                                                                 "/v3/api-docs/**")
                                                 .permitAll()
-                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                                .anyRequest().authenticated())
 
+                                                // Admin endpoints require ADMIN role
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                                                // All other API endpoints require authentication
+                                                .requestMatchers("/api/**").authenticated()
+
+                                                // Everything else is denied by default
+                                                .anyRequest().denyAll())
+
+                                // Use stateless session management
                                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                                // Add JWT filter before UsernamePasswordAuthenticationFilter
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();

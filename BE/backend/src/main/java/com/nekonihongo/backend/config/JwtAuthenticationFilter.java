@@ -60,6 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // Skip processing if no Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -69,16 +70,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = null;
 
         try {
+            // Validate JWT token
             if (!jwtService.isTokenValid(jwt)) {
                 sendUnauthorized(response);
                 return;
             }
+
             email = jwtService.extractEmail(jwt);
         } catch (Exception e) {
+            // Log the exception for debugging
+            System.out.println("JWT validation failed: " + e.getMessage());
             sendUnauthorized(response);
             return;
         }
 
+        // Set authentication in SecurityContext
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
@@ -90,6 +96,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception e) {
+                // Clear context and return 401 for user lookup failures
                 SecurityContextHolder.clearContext();
                 sendUnauthorized(response);
                 return;
