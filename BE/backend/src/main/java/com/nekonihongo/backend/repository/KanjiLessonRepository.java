@@ -10,9 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import com.nekonihongo.backend.entity.KanjiLesson;
 
 public interface KanjiLessonRepository extends JpaRepository<KanjiLesson, Integer> {
-    @Query("SELECT DISTINCT kl FROM KanjiLesson kl LEFT JOIN FETCH kl.kanjiList k LEFT JOIN FETCH k.compounds LEFT JOIN FETCH k.strokePaths ORDER BY kl.displayOrder")
+    @Query("SELECT DISTINCT kl FROM KanjiLesson kl LEFT JOIN FETCH kl.kanjiList k LEFT JOIN FETCH k.compounds ORDER BY kl.displayOrder")
     List<KanjiLesson> findAllWithKanji();
 
-    @EntityGraph(attributePaths = { "kanjiList", "kanjiList.compounds", "kanjiList.strokePaths" })
+    @EntityGraph(attributePaths = { "kanjiList", "kanjiList.compounds" })
     Optional<KanjiLesson> findById(Integer id);
 }
