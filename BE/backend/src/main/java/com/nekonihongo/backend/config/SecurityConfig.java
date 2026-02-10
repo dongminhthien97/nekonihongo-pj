@@ -72,7 +72,7 @@ public class SecurityConfig {
                                                 // Always allow OPTIONS (preflight) requests
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                                                // Public endpoints
+                                                // Public endpoints - explicitly allow auth endpoints
                                                 .requestMatchers(
                                                                 "/api/auth/**",
                                                                 "/health",
