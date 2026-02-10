@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/kanji")
+@RequestMapping("/api/kanji-lessons")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class KanjiLessonController {
 
     private final KanjiLessonService kanjiLessonService;
 
-    @GetMapping("/lessons/kanji")
+    @GetMapping("/kanji")
     public ResponseEntity<List<KanjiLessonDto>> getAllLessonsWithKanji() {
         List<KanjiLessonDto> lessons = kanjiLessonService.getAllLessonsWithKanji();
         return ResponseEntity.ok(lessons);
     }
 
-    @GetMapping("/lessons/{id}")
+    @GetMapping("/{id}")
     public ApiResponse<KanjiLessonDto> getLessonById(@PathVariable Integer id) {
         KanjiLessonDto lesson = kanjiLessonService.getKanjiLessonById(id);
         if (lesson == null) {

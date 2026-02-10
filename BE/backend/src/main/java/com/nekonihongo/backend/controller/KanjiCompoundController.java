@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/kanji")
+@RequestMapping("/api/kanji-compounds")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class KanjiCompoundController {
 
     private final KanjiCompoundService kanjiCompoundService;
 
-    @GetMapping("/{kanjiId}/compounds")
+    @GetMapping("/{kanjiId}")
     public ResponseEntity<List<KanjiCompoundDto>> getCompoundsByKanjiId(@PathVariable Long kanjiId) {
         List<KanjiCompoundDto> compounds = kanjiCompoundService.getCompoundsByKanjiId(kanjiId);
         return ResponseEntity.ok(compounds);
