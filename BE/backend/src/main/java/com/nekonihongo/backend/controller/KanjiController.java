@@ -25,7 +25,6 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class KanjiController {
 
-        private final KanjiLessonRepository repository;
         private final KanjiLessonService kanjiLessonService;
         private final KanjiService kanjiService;
 
@@ -37,33 +36,11 @@ public class KanjiController {
 
         @GetMapping("/lessons/{id}")
         public ApiResponse<KanjiLessonDto> getLesson(@PathVariable Integer id) {
-                KanjiLesson lesson = repository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài học Kanji"));
-
-                KanjiLessonDto dto = new KanjiLessonDto(
-                                lesson.getId(),
-                                lesson.getTitle(),
-                                lesson.getIcon(),
-                                lesson.getKanjiList().stream()
-                                                .sorted(Comparator.comparing(k -> k.getDisplayOrder()))
-                                                .map(k -> new KanjiDto(
-                                                                k.getKanji(),
-                                                                k.getOnReading(),
-                                                                k.getKunReading() != null ? k.getKunReading() : "",
-                                                                k.getHanViet(),
-                                                                k.getMeaning(),
-                                                                k.getStrokes(),
-                                                                k.getCompounds().stream()
-                                                                                .sorted(Comparator.comparing(c -> c
-                                                                                                .getDisplayOrder()))
-                                                                                .map(c -> new KanjiCompoundDto(
-                                                                                                c.getWord(),
-                                                                                                c.getReading(),
-                                                                                                c.getMeaning()))
-                                                                                .toList()))
-                                                .toList());
-
-                return ApiResponse.success("Lấy bài học Kanji thành công!", dto);
+                KanjiLessonDto lesson = kanjiLessonService.getKanjiLessonById(id);
+                if (lesson == null) {
+                        return ApiResponse.error("Không tìm thấy bài học Kanji");
+                }
+                return ApiResponse.success("Lấy bài học Kanji thành công!", lesson);
         }
 
         // API mới - lấy kanji theo cấp độ JLPT

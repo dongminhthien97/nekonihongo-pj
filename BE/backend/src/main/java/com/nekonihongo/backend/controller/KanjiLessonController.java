@@ -1,7 +1,7 @@
 package com.nekonihongo.backend.controller;
 
 import com.nekonihongo.backend.dto.ApiResponse;
-import com.nekonihongo.backend.dto.kanji.KanjiLessonDTO;
+import com.nekonihongo.backend.dto.kanji.KanjiLessonDto;
 import com.nekonihongo.backend.service.KanjiLessonService;
 
 import lombok.RequiredArgsConstructor;
@@ -19,14 +19,14 @@ public class KanjiLessonController {
     private final KanjiLessonService kanjiLessonService;
 
     @GetMapping("/lessons")
-    public ResponseEntity<List<KanjiLessonDTO>> getAllLessonsWithKanji() {
-        List<KanjiLessonDTO> lessons = kanjiLessonService.getAllLessonsWithKanji();
+    public ResponseEntity<List<KanjiLessonDto>> getAllLessonsWithKanji() {
+        List<KanjiLessonDto> lessons = kanjiLessonService.getAllLessonsWithKanji();
         return ResponseEntity.ok(lessons);
     }
 
     @GetMapping("/lessons/{id}")
-    public ApiResponse<KanjiLessonDTO> getLessonById(@PathVariable Integer id) {
-        KanjiLessonDTO lesson = kanjiLessonService.getKanjiLessonById(id);
+    public ApiResponse<KanjiLessonDto> getLessonById(@PathVariable Integer id) {
+        KanjiLessonDto lesson = kanjiLessonService.getKanjiLessonById(id);
         if (lesson == null) {
             return ApiResponse.error("Không tìm thấy bài học Kanji");
         }

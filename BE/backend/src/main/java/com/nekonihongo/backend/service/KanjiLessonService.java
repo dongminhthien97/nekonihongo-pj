@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.nekonihongo.backend.dto.kanji.KanjiCompoundDTO;
-import com.nekonihongo.backend.dto.kanji.KanjiDTO;
-import com.nekonihongo.backend.dto.kanji.KanjiLessonDTO;
+import com.nekonihongo.backend.dto.kanji.KanjiCompoundDto;
+import com.nekonihongo.backend.dto.kanji.KanjiDto;
+import com.nekonihongo.backend.dto.kanji.KanjiLessonDto;
 import com.nekonihongo.backend.entity.Kanji;
 import com.nekonihongo.backend.entity.KanjiCompound;
 import com.nekonihongo.backend.entity.KanjiLesson;
@@ -22,23 +22,32 @@ public class KanjiLessonService {
     private KanjiLessonRepository kanjiLessonRepository;
 
     @Transactional(readOnly = true)
-    public List<KanjiLessonDTO> getAllLessonsWithKanji() {
+    public List<KanjiLessonDto> getAllKanjiLessons() {
         List<KanjiLesson> lessons = kanjiLessonRepository.findAllWithKanjiOnly();
 
         return lessons.stream()
-                .map(this::convertToDto)
+                .map(entity -> convertToDto(entity))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public KanjiLessonDTO getKanjiLessonById(Integer id) {
+    public List<KanjiLessonDto> getAllLessonsWithKanji() {
+        List<KanjiLesson> lessons = kanjiLessonRepository.findAllWithKanjiOnly();
+
+        return lessons.stream()
+                .map(entity -> convertToDto(entity))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public KanjiLessonDto getKanjiLessonById(Integer id) {
         return kanjiLessonRepository.findById(id)
                 .map(this::convertToDto)
                 .orElse(null);
     }
 
-    private KanjiLessonDTO convertToDto(KanjiLesson lesson) {
-        return KanjiLessonDTO.builder()
+    private KanjiLessonDto convertToDto(KanjiLesson lesson) {
+        return KanjiLessonDto.builder()
                 .lessonId(lesson.getId())
                 .lessonTitle(lesson.getTitle())
                 .icon(lesson.getIcon())
@@ -49,8 +58,8 @@ public class KanjiLessonService {
                 .build();
     }
 
-    private KanjiDTO convertKanjiToDto(Kanji kanji) {
-        return KanjiDTO.builder()
+    private KanjiDto convertKanjiToDto(Kanji kanji) {
+        return KanjiDto.builder()
                 .id(kanji.getId())
                 .kanji(kanji.getKanji())
                 .onReading(kanji.getOnReading())

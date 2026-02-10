@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KanjiDTO {
+public class KanjiDto {
     private Long id;
     private String kanji;
     private String onReading;

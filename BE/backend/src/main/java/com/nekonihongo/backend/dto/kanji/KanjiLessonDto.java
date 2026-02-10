@@ -11,10 +11,10 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KanjiLessonDTO {
+public class KanjiLessonDto {
     private Integer lessonId;
     private String lessonTitle;
     private String icon;
     private Integer displayOrder;
-    private List<KanjiDTO> kanji;
+    private List<KanjiDto> kanji;
 }
