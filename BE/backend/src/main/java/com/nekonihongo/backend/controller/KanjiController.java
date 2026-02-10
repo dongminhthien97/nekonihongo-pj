@@ -9,9 +9,11 @@ import com.nekonihongo.backend.dto.kanji.KanjiLessonDto;
 import com.nekonihongo.backend.entity.KanjiLesson;
 import com.nekonihongo.backend.enums.JlptLevelType;
 import com.nekonihongo.backend.repository.KanjiLessonRepository;
+import com.nekonihongo.backend.service.KanjiLessonService;
 import com.nekonihongo.backend.service.KanjiService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Comparator;
@@ -24,42 +26,13 @@ import java.util.List;
 public class KanjiController {
 
         private final KanjiLessonRepository repository;
+        private final KanjiLessonService kanjiLessonService;
         private final KanjiService kanjiService;
 
         @GetMapping("/lessons")
-        public ApiResponse<List<KanjiLessonDto>> getAllLessons() {
-                List<KanjiLesson> lessons = repository.findAllWithKanji();
-
-                List<KanjiLessonDto> dtos = lessons.stream()
-                                .sorted(Comparator.comparing(KanjiLesson::getDisplayOrder))
-                                .map(lesson -> new KanjiLessonDto(
-                                                lesson.getId(),
-                                                lesson.getTitle(),
-                                                lesson.getIcon(),
-                                                lesson.getKanjiList().stream()
-                                                                .sorted(Comparator.comparing(k -> k.getDisplayOrder()))
-                                                                .map(k -> new KanjiDto(
-                                                                                k.getKanji(),
-                                                                                k.getOnReading(),
-                                                                                k.getKunReading() != null
-                                                                                                ? k.getKunReading()
-                                                                                                : "",
-                                                                                k.getHanViet(),
-                                                                                k.getMeaning(),
-                                                                                k.getStrokes(),
-                                                                                k.getCompounds().stream()
-                                                                                                .sorted(Comparator
-                                                                                                                .comparing(c -> c
-                                                                                                                                .getDisplayOrder()))
-                                                                                                .map(c -> new KanjiCompoundDto(
-                                                                                                                c.getWord(),
-                                                                                                                c.getReading(),
-                                                                                                                c.getMeaning()))
-                                                                                                .toList()))
-                                                                .toList()))
-                                .toList();
-
-                return ApiResponse.success("Lấy danh sách bài học Kanji thành công!", dtos);
+        public ResponseEntity<List<KanjiLessonDto>> getAllKanjiLessons() {
+                List<KanjiLessonDto> lessonDtos = kanjiLessonService.getAllKanjiLessons();
+                return ResponseEntity.ok(lessonDtos);
         }
 
         @GetMapping("/lessons/{id}")
