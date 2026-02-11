@@ -95,7 +95,7 @@ public class JwtService {
         } catch (MalformedJwtException e) {
             System.out.println("JWT token is malformed: " + e.getMessage());
             return false;
-        } catch (SignatureException e) {
+        } catch (io.jsonwebtoken.security.SignatureException e) {
             System.out.println("JWT signature is invalid: " + e.getMessage());
             return false;
         } catch (IllegalArgumentException e) {

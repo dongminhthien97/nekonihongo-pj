@@ -19,9 +19,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -112,7 +110,8 @@ public class SecurityConfig {
                                 "Content-Type",
                                 "Accept",
                                 "Origin",
-                                "X-Requested-With"));
+                                "X-Requested-With",
+                                "X-XSRF-TOKEN"));
 
                 // Handle allowed origins from environment
                 if (allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty()) {
@@ -128,6 +127,9 @@ public class SecurityConfig {
                 // Only allow credentials if specific origins are configured
                 config.setAllowCredentials(allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty());
                 config.setMaxAge(3600L);
+
+                // Add exposed headers for better client-side error handling
+                config.setExposedHeaders(List.of("Authorization", "Content-Type"));
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", config);

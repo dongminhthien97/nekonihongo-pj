@@ -3,7 +3,6 @@
 package com.nekonihongo.backend.security;
 
 import com.nekonihongo.backend.entity.User;
-import com.nekonihongo.backend.entity.User.Role;
 import com.nekonihongo.backend.entity.User.Status;
 
 import org.springframework.security.core.GrantedAuthority;

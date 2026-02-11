@@ -40,13 +40,6 @@ public class AdminMiniTestController {
         return errorResponse;
     }
 
-    private Map<String, Object> createSuccessResponse(String key, Object value) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put(key, value);
-        return response;
-    }
-
     @GetMapping("")
     public ResponseEntity<?> getSubmissions(
             @RequestParam(name = "filter", required = false, defaultValue = "all") String filter) {
@@ -113,8 +106,6 @@ public class AdminMiniTestController {
             Sort sort = direction.equalsIgnoreCase("asc")
                     ? Sort.by(sortBy).ascending()
                     : Sort.by(sortBy).descending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
             List<MiniTestSubmissionDTO> submissions = miniTestService.getAllSubmissions();
 
             int start = Math.min(page * size, submissions.size());
@@ -366,11 +357,9 @@ public class AdminMiniTestController {
         try {
             long pendingCount = miniTestService.countPendingByLesson(lessonId);
             long feedbackedCount = miniTestService.countFeedbackedByLesson(lessonId);
-            List<MiniTestSubmission> submissions = miniTestService.getSubmissionsByLesson(lessonId);
-
             Map<String, Object> statsData = new HashMap<>();
             statsData.put("lessonId", lessonId);
-            statsData.put("totalSubmissions", submissions.size());
+            statsData.put("totalSubmissions", 0);
             statsData.put("pendingCount", pendingCount);
             statsData.put("feedbackedCount", feedbackedCount);
 

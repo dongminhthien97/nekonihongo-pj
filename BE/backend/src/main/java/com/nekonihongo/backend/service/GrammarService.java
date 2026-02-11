@@ -1,8 +1,6 @@
 // src/main/java/com/nekonihongo/backend/service/GrammarService.java
 package com.nekonihongo.backend.service;
 
-import com.nekonihongo.backend.dto.ApiResponse;
-import com.nekonihongo.backend.dto.GrammarCountDTO;
 import com.nekonihongo.backend.dto.GrammarPatternDTO;
 import com.nekonihongo.backend.entity.GrammarPattern;
 import com.nekonihongo.backend.repository.GrammarPatternRepository;

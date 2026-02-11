@@ -1,6 +1,5 @@
 package com.nekonihongo.backend.controller;
 
-import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.kanji.KanjiCompoundDto;
 import com.nekonihongo.backend.service.KanjiCompoundService;
 

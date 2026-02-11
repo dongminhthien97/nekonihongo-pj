@@ -1,7 +1,6 @@
 // src/main/java/com/nekonihongo/backend/controller/KanjiController.java
 package com.nekonihongo.backend.controller;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -14,12 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.KanjiJlptDTO;
-import com.nekonihongo.backend.dto.kanji.KanjiCompoundDto;
-import com.nekonihongo.backend.dto.kanji.KanjiDto;
 import com.nekonihongo.backend.dto.kanji.KanjiLessonDto;
-import com.nekonihongo.backend.entity.KanjiLesson;
 import com.nekonihongo.backend.enums.JlptLevelType;
-import com.nekonihongo.backend.repository.KanjiLessonRepository;
 import com.nekonihongo.backend.service.KanjiLessonService;
 import com.nekonihongo.backend.service.KanjiService;
 
@@ -38,15 +33,27 @@ public class KanjiController {
 
         @GetMapping("/lessons")
         public ResponseEntity<List<KanjiLessonDto>> getAllKanjiLessons() {
-                logger.info("Received request for all Kanji lessons");
+                logger.info("=== START: HTTP GET /api/kanji/lessons ===");
+                logger.info("Step 1: Received request for all Kanji lessons");
                 long startTime = System.currentTimeMillis();
+                logger.info("Step 2: Starting service call...");
 
                 List<KanjiLessonDto> lessonDtos = kanjiLessonService.getAllKanjiLessons();
 
-                long duration = System.currentTimeMillis() - startTime;
-                logger.info("Returning " + lessonDtos.size() + " lessons in " + duration + "ms");
+                long serviceTime = System.currentTimeMillis() - startTime;
+                logger.info("Step 3: Service call completed in " + serviceTime + "ms");
+                logger.info("Step 4: Service returned " + lessonDtos.size() + " lessons");
 
-                return ResponseEntity.ok(lessonDtos);
+                long responseStartTime = System.currentTimeMillis();
+                ResponseEntity<List<KanjiLessonDto>> response = ResponseEntity.ok(lessonDtos);
+                long responseTime = System.currentTimeMillis() - responseStartTime;
+
+                long totalTime = System.currentTimeMillis() - startTime;
+                logger.info("Step 5: HTTP response created in " + responseTime + "ms");
+                logger.info("Step 6: Total request processing time: " + totalTime + "ms");
+                logger.info("=== END: HTTP GET /api/kanji/lessons ===");
+
+                return response;
         }
 
         @GetMapping("/lessons/{id}")

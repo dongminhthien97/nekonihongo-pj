@@ -3,7 +3,6 @@ package com.nekonihongo.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.Builder.Default;
 import java.util.ArrayList;
 import java.util.List;
 

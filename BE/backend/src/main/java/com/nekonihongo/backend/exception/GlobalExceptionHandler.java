@@ -1,6 +1,7 @@
 package com.nekonihongo.backend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import jakarta.servlet.ServletException;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -135,6 +138,20 @@ public class GlobalExceptionHandler {
                                                 HttpStatus.UNAUTHORIZED,
                                                 "Sai tài khoản hoặc mật khẩu",
                                                 request.getRequestURI()));
+        }
+
+        /**
+         * Handle broken pipe exceptions (client disconnected) - ignore these as they
+         * are not server errors
+         */
+        @ExceptionHandler(IOException.class)
+        public void handleClientAbortException(IOException ex, HttpServletRequest request) {
+                // Log as debug/info level since this is expected behavior when clients
+                // disconnect
+                log.debug("Client disconnected (broken pipe) | path={} | message={}",
+                                request.getRequestURI(),
+                                ex.getMessage());
+                // Don't return any response - let the connection close naturally
         }
 
         @ExceptionHandler(Exception.class)
