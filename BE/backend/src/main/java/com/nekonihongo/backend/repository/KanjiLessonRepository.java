@@ -20,4 +20,13 @@ public interface KanjiLessonRepository extends JpaRepository<KanjiLesson, Intege
 
     @EntityGraph(attributePaths = { "kanjiList", "kanjiList.compounds" })
     Optional<KanjiLesson> findById(Integer id);
+
+    @Query("""
+            SELECT DISTINCT l
+            FROM KanjiLesson l
+            LEFT JOIN FETCH l.kanjiList k
+            LEFT JOIN FETCH k.compounds
+            ORDER BY l.displayOrder, k.displayOrder
+            """)
+    List<KanjiLesson> findAllWithKanjiAndCompounds();
 }
