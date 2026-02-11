@@ -1,5 +1,6 @@
 package com.nekonihongo.backend.controller;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.QuestionResponseDTO;
 import com.nekonihongo.backend.service.GrammarQuestionService;
 import lombok.RequiredArgsConstructor;
@@ -8,9 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/grammar")
@@ -26,7 +25,7 @@ public class GrammarQuestionController {
      */
     @GetMapping("/mini-test/questions")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getQuestions(
+    public ResponseEntity<ApiResponse<List<QuestionResponseDTO>>> getQuestions(
             @RequestParam(value = "lessonId", required = false) Integer lessonId,
             @RequestParam(value = "lesson_id", required = false) Integer lessonIdLegacy) {
 
@@ -34,20 +33,15 @@ public class GrammarQuestionController {
 
         if (id == null) {
             log.warn("GET /api/grammar/mini-test/questions - Missing lessonId");
-            throw new IllegalArgumentException("lessonId is required");
+            return ResponseEntity.badRequest().body(ApiResponse.error("lessonId is required", "MISSING_LESSON_ID"));
         }
 
         log.info("GET /api/grammar/mini-test/questions - Fetching questions for lesson: {}", id);
 
         List<QuestionResponseDTO> questions = grammarQuestionService.getQuestionsByLesson(id);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", questions);
-        response.put("count", questions.size());
-
         log.info("GET /api/grammar/mini-test/questions - Returning {} questions", questions.size());
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(questions));
     }
 }

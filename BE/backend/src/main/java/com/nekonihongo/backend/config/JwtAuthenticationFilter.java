@@ -15,10 +15,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.util.AntPathMatcher;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -26,30 +24,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
-    private static final List<String> PUBLIC_PATTERNS = List.of(
-            "/auth/**",
-            "/api/auth/**",
-            "/api/**/preview/**",
-            "/api/**/public/**",
-            "/health",
-            "/actuator/health",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/error",
-            "/favicon.ico");
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        // Always skip JWT filter for CORS preflight requests
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return true;
-        }
-
-        return PUBLIC_PATTERNS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        return path.startsWith("/api/auth/") ||
+                path.equals("/health") ||
+                path.equals("/api/health") ||
+                path.startsWith("/api/grammar/") ||
+                path.startsWith("/api/vocabulary/") ||
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-resources") ||
+                path.startsWith("/webjars/") ||
+                path.equals("/error") ||
+                path.equals("/favicon.ico");
     }
 
     @Override
@@ -60,7 +50,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Skip processing if no Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -70,46 +59,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = null;
 
         try {
-            // Validate JWT token
-            if (!jwtService.isTokenValid(jwt)) {
-                sendUnauthorized(response);
-                return;
-            }
-
             email = jwtService.extractEmail(jwt);
         } catch (Exception e) {
-            // Log the exception for debugging
-            System.out.println("JWT validation failed: " + e.getMessage());
-            sendUnauthorized(response);
-            return;
+            // Invalid token format
         }
 
-        // Set authentication in SecurityContext
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                var authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                if (jwtService.isTokenValid(jwt)) {
+                    var authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             } catch (Exception e) {
-                // Clear context and return 401 for user lookup failures
                 SecurityContextHolder.clearContext();
-                sendUnauthorized(response);
-                return;
             }
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private void sendUnauthorized(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write(
-                "{\"error\":\"Unauthorized\",\"message\":\"Token khong hop le hoac het han\"}");
     }
 }

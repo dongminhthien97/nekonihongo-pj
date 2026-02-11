@@ -1,8 +1,9 @@
 package com.nekonihongo.backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nekonihongo.backend.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,108 +29,94 @@ import java.util.List;
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
-
-        // ENV: app.cors.allowed-origins=https://xxx,https://yyy
-        @Value("${app.cors.allowed-origins:}")
-        private String allowedOriginsProperty;
+        private final ObjectMapper objectMapper;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
-                                // Disable CSRF for stateless JWT authentication
                                 .csrf(csrf -> csrf.disable())
-
-                                // Disable form login and HTTP basic authentication
-                                .formLogin(form -> form.disable())
-                                .httpBasic(basic -> basic.disable())
-
-                                // Enable CORS
                                 .cors(Customizer.withDefaults())
 
-                                // Configure exception handling
+                                // Xử lý lỗi 401 và 403
                                 .exceptionHandling(ex -> ex
-                                                .authenticationEntryPoint((req, res, e) -> {
+                                                .authenticationEntryPoint((req, res, authException) -> {
                                                         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                                        res.setContentType("application/json");
-                                                        res.getWriter().write(
-                                                                        """
-                                                                                            {"error":"Unauthorized","message":"Token không hợp lệ hoặc hết hạn"}
-                                                                                        """);
+                                                        res.setContentType("application/json;charset=UTF-8");
+                                                        res.getWriter().write(objectMapper.writeValueAsString(
+                                                                        ApiResponse.error("Unauthorized",
+                                                                                        "UNAUTHORIZED")));
                                                 })
-                                                .accessDeniedHandler((req, res, e) -> {
+                                                .accessDeniedHandler((req, res, accessDeniedException) -> {
                                                         res.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                                                        res.setContentType("application/json");
-                                                        res.getWriter().write(
-                                                                        """
-                                                                                            {"error":"Forbidden","message":"Bạn không có quyền truy cập"}
-                                                                                        """);
+                                                        res.setContentType("application/json;charset=UTF-8");
+                                                        res.getWriter().write(objectMapper.writeValueAsString(
+                                                                        ApiResponse.error("Forbidden", "FORBIDDEN")));
                                                 }))
 
-                                // Configure authorization rules
                                 .authorizeHttpRequests(auth -> auth
-                                                // Always allow OPTIONS (preflight) requests
-                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                                                // Public endpoints - explicitly allow auth endpoints
-                                                .requestMatchers(
-                                                                "/api/auth/**",
-                                                                "/health",
-                                                                "/actuator/health",
-                                                                "/swagger-ui/**",
-                                                                "/v3/api-docs/**")
+                                                .requestMatchers("/health", "/api/health").permitAll()
+                                                // Swagger và tài liệu API
+                                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                                                "/v3/api-docs/**", "/swagger-resources/**",
+                                                                "/webjars/**")
                                                 .permitAll()
 
-                                                // Admin endpoints require ADMIN role
+                                                // Các API công khai
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/grammar/lessons").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/grammar/**").permitAll()
+                                                .requestMatchers("/api/vocabulary/**").permitAll()
+                                                .requestMatchers("/api/vocabulary/n5/**").permitAll()
+                                                .requestMatchers("/api/kanji/n5/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/kanji/lessons").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/exercises/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/exercises/submit").permitAll()
+                                                .requestMatchers("/api/hiragana/**").permitAll()
+                                                .requestMatchers("/api/katakana/**").permitAll()
+                                                .requestMatchers("/api/admin/mini-test/**").permitAll()
+                                                .requestMatchers("/api/user/mini-test/**").permitAll()
+                                                .requestMatchers("/api/grammar-tests/**").permitAll()
+                                                .requestMatchers("/api/grammar/mini-test/**").permitAll()
+                                                .requestMatchers("/api/admin/questions/**").permitAll()
+                                                .requestMatchers(
+                                                                "/api/admin/questions/lesson/{lessonId}/correct-answers")
+                                                .permitAll()
+                                                .requestMatchers("/api/grammar/jlpt/**").permitAll()
+                                                .requestMatchers("/api/kanji/jlpt/{level}/**").permitAll()
+                                                .requestMatchers("/api/kanji/jlpt/{level}/count").permitAll()
+
+                                                // Các API cần đăng nhập
+                                                .requestMatchers("/api/user/progress/vocabulary").authenticated()
+                                                .requestMatchers("/api/user/me/**").authenticated()
+                                                .requestMatchers("/api/user/**").authenticated()
+
+                                                // Admin APIs
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                                                // All other API endpoints require authentication
-                                                .requestMatchers("/api/**").authenticated()
+                                                // Tất cả còn lại cần đăng nhập
+                                                .anyRequest().authenticated())
 
-                                                // Everything else is denied by default
-                                                .anyRequest().denyAll())
+                                // Stateless session
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                                // Use stateless session management
-                                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                                // Add JWT filter before UsernamePasswordAuthenticationFilter
+                                // Thêm JWT filter
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
 
+        // CORS configuration bean
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
-
-                // Always allow OPTIONS (preflight) requests
-                config.setAllowedMethods(List.of(
-                                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-                config.setAllowedHeaders(List.of(
-                                "Authorization",
-                                "Content-Type",
-                                "Accept",
-                                "Origin",
-                                "X-Requested-With",
-                                "X-XSRF-TOKEN"));
-
-                // Handle allowed origins from environment
-                if (allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty()) {
-                        String[] origins = allowedOriginsProperty.split(",");
-                        config.setAllowedOriginPatterns(List.of(origins));
-                        System.out.println("CORS allowed origins: " + allowedOriginsProperty);
-                } else {
-                        // If no origins specified, allow all but don't set credentials
-                        config.setAllowedOriginPatterns(List.of("*"));
-                        System.out.println("CORS: All origins allowed (no credentials)");
-                }
-
-                // Only allow credentials if specific origins are configured
-                config.setAllowCredentials(allowedOriginsProperty != null && !allowedOriginsProperty.trim().isEmpty());
-                config.setMaxAge(3600L);
-
-                // Add exposed headers for better client-side error handling
-                config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+                config.setAllowCredentials(true);
+                config.setAllowedOrigins(List.of(
+                                "http://localhost:5173",
+                                "http://localhost:3000",
+                                "http://127.0.0.1:5173"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", config);
@@ -138,6 +125,8 @@ public class SecurityConfig {
 
         @Bean
         public PasswordEncoder passwordEncoder() {
+                // Production: dùng BCrypt (mạnh)
                 return new BCryptPasswordEncoder();
+                // Dev/test: NoOpPasswordEncoder.getInstance() nếu cần
         }
 }

@@ -1,4 +1,3 @@
-// HiraganaService.java
 package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.HiraganaDTO;
@@ -7,7 +6,9 @@ import com.nekonihongo.backend.entity.Hiragana;
 import com.nekonihongo.backend.mapper.HiraganaMapper;
 import com.nekonihongo.backend.repository.HiraganaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +33,8 @@ public class HiraganaService {
     }
 
     public HiraganaDTO createHiragana(HiraganaRequest request) {
-        // Check if character already exists
         if (hiraganaRepository.findByCharacter(request.getCharacter()).isPresent()) {
-            throw new RuntimeException("Hiragana character already exists");
+            throw new IllegalArgumentException("Character already exists");
         }
 
         Hiragana hiragana = hiraganaMapper.toEntity(request);
@@ -44,12 +44,11 @@ public class HiraganaService {
 
     public HiraganaDTO updateHiragana(Integer id, HiraganaRequest request) {
         Hiragana existing = hiraganaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Hiragana not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hiragana not found"));
 
-        // Check if character is being changed and already exists
-        if (!existing.getCharacter().equals(request.getCharacter()) &&
-                hiraganaRepository.findByCharacter(request.getCharacter()).isPresent()) {
-            throw new RuntimeException("Hiragana character already exists");
+        if (!existing.getCharacter().equals(request.getCharacter())
+                && hiraganaRepository.findByCharacter(request.getCharacter()).isPresent()) {
+            throw new IllegalArgumentException("Character already exists");
         }
 
         existing.setCharacter(request.getCharacter());
@@ -63,7 +62,7 @@ public class HiraganaService {
 
     public void deleteHiragana(Integer id) {
         if (!hiraganaRepository.existsById(id)) {
-            throw new RuntimeException("Hiragana not found with id: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hiragana not found");
         }
         hiraganaRepository.deleteById(id);
     }

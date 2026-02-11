@@ -1,6 +1,6 @@
-// src/main/java/com/nekonihongo/backend/controller/AdminQuestionController.java
 package com.nekonihongo.backend.controller;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.entity.GrammarQuestion;
 import com.nekonihongo.backend.repository.GrammarQuestionRepository;
 import lombok.AllArgsConstructor;
@@ -24,34 +24,29 @@ public class AdminQuestionController {
     private final GrammarQuestionRepository grammarQuestionRepository;
 
     @GetMapping("/lesson/{lessonId}")
-    public ResponseEntity<?> getQuestionsByLesson(@PathVariable(name = "lessonId") Integer lessonId) {
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getQuestionsByLesson(
+            @PathVariable(name = "lessonId") Integer lessonId) {
         try {
             List<GrammarQuestion> questions = grammarQuestionRepository.findByLessonId(lessonId);
 
             if (questions.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "data", Collections.emptyList(),
-                        "message", "No questions found for this lesson"));
+                return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
             }
 
             List<Map<String, Object>> questionDTOs = questions.stream()
                     .map(this::convertToQuestionDTO)
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "data", questionDTOs,
-                    "count", questions.size()));
+            return ResponseEntity.ok(ApiResponse.success(questionDTOs));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Error getting questions: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error getting questions: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @PostMapping("/evaluate-answers")
-    public ResponseEntity<?> evaluateAnswers(@RequestBody EvaluateAnswersRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> evaluateAnswers(
+            @RequestBody EvaluateAnswersRequest request) {
         try {
             List<GrammarQuestion> questions = grammarQuestionRepository.findByLessonId(request.getLessonId());
             Map<Long, GrammarQuestion> questionMap = questions.stream()
@@ -135,7 +130,6 @@ public class AdminQuestionController {
                     .thenComparing(EvaluatedAnswer::getSubQuestionIndex));
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("totalScore", totalScore);
             response.put("maxPossibleScore", maxPossibleScore);
             response.put("percentage",
@@ -143,46 +137,39 @@ public class AdminQuestionController {
             response.put("evaluatedAnswers", evaluatedAnswers);
             response.put("lessonId", request.getLessonId());
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Error evaluating answers: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error evaluating answers: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/{questionId}")
-    public ResponseEntity<?> getQuestionById(@PathVariable(name = "questionId") Long questionId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getQuestionById(
+            @PathVariable(name = "questionId") Long questionId) {
         try {
             Optional<GrammarQuestion> questionOpt = grammarQuestionRepository.findById(questionId);
 
             if (questionOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "success", false,
-                        "message", "Question not found"));
+                return ResponseEntity.status(404).body(ApiResponse.error("Question not found", "NOT_FOUND"));
             }
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "data", convertToQuestionDTO(questionOpt.get())));
+            return ResponseEntity.ok(ApiResponse.success(convertToQuestionDTO(questionOpt.get())));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Error getting question"));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error getting question", "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/lesson/{lessonId}/correct-answers")
-    public ResponseEntity<?> getCorrectAnswersByLesson(@PathVariable(name = "lessonId") Integer lessonId) {
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getCorrectAnswersByLesson(
+            @PathVariable(name = "lessonId") Integer lessonId) {
         try {
             List<GrammarQuestion> questions = grammarQuestionRepository.findByLessonId(lessonId);
 
             if (questions.isEmpty()) {
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "data", List.of(),
-                        "message", "No questions found for this lesson"));
+                return ResponseEntity.ok(ApiResponse.success(List.of()));
             }
 
             List<Map<String, Object>> questionAnswers = questions.stream()
@@ -211,14 +198,10 @@ public class AdminQuestionController {
                     })
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "data", questionAnswers,
-                    "count", questions.size()));
+            return ResponseEntity.ok(ApiResponse.success(questionAnswers));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Error getting correct answers: " + e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error getting correct answers: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 

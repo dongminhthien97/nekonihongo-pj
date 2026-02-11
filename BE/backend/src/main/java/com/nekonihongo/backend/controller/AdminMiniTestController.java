@@ -1,6 +1,6 @@
-// src/main/java/com/nekonihongo/backend/controller/AdminMiniTestController.java
 package com.nekonihongo.backend.controller;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.MiniTestSubmissionDTO;
 import com.nekonihongo.backend.entity.MiniTestSubmission;
 import com.nekonihongo.backend.entity.User;
@@ -32,16 +32,8 @@ public class AdminMiniTestController {
     private final MiniTestService miniTestService;
     private final GrammarQuestionRepository grammarQuestionRepository;
 
-    private Map<String, Object> createErrorResponse(Exception e) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("success", false);
-        errorResponse.put("message", "Lỗi server: " +
-                (e.getMessage() != null ? e.getMessage() : "Không xác định"));
-        return errorResponse;
-    }
-
     @GetMapping("")
-    public ResponseEntity<?> getSubmissions(
+    public ResponseEntity<ApiResponse<List<MiniTestSubmissionDTO>>> getSubmissions(
             @RequestParam(name = "filter", required = false, defaultValue = "all") String filter) {
 
         try {
@@ -53,50 +45,37 @@ public class AdminMiniTestController {
                 submissions = miniTestService.getAllSubmissions();
             }
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", submissions);
-            response.put("total", submissions.size());
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/pending-count")
-    public ResponseEntity<?> getPendingCount() {
+    public ResponseEntity<ApiResponse<Long>> getPendingCount() {
         try {
             long count = miniTestService.getPendingCount();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("count", count);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(count));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<?> getPendingSubmissions() {
+    public ResponseEntity<ApiResponse<List<MiniTestSubmissionDTO>>> getPendingSubmissions() {
         try {
             List<MiniTestSubmissionDTO> submissions = miniTestService.getPendingSubmissions();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", submissions);
-            response.put("count", submissions.size());
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(submissions));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/submissions")
-    public ResponseEntity<?> getAllSubmissions(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllSubmissions(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             @RequestParam(name = "sortBy", defaultValue = "submittedAt") String sortBy,
@@ -113,27 +92,24 @@ public class AdminMiniTestController {
             List<MiniTestSubmissionDTO> pagedSubmissions = submissions.subList(start, end);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("data", pagedSubmissions);
             response.put("currentPage", page);
             response.put("totalItems", submissions.size());
             response.put("totalPages", (int) Math.ceil((double) submissions.size() / size));
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/submission/{id}")
-    public ResponseEntity<?> getSubmissionById(@PathVariable(name = "id") Long id) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSubmissionById(@PathVariable(name = "id") Long id) {
         try {
             var submissionOpt = miniTestService.getSubmissionById(id);
             if (submissionOpt.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Không tìm thấy bài nộp");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(ApiResponse.error("Submission not found", "NOT_FOUND"));
             }
 
             var submission = submissionOpt.get();
@@ -148,25 +124,20 @@ public class AdminMiniTestController {
             submissionData.put("timeSpent", submission.getTimeSpent());
             submissionData.put("score", submission.getScore());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", submissionData);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(submissionData));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/{submissionId}/details")
-    public ResponseEntity<?> getSubmissionDetails(@PathVariable(name = "submissionId") Long submissionId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSubmissionDetails(
+            @PathVariable(name = "submissionId") Long submissionId) {
         try {
             Optional<MiniTestSubmission> submissionOpt = miniTestService.getSubmissionById(submissionId);
             if (submissionOpt.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Không tìm thấy bài nộp");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(ApiResponse.error("Submission not found", "NOT_FOUND"));
             }
 
             MiniTestSubmission submission = submissionOpt.get();
@@ -196,18 +167,15 @@ public class AdminMiniTestController {
                 submissionData.put("userEmail", "N/A");
             }
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", submissionData);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(submissionData));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @PostMapping("/submission/{id}/feedback")
-    public ResponseEntity<?> addFeedbackWithScore(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> addFeedbackWithScore(
             @PathVariable(name = "id") Long submissionId,
             @RequestBody Map<String, Object> feedbackRequest) {
 
@@ -228,10 +196,8 @@ public class AdminMiniTestController {
                             try {
                                 score = Integer.parseInt(scoreStr);
                             } catch (NumberFormatException e) {
-                                Map<String, Object> errorResponse = new HashMap<>();
-                                errorResponse.put("success", false);
-                                errorResponse.put("message", "Định dạng điểm không hợp lệ. Phải là số nguyên.");
-                                return ResponseEntity.badRequest().body(errorResponse);
+                                return ResponseEntity.badRequest().body(ApiResponse
+                                        .error("Invalid score format. Must be an integer.", "INVALID_SCORE"));
                             }
                         } else {
                             score = 0;
@@ -259,7 +225,6 @@ public class AdminMiniTestController {
             var result = miniTestService.scoreAndFeedback(submissionId, feedback, score);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", result.isSuccess());
             response.put("message", result.getMessage());
 
             if (result.getSubmissionId() != null) {
@@ -271,22 +236,18 @@ public class AdminMiniTestController {
             }
 
             if (result.isSuccess()) {
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(ApiResponse.success(response));
             } else {
-                return ResponseEntity.badRequest().body(response);
+                return ResponseEntity.badRequest().body(ApiResponse.error(result.getMessage(), "OPERATION_FAILED"));
             }
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Lỗi server: " +
-                    (e.getMessage() != null ? e.getMessage() : "Không xác định"));
-
-            return ResponseEntity.internalServerError().body(errorResponse);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @PostMapping("/submission/{id}/manual-score")
-    public ResponseEntity<?> submitManualScore(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> submitManualScore(
             @PathVariable(name = "id") Long submissionId,
             @RequestBody Map<String, Object> scoreRequest) {
 
@@ -307,10 +268,8 @@ public class AdminMiniTestController {
                             try {
                                 totalScore = Integer.parseInt(scoreStr);
                             } catch (NumberFormatException e) {
-                                Map<String, Object> errorResponse = new HashMap<>();
-                                errorResponse.put("success", false);
-                                errorResponse.put("message", "Định dạng điểm không hợp lệ. Phải là số nguyên.");
-                                return ResponseEntity.badRequest().body(errorResponse);
+                                return ResponseEntity.badRequest().body(ApiResponse
+                                        .error("Invalid score format. Must be an integer.", "INVALID_SCORE"));
                             }
                         } else {
                             totalScore = 0;
@@ -332,28 +291,26 @@ public class AdminMiniTestController {
             }
 
             if (totalScore == null || totalScore < 0) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Điểm số không hợp lệ");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(ApiResponse.error("Invalid score", "INVALID_SCORE"));
             }
 
             var result = miniTestService.scoreAndFeedback(submissionId, feedback, totalScore);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", result.isSuccess());
             response.put("message", result.getMessage());
             response.put("submissionId", result.getSubmissionId());
             response.put("score", totalScore);
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/lesson/{lessonId}/stats")
-    public ResponseEntity<?> getLessonStats(@PathVariable(name = "lessonId") Integer lessonId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getLessonStats(
+            @PathVariable(name = "lessonId") Integer lessonId) {
         try {
             long pendingCount = miniTestService.countPendingByLesson(lessonId);
             long feedbackedCount = miniTestService.countFeedbackedByLesson(lessonId);
@@ -363,18 +320,15 @@ public class AdminMiniTestController {
             statsData.put("pendingCount", pendingCount);
             statsData.put("feedbackedCount", feedbackedCount);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", statsData);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(statsData));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> searchSubmissions(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> searchSubmissions(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "lessonId", required = false) Integer lessonId,
@@ -416,20 +370,20 @@ public class AdminMiniTestController {
             List<MiniTestSubmissionDTO> pagedSubmissions = filteredSubmissions.subList(start, end);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("data", pagedSubmissions);
             response.put("currentPage", page);
             response.put("totalItems", filteredSubmissions.size());
             response.put("totalPages", (int) Math.ceil((double) filteredSubmissions.size() / size));
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @PostMapping("/mark-all-read")
-    public ResponseEntity<?> markAllAsRead() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> markAllAsRead() {
         try {
             List<MiniTestSubmissionDTO> pendingSubmissions = miniTestService.getPendingSubmissions();
 
@@ -444,23 +398,22 @@ public class AdminMiniTestController {
             }
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("message", "Đã đánh dấu " + markedCount + " bài là đã đọc");
             response.put("markedCount", markedCount);
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @DeleteMapping("/submission/{id}")
-    public ResponseEntity<?> deleteSubmission(@PathVariable(name = "id") Long id) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deleteSubmission(@PathVariable(name = "id") Long id) {
         try {
             var result = miniTestService.deleteSubmissionByAdmin(id);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", result.isSuccess());
             response.put("message", result.getMessage());
 
             if (result.getSubmissionId() != null) {
@@ -468,30 +421,24 @@ public class AdminMiniTestController {
             }
 
             if (result.isSuccess()) {
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(ApiResponse.success(response));
             } else {
-                return ResponseEntity.badRequest().body(response);
+                return ResponseEntity.badRequest().body(ApiResponse.error(result.getMessage(), "OPERATION_FAILED"));
             }
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Lỗi server: " +
-                    (e.getMessage() != null ? e.getMessage() : "Không xác định"));
-
-            return ResponseEntity.internalServerError().body(errorResponse);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @PostMapping("/batch-delete")
-    public ResponseEntity<?> batchDeleteSubmissions(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> batchDeleteSubmissions(
+            @RequestBody Map<String, Object> request) {
         try {
             List<Integer> ids = (List<Integer>) request.get("ids");
 
             if (ids == null || ids.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Danh sách ID không được để trống");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(ApiResponse.error("ID list cannot be empty", "EMPTY_ID_LIST"));
             }
 
             List<Long> successIds = new ArrayList<>();
@@ -518,7 +465,6 @@ public class AdminMiniTestController {
             }
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("message", String.format("Đã xử lý %d bài nộp", ids.size()));
             response.put("total", ids.size());
             response.put("successCount", successIds.size());
@@ -533,26 +479,23 @@ public class AdminMiniTestController {
                 response.put("errors", errorMessages);
             }
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
 
         } catch (ClassCastException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Định dạng request không hợp lệ. IDs phải là mảng số nguyên");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Invalid request format. IDs must be an array of integers", "INVALID_REQUEST"));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @DeleteMapping("/batch-delete")
-    public ResponseEntity<?> batchDeleteByQueryParam(@RequestParam(name = "ids") List<Long> ids) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> batchDeleteByQueryParam(
+            @RequestParam(name = "ids") List<Long> ids) {
         try {
             if (ids == null || ids.isEmpty()) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Danh sách ID không được để trống");
-                return ResponseEntity.badRequest().body(errorResponse);
+                return ResponseEntity.badRequest().body(ApiResponse.error("ID list cannot be empty", "EMPTY_ID_LIST"));
             }
 
             List<Long> successIds = new ArrayList<>();
@@ -577,7 +520,6 @@ public class AdminMiniTestController {
             }
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("message", String.format("Đã xử lý %d bài nộp", ids.size()));
             response.put("total", ids.size());
             response.put("successCount", successIds.size());
@@ -592,36 +534,33 @@ public class AdminMiniTestController {
                 response.put("errors", errorMessages);
             }
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(createErrorResponse(e));
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Server error: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 
     @GetMapping("/mini-test/max-score/{lessonId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getMaxScoreForLesson(@PathVariable(name = "lessonId") Integer lessonId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getMaxScoreForLesson(
+            @PathVariable(name = "lessonId") Integer lessonId) {
         try {
             Integer maxScore = grammarQuestionRepository.sumPointsByLessonId(lessonId);
             Long questionCount = grammarQuestionRepository.countByLessonId(lessonId);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("lessonId", lessonId);
             response.put("maxScore", maxScore != null ? maxScore : 0);
             response.put("questionCount", questionCount);
             response.put("averagePointsPerQuestion",
                     questionCount > 0 && maxScore != null ? Math.round((double) maxScore / questionCount) : 10);
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Error getting max score: " +
-                    (e.getMessage() != null ? e.getMessage() : "Không xác định"));
-
-            return ResponseEntity.internalServerError().body(errorResponse);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error getting max score: " + e.getMessage(), "SERVER_ERROR"));
         }
     }
 }

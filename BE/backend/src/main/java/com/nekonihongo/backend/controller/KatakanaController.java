@@ -1,6 +1,6 @@
-// KatakanaController.java (tương tự)
 package com.nekonihongo.backend.controller;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.KatakanaDTO;
 import com.nekonihongo.backend.dto.request.KatakanaRequest;
 import com.nekonihongo.backend.service.KatakanaService;
@@ -9,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/katakana")
@@ -21,79 +19,37 @@ public class KatakanaController {
     private final KatakanaService katakanaService;
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllKatakana() {
+    public ResponseEntity<ApiResponse<List<KatakanaDTO>>> getAllKatakana() {
         List<KatakanaDTO> katakanaList = katakanaService.getAllKatakana();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", katakanaList);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(katakanaList));
     }
 
     @GetMapping("/{character}")
-    public ResponseEntity<Map<String, Object>> getKatakanaDetail(@PathVariable String character) {
+    public ResponseEntity<ApiResponse<KatakanaDTO>> getKatakanaDetail(@PathVariable String character) {
         KatakanaDTO katakana = katakanaService.getByCharacter(character);
-        Map<String, Object> response = new HashMap<>();
-
-        if (katakana != null) {
-            response.put("success", true);
-            response.put("data", katakana);
-            return ResponseEntity.ok(response);
-        } else {
-            response.put("success", false);
-            response.put("message", "Katakana not found");
-            return ResponseEntity.status(404).body(response);
+        if (katakana == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("Katakana not found", "NOT_FOUND"));
         }
+        return ResponseEntity.ok(ApiResponse.success(katakana));
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createKatakana(@Valid @RequestBody KatakanaRequest request) {
-        try {
-            KatakanaDTO created = katakanaService.createKatakana(request);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Katakana created successfully");
-            response.put("data", created);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+    public ResponseEntity<ApiResponse<KatakanaDTO>> createKatakana(@Valid @RequestBody KatakanaRequest request) {
+        KatakanaDTO created = katakanaService.createKatakana(request);
+        return ResponseEntity.ok(ApiResponse.success(created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateKatakana(
+    public ResponseEntity<ApiResponse<KatakanaDTO>> updateKatakana(
             @PathVariable Integer id,
             @Valid @RequestBody KatakanaRequest request) {
-        try {
-            KatakanaDTO updated = katakanaService.updateKatakana(id, request);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Katakana updated successfully");
-            response.put("data", updated);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+        KatakanaDTO updated = katakanaService.updateKatakana(id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteKatakana(@PathVariable Integer id) {
-        try {
-            katakanaService.deleteKatakana(id);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Katakana deleted successfully");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+    public ResponseEntity<ApiResponse<Void>> deleteKatakana(@PathVariable Integer id) {
+        katakanaService.deleteKatakana(id);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

@@ -1,4 +1,3 @@
-// KatakanaService.java
 package com.nekonihongo.backend.service;
 
 import com.nekonihongo.backend.dto.KatakanaDTO;
@@ -7,7 +6,9 @@ import com.nekonihongo.backend.entity.Katakana;
 import com.nekonihongo.backend.mapper.KatakanaMapper;
 import com.nekonihongo.backend.repository.KatakanaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +33,8 @@ public class KatakanaService {
     }
 
     public KatakanaDTO createKatakana(KatakanaRequest request) {
-        // Check if character already exists
         if (katakanaRepository.findByCharacter(request.getCharacter()).isPresent()) {
-            throw new RuntimeException("Katakana character already exists");
+            throw new IllegalArgumentException("Character already exists");
         }
 
         Katakana katakana = katakanaMapper.toEntity(request);
@@ -44,12 +44,11 @@ public class KatakanaService {
 
     public KatakanaDTO updateKatakana(Integer id, KatakanaRequest request) {
         Katakana existing = katakanaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Katakana not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Katakana not found"));
 
-        // Check if character is being changed and already exists
-        if (!existing.getCharacter().equals(request.getCharacter()) &&
-                katakanaRepository.findByCharacter(request.getCharacter()).isPresent()) {
-            throw new RuntimeException("Katakana character already exists");
+        if (!existing.getCharacter().equals(request.getCharacter())
+                && katakanaRepository.findByCharacter(request.getCharacter()).isPresent()) {
+            throw new IllegalArgumentException("Character already exists");
         }
 
         existing.setCharacter(request.getCharacter());
@@ -63,7 +62,7 @@ public class KatakanaService {
 
     public void deleteKatakana(Integer id) {
         if (!katakanaRepository.existsById(id)) {
-            throw new RuntimeException("Katakana not found with id: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Katakana not found");
         }
         katakanaRepository.deleteById(id);
     }

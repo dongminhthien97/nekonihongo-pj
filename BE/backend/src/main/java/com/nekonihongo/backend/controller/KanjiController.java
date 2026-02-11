@@ -1,4 +1,3 @@
-// src/main/java/com/nekonihongo/backend/controller/KanjiController.java
 package com.nekonihongo.backend.controller;
 
 import java.util.List;
@@ -63,7 +62,7 @@ public class KanjiController {
                 KanjiLessonDto lesson = kanjiLessonService.getKanjiLessonById(id);
                 if (lesson == null) {
                         logger.warning("Kanji lesson not found with ID: " + id);
-                        return ApiResponse.error("Không tìm thấy bài học Kanji");
+                        return ApiResponse.error("Không tìm thấy bài học Kanji", "NOT_FOUND");
                 }
 
                 logger.info("Successfully found Kanji lesson: " + lesson.getLessonTitle());
@@ -82,7 +81,8 @@ public class KanjiController {
                                         kanjiList);
                 } catch (IllegalArgumentException e) {
                         logger.warning("Invalid JLPT level: " + level);
-                        return ApiResponse.error("Cấp độ JLPT không hợp lệ. Các cấp độ: N5, N4, N3, N2, N1");
+                        return ApiResponse.error("Cấp độ JLPT không hợp lệ. Các cấp độ: N5, N4, N3, N2, N1",
+                                        "INVALID_LEVEL");
                 }
         }
 
@@ -105,7 +105,8 @@ public class KanjiController {
                                         count);
                 } catch (IllegalArgumentException e) {
                         logger.warning("Invalid JLPT level for count: " + level);
-                        return ApiResponse.error("Cấp độ JLPT không hợp lệ. Các cấp độ: N5, N4, N3, N2, N1");
+                        return ApiResponse.error("Cấp độ JLPT không hợp lệ. Các cấp độ: N5, N4, N3, N2, N1",
+                                        "INVALID_LEVEL");
                 }
         }
 }
