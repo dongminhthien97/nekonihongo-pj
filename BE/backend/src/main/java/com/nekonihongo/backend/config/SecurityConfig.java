@@ -114,21 +114,23 @@ public class SecurityConfig {
         // CORS configuration bean
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
+
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowCredentials(true);
-                config.setAllowedOrigins(List.of(
-                                "https://nekonihongos.vercel.app",
+
+                config.setAllowCredentials(false); // QUAN TRỌNG
+
+                config.setAllowedOriginPatterns(List.of(
+                                "https://*.vercel.app",
                                 "http://localhost:5173",
-                                "http://localhost:3000",
-                                "http://127.0.0.1:5173"));
-                config.setAllowedHeaders(List.of(
-                                "Authorization",
-                                "Content-Type"));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                                "http://localhost:3000"));
+
+                config.setAllowedMethods(List.of("*"));
+                config.setAllowedHeaders(List.of("*"));
                 config.setExposedHeaders(List.of("Authorization"));
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", config);
+
                 return source;
         }
 
