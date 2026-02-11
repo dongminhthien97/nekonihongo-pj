@@ -54,7 +54,12 @@ public class SecurityConfig {
                                                 }))
 
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/health", "/api/health").permitAll()
+                                                .requestMatchers(
+                                                                "/health",
+                                                                "/api/health",
+                                                                "/api/ping")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 // Swagger và tài liệu API
                                                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                                                 "/v3/api-docs/**", "/swagger-resources/**",
@@ -112,11 +117,15 @@ public class SecurityConfig {
                 CorsConfiguration config = new CorsConfiguration();
                 config.setAllowCredentials(true);
                 config.setAllowedOrigins(List.of(
+                                "https://nekonihongos.vercel.app",
                                 "http://localhost:5173",
                                 "http://localhost:3000",
                                 "http://127.0.0.1:5173"));
-                config.setAllowedHeaders(List.of("*"));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of(
+                                "Authorization",
+                                "Content-Type"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setExposedHeaders(List.of("Authorization"));
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", config);
