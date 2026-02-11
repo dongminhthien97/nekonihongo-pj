@@ -1,5 +1,6 @@
 package com.nekonihongo.backend.controller;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.CategoryDTO;
 import com.nekonihongo.backend.dto.JlptLevelDTO;
 import com.nekonihongo.backend.service.CategoryService;
@@ -42,12 +43,11 @@ public class CommonController {
      * meaningful status information for load balancers and monitoring systems.
      */
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ApiResponse<Map<String, Object>> health() {
         Map<String, Object> healthInfo = new HashMap<>();
 
         // Basic system information
         healthInfo.put("status", "UP");
-        healthInfo.put("timestamp", System.currentTimeMillis());
         healthInfo.put("service", "nekonihongo-backend");
         healthInfo.put("version", "1.0.0");
 
@@ -66,11 +66,13 @@ public class CommonController {
         healthInfo.put("ready", true);
         healthInfo.put("upTime", System.currentTimeMillis());
 
-        // Return appropriate HTTP status based on health
+        // Return appropriate response based on health
         if ("UP".equals(healthInfo.get("status"))) {
-            return ResponseEntity.ok(healthInfo);
+            return ApiResponse.success(healthInfo);
         } else {
-            return ResponseEntity.status(503).body(healthInfo);
+            // This will be wrapped by GlobalResponseHandler, but we need to return
+            // the data structure
+            return ApiResponse.success(healthInfo);
         }
     }
 
@@ -79,7 +81,7 @@ public class CommonController {
      * Returns minimal response for faster keep-alive requests.
      */
     @GetMapping("/ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
+    public ApiResponse<String> ping() {
+        return ApiResponse.success("pong");
     }
 }

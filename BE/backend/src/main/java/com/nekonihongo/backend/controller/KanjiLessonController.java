@@ -19,9 +19,9 @@ public class KanjiLessonController {
     private final KanjiLessonService kanjiLessonService;
 
     @GetMapping("/kanji")
-    public ResponseEntity<List<KanjiLessonDto>> getAllLessonsWithKanji() {
+    public ApiResponse<List<KanjiLessonDto>> getAllLessonsWithKanji() {
         List<KanjiLessonDto> lessons = kanjiLessonService.getAllLessonsWithKanji();
-        return ResponseEntity.ok(lessons);
+        return ApiResponse.success(lessons);
     }
 
     @GetMapping("/{id}")

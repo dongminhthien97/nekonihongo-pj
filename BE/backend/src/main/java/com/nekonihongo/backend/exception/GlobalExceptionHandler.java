@@ -1,11 +1,13 @@
 package com.nekonihongo.backend.exception;
 
+import com.nekonihongo.backend.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -24,7 +26,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
         @ExceptionHandler(ResourceNotFoundException.class)
-        public ResponseEntity<?> handleResourceNotFound(
+        public ResponseEntity<ApiResponse<?>> handleResourceNotFound(
                         ResourceNotFoundException ex,
                         HttpServletRequest request) {
 
@@ -32,14 +34,12 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI(),
                                 ex.getMessage());
 
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(
-                                HttpStatus.NOT_FOUND,
-                                ex.getMessage(),
-                                request.getRequestURI()));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body(ApiResponse.notFound(ex.getMessage()));
         }
 
         @ExceptionHandler(MissingServletRequestParameterException.class)
-        public ResponseEntity<?> handleMissingParams(
+        public ResponseEntity<ApiResponse<?>> handleMissingParams(
                         MissingServletRequestParameterException ex,
                         HttpServletRequest request) {
 
@@ -47,14 +47,13 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI(),
                                 ex.getParameterName());
 
-                return ResponseEntity.badRequest().body(errorBody(
-                                HttpStatus.BAD_REQUEST,
-                                "Required parameter is missing: " + ex.getParameterName(),
-                                request.getRequestURI()));
+                return ResponseEntity.badRequest()
+                                .body(ApiResponse.validationError(
+                                                "Required parameter is missing: " + ex.getParameterName()));
         }
 
         @ExceptionHandler(HttpMessageNotReadableException.class)
-        public ResponseEntity<?> handleMalformedJson(
+        public ResponseEntity<ApiResponse<?>> handleMalformedJson(
                         HttpMessageNotReadableException ex,
                         HttpServletRequest request) {
 
@@ -62,14 +61,12 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI(),
                                 ex.getMessage());
 
-                return ResponseEntity.badRequest().body(errorBody(
-                                HttpStatus.BAD_REQUEST,
-                                "Malformed JSON request body",
-                                request.getRequestURI()));
+                return ResponseEntity.badRequest()
+                                .body(ApiResponse.validationError("Malformed JSON request body"));
         }
 
         @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-        public ResponseEntity<?> handleMethodArgumentTypeMismatch(
+        public ResponseEntity<ApiResponse<?>> handleMethodArgumentTypeMismatch(
                         MethodArgumentTypeMismatchException ex,
                         HttpServletRequest request) {
 
@@ -79,14 +76,12 @@ public class GlobalExceptionHandler {
                                 ex.getName(),
                                 ex.getValue());
 
-                return ResponseEntity.badRequest().body(errorBody(
-                                HttpStatus.BAD_REQUEST,
-                                "Invalid parameter type: " + ex.getName(),
-                                request.getRequestURI()));
+                return ResponseEntity.badRequest()
+                                .body(ApiResponse.validationError("Invalid parameter type: " + ex.getName()));
         }
 
         @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<?> handleIllegalArgumentException(
+        public ResponseEntity<ApiResponse<?>> handleIllegalArgumentException(
                         IllegalArgumentException ex,
                         HttpServletRequest request) {
 
@@ -95,14 +90,12 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI(),
                                 ex.getMessage());
 
-                return ResponseEntity.badRequest().body(errorBody(
-                                HttpStatus.BAD_REQUEST,
-                                ex.getMessage(),
-                                request.getRequestURI()));
+                return ResponseEntity.badRequest()
+                                .body(ApiResponse.validationError(ex.getMessage()));
         }
 
         @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<?> handleMethodArgumentNotValid(
+        public ResponseEntity<ApiResponse<?>> handleMethodArgumentNotValid(
                         MethodArgumentNotValidException ex,
                         HttpServletRequest request) {
 
@@ -116,14 +109,12 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI(),
                                 message);
 
-                return ResponseEntity.badRequest().body(errorBody(
-                                HttpStatus.BAD_REQUEST,
-                                message,
-                                request.getRequestURI()));
+                return ResponseEntity.badRequest()
+                                .body(ApiResponse.validationError(message));
         }
 
         @ExceptionHandler(BadCredentialsException.class)
-        public ResponseEntity<?> handleBadCredentials(
+        public ResponseEntity<ApiResponse<?>> handleBadCredentials(
                         BadCredentialsException ex,
                         HttpServletRequest request) {
 
@@ -133,31 +124,55 @@ public class GlobalExceptionHandler {
                                 request.getMethod(),
                                 ex.getMessage());
 
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                                errorBody(
-                                                HttpStatus.UNAUTHORIZED,
-                                                "Sai tài khoản hoặc mật khẩu",
-                                                request.getRequestURI()));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(ApiResponse.unauthorized("Sai tài khoản hoặc mật khẩu"));
         }
 
-        /**
-         * Handle broken pipe exceptions (client disconnected) - ignore these as they
-         * are not server errors
-         */
-        @ExceptionHandler(IOException.class)
-        public void handleClientAbortException(IOException ex, HttpServletRequest request) {
-                // Log as debug/info level since this is expected behavior when clients
-                // disconnect
-                log.debug("Client disconnected (broken pipe) | path={} | message={}",
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<ApiResponse<?>> handleAccessDenied(
+                        AccessDeniedException ex,
+                        HttpServletRequest request) {
+
+                log.warn(
+                                "ACCESS DENIED | path={} | method={} | message={}",
                                 request.getRequestURI(),
+                                request.getMethod(),
                                 ex.getMessage());
-                // Don't return any response - let the connection close naturally
+
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body(ApiResponse.forbidden("Bạn không có quyền truy cập"));
+        }
+
+        @ExceptionHandler(RuntimeException.class)
+        public ResponseEntity<ApiResponse<?>> handleRuntimeException(
+                        RuntimeException ex,
+                        HttpServletRequest request) {
+
+                log.error(
+                                "RUNTIME EXCEPTION | path={} | method={} | message={}",
+                                request.getRequestURI(),
+                                request.getMethod(),
+                                ex.getMessage());
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponse.serverError("Lỗi hệ thống không mong muốn"));
         }
 
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<?> handleGenericException(
+        public ResponseEntity<ApiResponse<?>> handleGenericException(
                         Exception ex,
                         HttpServletRequest request) {
+
+                // Disable stacktrace logging for ClientAbortException (broken pipe)
+                if (ex instanceof IOException && ex.getMessage() != null &&
+                                (ex.getMessage().contains("Broken pipe")
+                                                || ex.getMessage().contains("Connection reset"))) {
+                        log.warn("CLIENT DISCONNECTED (Broken pipe) | path={} | message={}",
+                                        request.getRequestURI(),
+                                        ex.getMessage());
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(ApiResponse.serverError("Client disconnected"));
+                }
 
                 log.error(
                                 "INTERNAL SERVER ERROR | path={} | method={} | rootCause={}",
@@ -166,20 +181,7 @@ public class GlobalExceptionHandler {
                                 ex.getMessage(),
                                 ex);
 
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody(
-                                HttpStatus.INTERNAL_SERVER_ERROR,
-                                "Lỗi hệ thống không mong muốn",
-                                request.getRequestURI()));
-        }
-
-        private Map<String, Object> errorBody(HttpStatus status, String message, String path) {
-                Map<String, Object> body = new HashMap<>();
-                body.put("success", false);
-                body.put("status", status.value());
-                body.put("error", status.getReasonPhrase());
-                body.put("message", message);
-                body.put("path", path);
-                body.put("timestamp", OffsetDateTime.now().toString());
-                return body;
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponse.serverError("Lỗi hệ thống không mong muốn"));
         }
 }
