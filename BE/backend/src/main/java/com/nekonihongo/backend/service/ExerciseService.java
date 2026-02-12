@@ -34,7 +34,7 @@ public class ExerciseService {
 
     public List<ExerciseDTO> getExercisesByCategoryAndLevel(CategoryType category, JlptLevelType level) {
         List<Exercise> exercises = exerciseRepository
-                .findByCategoryAndLevel(category.name(), level);
+                .findByCategoryAndLevel(category, level);
 
         return exercises.stream()
                 .map(this::mapToDTO)

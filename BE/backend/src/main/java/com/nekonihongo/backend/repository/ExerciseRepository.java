@@ -52,8 +52,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
         @Query("SELECT e FROM Exercise e " +
                         "JOIN e.category c " +
                         "JOIN e.level l " +
-                        "WHERE c.name = :categoryName AND l.level = :levelType")
+                        "WHERE c.name = :categoryType AND l.level = :levelType")
         List<Exercise> findByCategoryAndLevel(
-                        @Param("categoryName") String categoryName,
+                        @Param("categoryType") CategoryType categoryType,
                         @Param("levelType") JlptLevelType levelType);
 }
