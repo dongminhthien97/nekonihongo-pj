@@ -4,8 +4,8 @@ package com.nekonihongo.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "kanji_lessons")
@@ -30,9 +30,8 @@ public class KanjiLesson {
     @Builder.Default
     private Integer displayOrder = 0;
 
-    @OneToMany(mappedBy = "lesson", cascade = { CascadeType.ALL }, // ← Fix: thêm {} để thành array
-            orphanRemoval = true)
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
     @Builder.Default
-    private List<Kanji> kanjiList = new ArrayList<>();
+    private Set<Kanji> kanjiList = new LinkedHashSet<>();
 }

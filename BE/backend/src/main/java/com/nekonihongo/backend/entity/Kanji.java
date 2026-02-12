@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Objects;
 
 @Entity
 @Table(name = "kanji")
@@ -50,4 +51,18 @@ public class Kanji {
     @Builder.Default
     private Set<KanjiCompound> compounds = new HashSet<>();
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Kanji))
+            return false;
+        Kanji kanji = (Kanji) o;
+        return Objects.equals(id, kanji.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
