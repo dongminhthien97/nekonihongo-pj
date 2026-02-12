@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionDTO {
+    private Long id;
     private int displayOrder;
     private String questionText;
     private String optionA;
@@ -17,4 +18,5 @@ public class QuestionDTO {
     private String optionD;
     private String correctOption; // "A"|"B"|"C"|"D"
     private String explanation;
+    private Long exerciseId;
 }

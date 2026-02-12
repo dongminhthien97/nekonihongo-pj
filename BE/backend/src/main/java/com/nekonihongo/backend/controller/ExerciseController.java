@@ -3,6 +3,8 @@ package com.nekonihongo.backend.controller;
 import com.nekonihongo.backend.dto.ApiResponse;
 import com.nekonihongo.backend.dto.ExerciseDTO;
 import com.nekonihongo.backend.entity.User;
+import com.nekonihongo.backend.enums.CategoryType;
+import com.nekonihongo.backend.enums.JlptLevelType;
 import com.nekonihongo.backend.repository.ActivityLogRepository;
 import com.nekonihongo.backend.service.ExerciseService;
 import com.nekonihongo.backend.service.impl.UserService;
@@ -27,24 +29,125 @@ public class ExerciseController {
     private final UserService userService;
     private final ActivityLogRepository activityLogRepository;
 
+    // ============ VOCABULARY - TẤT CẢ LEVEL ============
+
     @GetMapping("/vocabulary/n5")
     public ResponseEntity<List<ExerciseDTO>> getN5VocabularyExercises() {
-        return ResponseEntity.ok(exerciseService.getN5VocabularyExercises());
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.VOCABULARY, JlptLevelType.N5));
     }
+
+    @GetMapping("/vocabulary/n4")
+    public ResponseEntity<List<ExerciseDTO>> getN4VocabularyExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.VOCABULARY, JlptLevelType.N4));
+    }
+
+    @GetMapping("/vocabulary/n3")
+    public ResponseEntity<List<ExerciseDTO>> getN3VocabularyExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.VOCABULARY, JlptLevelType.N3));
+    }
+
+    @GetMapping("/vocabulary/n2")
+    public ResponseEntity<List<ExerciseDTO>> getN2VocabularyExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.VOCABULARY, JlptLevelType.N2));
+    }
+
+    @GetMapping("/vocabulary/n1")
+    public ResponseEntity<List<ExerciseDTO>> getN1VocabularyExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.VOCABULARY, JlptLevelType.N1));
+    }
+
+    // ============ GRAMMAR - TẤT CẢ LEVEL ============
+
+    @GetMapping("/grammar/n5")
+    public ResponseEntity<List<ExerciseDTO>> getN5GrammarExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.GRAMMAR, JlptLevelType.N5));
+    }
+
+    @GetMapping("/grammar/n4")
+    public ResponseEntity<List<ExerciseDTO>> getN4GrammarExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.GRAMMAR, JlptLevelType.N4));
+    }
+
+    @GetMapping("/grammar/n3")
+    public ResponseEntity<List<ExerciseDTO>> getN3GrammarExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.GRAMMAR, JlptLevelType.N3));
+    }
+
+    @GetMapping("/grammar/n2")
+    public ResponseEntity<List<ExerciseDTO>> getN2GrammarExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.GRAMMAR, JlptLevelType.N2));
+    }
+
+    @GetMapping("/grammar/n1")
+    public ResponseEntity<List<ExerciseDTO>> getN1GrammarExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.GRAMMAR, JlptLevelType.N1));
+    }
+
+    // ============ KANJI - TẤT CẢ LEVEL ============
+
+    @GetMapping("/kanji/n5")
+    public ResponseEntity<List<ExerciseDTO>> getN5KanjiExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.KANJI, JlptLevelType.N5));
+    }
+
+    @GetMapping("/kanji/n4")
+    public ResponseEntity<List<ExerciseDTO>> getN4KanjiExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.KANJI, JlptLevelType.N4));
+    }
+
+    @GetMapping("/kanji/n3")
+    public ResponseEntity<List<ExerciseDTO>> getN3KanjiExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.KANJI, JlptLevelType.N3));
+    }
+
+    @GetMapping("/kanji/n2")
+    public ResponseEntity<List<ExerciseDTO>> getN2KanjiExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.KANJI, JlptLevelType.N2));
+    }
+
+    @GetMapping("/kanji/n1")
+    public ResponseEntity<List<ExerciseDTO>> getN1KanjiExercises() {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategoryAndLevel(
+                CategoryType.KANJI, JlptLevelType.N1));
+    }
+
+    // ============ ENDPOINTS LINH HOẠT (DYNAMIC) ============
+
+    @GetMapping("/category/{category}/level/{level}")
+    public ResponseEntity<List<ExerciseDTO>> getExercisesByCategoryAndLevel(
+            @PathVariable String category,
+            @PathVariable String level) {
+
+        try {
+            CategoryType categoryType = CategoryType.valueOf(category.toUpperCase());
+            JlptLevelType levelType = JlptLevelType.valueOf(level.toUpperCase());
+
+            List<ExerciseDTO> exercises = exerciseService.getExercisesByCategoryAndLevel(categoryType, levelType);
+            return ResponseEntity.ok(exercises);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // ============ EXERCISE CHUNG ============
 
     @GetMapping("/{id}")
     public ResponseEntity<ExerciseDTO> getExercise(@PathVariable("id") Long id) {
         return ResponseEntity.ok(exerciseService.getExerciseById(id));
-    }
-
-    @GetMapping("/grammar/n5")
-    public ResponseEntity<List<ExerciseDTO>> getN5GrammarExercises() {
-        return ResponseEntity.ok(exerciseService.getN5GrammarExercises());
-    }
-
-    @GetMapping("/kanji/n5")
-    public ResponseEntity<List<ExerciseDTO>> getN5KanjiExercises() {
-        return ResponseEntity.ok(exerciseService.getN5KanjiExercises());
     }
 
     @PostMapping("/submit")
@@ -70,6 +173,8 @@ public class ExerciseController {
 
         return ResponseEntity.ok(ApiResponse.success("Exercise submitted", result));
     }
+
+    // ============ DEBUG ENDPOINTS ============
 
     @GetMapping("/debug/logs/count")
     public ResponseEntity<ApiResponse<Long>> getLogCount() {

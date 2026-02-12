@@ -5,6 +5,7 @@ import com.nekonihongo.backend.dto.QuestionDTO;
 import com.nekonihongo.backend.entity.*;
 import com.nekonihongo.backend.enums.CategoryType;
 import com.nekonihongo.backend.enums.JlptLevelType;
+import com.nekonihongo.backend.exception.ResourceNotFoundException;
 import com.nekonihongo.backend.repository.*;
 import lombok.*;
 import org.springframework.stereotype.Service;
@@ -25,50 +26,128 @@ public class ExerciseService {
     private final LevelCalculationService levelService;
     private final ActivityLogService activityLogService;
     private final ActivityLogRepository activityLogRepository;
+    private final CategoryRepository categoryRepository;
+    private final LevelRepository levelRepository;
 
-    public List<ExerciseDTO> getN5VocabularyExercises() {
+    // ============ GENERIC METHOD - LẤY EXERCISE THEO CATEGORY & LEVEL ============
+
+    public List<ExerciseDTO> getExercisesByCategoryAndLevel(CategoryType category, JlptLevelType level) {
         List<Exercise> exercises = exerciseRepository
-                .findByCategory_NameAndLevel_LevelOrderByLessonNumber(
-                        CategoryType.VOCABULARY,
-                        JlptLevelType.N5);
-        return exercises.stream().map(this::mapToDTO).collect(Collectors.toList());
+                .findByCategory_NameAndLevel_LevelOrderByLessonNumberAsc(category, level);
+
+        return exercises.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
+    // ============ DYNAMIC METHODS FOR SPECIFIC LEVELS ============
+
+    // Vocabulary methods
+    public List<ExerciseDTO> getN5VocabularyExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.VOCABULARY, JlptLevelType.N5);
+    }
+
+    public List<ExerciseDTO> getN4VocabularyExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.VOCABULARY, JlptLevelType.N4);
+    }
+
+    public List<ExerciseDTO> getN3VocabularyExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.VOCABULARY, JlptLevelType.N3);
+    }
+
+    public List<ExerciseDTO> getN2VocabularyExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.VOCABULARY, JlptLevelType.N2);
+    }
+
+    public List<ExerciseDTO> getN1VocabularyExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.VOCABULARY, JlptLevelType.N1);
+    }
+
+    // Grammar methods
+    public List<ExerciseDTO> getN5GrammarExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.GRAMMAR, JlptLevelType.N5);
+    }
+
+    public List<ExerciseDTO> getN4GrammarExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.GRAMMAR, JlptLevelType.N4);
+    }
+
+    public List<ExerciseDTO> getN3GrammarExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.GRAMMAR, JlptLevelType.N3);
+    }
+
+    public List<ExerciseDTO> getN2GrammarExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.GRAMMAR, JlptLevelType.N2);
+    }
+
+    public List<ExerciseDTO> getN1GrammarExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.GRAMMAR, JlptLevelType.N1);
+    }
+
+    // Kanji methods
+    public List<ExerciseDTO> getN5KanjiExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.KANJI, JlptLevelType.N5);
+    }
+
+    public List<ExerciseDTO> getN4KanjiExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.KANJI, JlptLevelType.N4);
+    }
+
+    public List<ExerciseDTO> getN3KanjiExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.KANJI, JlptLevelType.N3);
+    }
+
+    public List<ExerciseDTO> getN2KanjiExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.KANJI, JlptLevelType.N2);
+    }
+
+    public List<ExerciseDTO> getN1KanjiExercises() {
+        return getExercisesByCategoryAndLevel(CategoryType.KANJI, JlptLevelType.N1);
+    }
+
+    // ============ CHECK AVAILABILITY ============
+
+    public boolean hasExercises(CategoryType category, JlptLevelType level) {
+        return exerciseRepository.existsByCategory_NameAndLevel_Level(category, level);
+    }
+
+    public long countExercises(CategoryType category, JlptLevelType level) {
+        return exerciseRepository.countByCategory_NameAndLevel_Level(category, level);
+    }
+
+    // ============ EXERCISE BY ID ============
+
     public ExerciseDTO getExerciseById(Long id) {
-        Exercise exercise = exerciseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
+        Exercise exercise = exerciseRepository.findByIdWithQuestions(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài tập với ID: " + id));
         return mapToDTO(exercise);
     }
 
-    public List<ExerciseDTO> getN5GrammarExercises() {
-        List<Exercise> exercises = exerciseRepository
-                .findByCategory_NameAndLevel_LevelOrderByLessonNumber(
-                        CategoryType.GRAMMAR,
-                        JlptLevelType.N5);
-        return exercises.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-
-    public List<ExerciseDTO> getN5KanjiExercises() {
-        List<Exercise> exercises = exerciseRepository
-                .findByCategory_NameAndLevel_LevelOrderByLessonNumber(
-                        CategoryType.KANJI,
-                        JlptLevelType.N5);
-        return exercises.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
+    // ============ IMPORT EXERCISES ============
 
     @Transactional
     public void importN5VocabularyExercises(List<Object> jsonData) {
+        // Import logic here
     }
+
+    @Transactional
+    public void importExercises(CategoryType category, JlptLevelType level, List<ExerciseDTO> exercises) {
+        // Bulk import logic
+    }
+
+    // ============ SUBMIT EXERCISE ============
 
     @Transactional
     public SubmitExerciseResult submitExercise(Long userId, SubmitExerciseRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         int oldPoints = user.getPoints();
         int oldLevel = user.getLevel();
 
         String exerciseTitle = getExerciseTitle(request);
+        CategoryType exerciseType = request.getExerciseType() != null ? request.getExerciseType()
+                : CategoryType.VOCABULARY;
 
         int pointsEarned = calculatePointsEarned(
                 request.getCorrectAnswers(),
@@ -88,7 +167,8 @@ public class ExerciseService {
         user.setLastLoginDate(LocalDateTime.now());
         userRepository.save(user);
 
-        logActivityWithRetry(user, request, exerciseTitle, pointsEarned, newPoints, leveledUp, oldLevel, newLevel);
+        logActivityWithRetry(user, request, exerciseTitle, pointsEarned, newPoints,
+                leveledUp, oldLevel, newLevel, exerciseType);
 
         LevelCalculationService.LevelInfo levelInfo = levelService.getLevelInfo(newPoints);
 
@@ -102,29 +182,29 @@ public class ExerciseService {
                 .levelInfo(levelInfo)
                 .streak(user.getStreak())
                 .message(getLevelUpMessage(leveledUp, oldLevel, newLevel))
+                .exerciseType(exerciseType)
                 .build();
 
         return result;
     }
 
     private String getExerciseTitle(SubmitExerciseRequest request) {
-        String exerciseTitle = "Unknown Exercise";
+        if (request.getExerciseTitle() != null && !request.getExerciseTitle().isEmpty()) {
+            return request.getExerciseTitle();
+        }
 
         if (request.getExerciseId() != null) {
             try {
                 Exercise exercise = exerciseRepository.findById(request.getExerciseId()).orElse(null);
                 if (exercise != null) {
-                    exerciseTitle = exercise.getTitle();
+                    return exercise.getTitle();
                 }
             } catch (Exception e) {
+                // Log error
             }
         }
 
-        if (request.getExerciseTitle() != null && !request.getExerciseTitle().isEmpty()) {
-            exerciseTitle = request.getExerciseTitle();
-        }
-
-        return exerciseTitle;
+        return "Unknown Exercise";
     }
 
     private void logActivityWithRetry(
@@ -135,13 +215,14 @@ public class ExerciseService {
             int newPoints,
             boolean leveledUp,
             int oldLevel,
-            int newLevel) {
+            int newLevel,
+            CategoryType exerciseType) {
 
         try {
             String action = buildActivityLogAction(
                     user.getUsername(),
                     exerciseTitle,
-                    request.getExerciseType(),
+                    exerciseType,
                     request.getCorrectAnswers(),
                     request.getTotalQuestions(),
                     pointsEarned,
@@ -156,12 +237,13 @@ public class ExerciseService {
                     return;
                 } catch (Exception e) {
                     if (attempt == 3) {
+                        // Log error
                     }
                     Thread.sleep(100);
                 }
             }
-
         } catch (Exception e) {
+            // Log error
         }
     }
 
@@ -177,7 +259,7 @@ public class ExerciseService {
             int oldLevel,
             int newLevel) {
 
-        double percentage = (double) correctAnswers / totalQuestions * 100;
+        double percentage = totalQuestions > 0 ? (double) correctAnswers / totalQuestions * 100 : 0;
         String percentageStr = String.format("%.1f%%", percentage);
 
         StringBuilder action = new StringBuilder();
@@ -206,11 +288,11 @@ public class ExerciseService {
         int basePoints = (int) Math.round(percentage * 10);
 
         double multiplier = switch (difficultyLevel) {
-            case 1 -> 1.0;
-            case 2 -> 1.2;
-            case 3 -> 1.5;
-            case 4 -> 2.0;
-            case 5 -> 3.0;
+            case 1 -> 1.0; // N5
+            case 2 -> 1.2; // N4
+            case 3 -> 1.5; // N3
+            case 4 -> 2.0; // N2
+            case 5 -> 3.0; // N1
             default -> 1.0;
         };
 
@@ -233,7 +315,7 @@ public class ExerciseService {
     public void logActivityDirectly(Long userId, String action) {
         try {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found for logging"));
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found for logging"));
 
             ActivityLog activityLog = ActivityLog.builder()
                     .user(user)
@@ -244,9 +326,49 @@ public class ExerciseService {
             activityLogRepository.save(activityLog);
             activityLogRepository.flush();
         } catch (Exception e) {
-            throw e;
+            throw new RuntimeException("Failed to log activity", e);
         }
     }
+
+    // ============ DTO MAPPING ============
+
+    private ExerciseDTO mapToDTO(Exercise exercise) {
+        List<QuestionDTO> questionDTOs = null;
+
+        // Nếu exercise đã load questions (JOIN FETCH)
+        if (exercise.getQuestions() != null && !exercise.getQuestions().isEmpty()) {
+            questionDTOs = exercise.getQuestions().stream()
+                    .sorted((q1, q2) -> q1.getDisplayOrder().compareTo(q2.getDisplayOrder()))
+                    .map(this::mapToQuestionDTO)
+                    .collect(Collectors.toList());
+        }
+
+        return ExerciseDTO.builder()
+                .id(exercise.getId())
+                .title(exercise.getTitle())
+                .description(exercise.getDescription())
+                .lessonNumber(exercise.getLessonNumber())
+                .totalQuestions(exercise.getTotalQuestions())
+                .questions(questionDTOs)
+                .build();
+    }
+
+    private QuestionDTO mapToQuestionDTO(Question question) {
+        return QuestionDTO.builder()
+                .id(question.getId())
+                .displayOrder(question.getDisplayOrder())
+                .questionText(question.getQuestionText())
+                .optionA(question.getOptionA())
+                .optionB(question.getOptionB())
+                .optionC(question.getOptionC())
+                .optionD(question.getOptionD())
+                .correctOption(question.getCorrectOption() != null ? question.getCorrectOption().name() : "")
+                .explanation(question.getExplanation())
+                .exerciseId(question.getExercise() != null ? question.getExercise().getId() : null)
+                .build();
+    }
+
+    // ============ REQUEST/RESPONSE DTOs ============
 
     @Data
     @Builder
@@ -273,37 +395,6 @@ public class ExerciseService {
         private LevelCalculationService.LevelInfo levelInfo;
         private int streak;
         private String message;
-    }
-
-    private ExerciseDTO mapToDTO(Exercise exercise) {
-        List<Question> questions = questionRepository
-                .findByExercise_IdOrderByDisplayOrder(exercise.getId());
-
-        List<QuestionDTO> questionDTOs = questions.stream()
-                .map(q -> QuestionDTO.builder()
-                        .displayOrder(q.getDisplayOrder())
-                        .questionText(q.getQuestionText())
-                        .optionA(q.getOptionA())
-                        .optionB(q.getOptionB())
-                        .optionC(q.getOptionC())
-                        .optionD(q.getOptionD())
-                        .correctOption(switch (q.getCorrectOption()) {
-                            case A -> "A";
-                            case B -> "B";
-                            case C -> "C";
-                            case D -> "D";
-                        })
-                        .explanation(q.getExplanation())
-                        .build())
-                .collect(Collectors.toList());
-
-        return ExerciseDTO.builder()
-                .id(exercise.getId())
-                .title(exercise.getTitle())
-                .description(exercise.getDescription())
-                .lessonNumber(exercise.getLessonNumber())
-                .totalQuestions(exercise.getTotalQuestions())
-                .questions(questionDTOs)
-                .build();
+        private CategoryType exerciseType;
     }
 }
