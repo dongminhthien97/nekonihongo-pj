@@ -7,6 +7,7 @@ import com.nekonihongo.backend.enums.CategoryType;
 import com.nekonihongo.backend.enums.JlptLevelType;
 import com.nekonihongo.backend.exception.ResourceNotFoundException;
 import com.nekonihongo.backend.repository.*;
+import com.nekonihongo.backend.repository.JlptLevelRepository;
 import lombok.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class ExerciseService {
     private final ActivityLogService activityLogService;
     private final ActivityLogRepository activityLogRepository;
     private final CategoryRepository categoryRepository;
-    private final LevelRepository levelRepository;
+    private final JlptLevelRepository jlptLevelRepository;
 
     // ============ GENERIC METHOD - LẤY EXERCISE THEO CATEGORY & LEVEL ============
 
