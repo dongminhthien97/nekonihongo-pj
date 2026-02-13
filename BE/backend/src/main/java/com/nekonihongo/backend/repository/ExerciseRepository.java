@@ -48,8 +48,11 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
                         "ORDER BY q.displayOrder ASC")
         Optional<Exercise> findByIdWithQuestions(@Param("id") Long id);
 
-        // Lấy bài tập kèm câu hỏi và options bằng @EntityGraph
-        @EntityGraph(attributePaths = { "questions", "questions.options" })
+        // Lấy bài tập kèm câu hỏi và options bằng @Query
+        @Query("SELECT e FROM Exercise e " +
+                        "JOIN e.category c " +
+                        "JOIN e.level l " +
+                        "WHERE c.name = :categoryType AND l.level = :levelType")
         List<Exercise> findByCategoryAndLevel(
                         @Param("categoryType") CategoryType categoryType,
                         @Param("levelType") JlptLevelType levelType);
